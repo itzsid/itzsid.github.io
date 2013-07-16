@@ -1,7 +1,6 @@
 ---
 layout: page
 ---
-{% include JB/setup %}
 <ul>
 {% for post in site.posts %}
 
