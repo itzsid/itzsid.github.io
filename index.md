@@ -1,7 +1,15 @@
 ---
 layout: page
-title: Hello World!
-tagline: Supporting tagline
 ---
 {% include JB/setup %}
+<ul>
+{% for post in site.posts %}
+
+<h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
+<br>
+{{ post.content}}
+<br>
+{% endfor %}
+</ul>
+
 
