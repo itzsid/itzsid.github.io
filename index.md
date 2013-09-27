@@ -6,6 +6,8 @@ layout: page
 
 <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
 <br>
+{{ post.date }}
+<br>
 {{ post.content}}
 <br>
 {% endfor %}
