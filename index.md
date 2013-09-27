@@ -10,6 +10,7 @@ layout: page
 <br>
 {{ post.content}}
 <br>
+<hr>
 {% endfor %}
 </ul>
 
