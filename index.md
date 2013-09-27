@@ -3,7 +3,7 @@ layout: page
 ---
 <ul>
 {% for post in site.posts %}
-{{ post.date | date_to_long_string }}
+<b>{{ post.date | date_to_long_string }}</b>
 <br>
 <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
 <br>
