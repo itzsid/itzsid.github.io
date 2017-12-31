@@ -1,3 +1,10 @@
+
+- paper:
+  title: 'Distributed Object based SLAM'
+  authors: 'Siddharth Choudhary'
+  conference: "Ph.D. Thesis"
+  ppt: 'publications/defense.pdf' 
+
 - paper:
   title: 'Distributed Mapping with Privacy and Communication Constraints: Lightweight Algorithms and Object-based Models'
   authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, 
@@ -5,4 +12,39 @@ John Rogers, Henrik I. Christensen, Frank Dellaert'
   conference: "IJRR 2017"
   code: 'https://cognitiverobotics.github.io/distributed-mapper/'
   arxiv: 'https://arxiv.org/pdf/1702.03435.pdf'
-  
+  bibtex: 'publications/bibtex/Choudhary16ijrr_bibtex.txt'
+ 
+- paper:
+  title: 'Multi Robot Object-based SLAM'
+  authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, 
+John Rogers, Zhen Liu, Henrik I. Christensen, Frank Dellaert'
+  conference: "ISER 2016"
+  code: 'https://cognitiverobotics.github.io/distributed-mapper/'
+  pdf: 'publications/Choudhary16iser.pdf'
+  bibtex: 'publications/bibtex/Choudhary16iser_bibtex.txt'
+
+- paper:
+  title: 'Distributed Trajectory Estimation with Privacy and Communication Constraints: 
+a Two-Stage Distributed Gauss-Seidel Approach'
+  authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, John Rogers, Henrik I. Christensen, Frank Dellaert'
+  conference: "ICRA 2016"
+  www: 'publications/web/icra16/'
+  ppt: 'publications/web/icra16/presentation.pdf'
+  bibtex: 'publications/bibtex/Choudhary16icra_bibtex.txt'
+  pdf: 'publications/Choudhary16icra.pdf'
+
+- paper:
+  title: 'Information based Reduced Landmark SLAM'
+  authors: 'Siddharth Choudhary, Vadim Indelman, Henrik I. Christensen, Frank Dellaert'
+  conference: "ICRA 2015"
+  ppt: 'publications/web/icra15/Choudhary15icra_ppt.pdf'
+  bibtex: 'publications/bibtex/Choudhary15icra_bibtex.txt'
+  pdf: 'publications/Choudhary15icra.pdf'
+
+- paper:
+  title: 'Visibility Probability Structure from SfM Datasets and Applications'
+  authors: 'Siddharth Choudhary and P J Narayanan'
+  conference: "ECCV 2012"
+  www: 'publications/web/eccv12/'
+  bibtex: 'publications/bibtex/Choudhary12eccv_bibtex.txt'
+  pdf: 'publications/Choudhary12eccv.pdf'

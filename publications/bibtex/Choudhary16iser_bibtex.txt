@@ -1,0 +1,13 @@
+@inproceedings{Choudhary16icra,
+  author    = {Siddharth Choudhary and
+               Luca Carlone and
+	       Carlos Nieto and
+	       John Rogers and
+               Zhen Liu and
+               Henrik I. Christensen and
+               Frank Dellaert},
+  title     = {Multi Robot Object-based SLAM},
+  booktitle = {International Symposium on Experimental Robotics, {ISER}
+               2016},
+  year      = {2016}
+}

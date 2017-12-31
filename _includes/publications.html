@@ -6,22 +6,31 @@
   {% for paper in site.data.publications %}
     <div class="item">
 
-      <span class="publication-authors">{{ paper.authors }}</span>
+      <span class="publication-authors">{{ paper.authors }}</span> <br>
       <span class="publication-title">{{ paper.title }}</span> <br>
       <span class="publication-conference">{{ paper.conference }}</span>
       {% if paper.arxiv %}
       [<a href={{ paper.arxiv }}>arxiv</a>]
       {% endif %}
       {% if paper.pdf %}
-      [<a href={{ paper.pdf }}>pdf</a>]
+      [<a href={{ site.url }}/{{ paper.pdf }}>pdf</a>]
+      {% endif %}
+      {% if paper.ppt %}
+      [<a href={{ site.url }}/{{ paper.ppt }}>ppt</a>]
+      {% endif %}
+      {% if paper.www %}
+      [<a href={{ site.url }}/{{ paper.www }}>www</a>]
       {% endif %}
       {% if paper.code %}
       [<a href={{ paper.code }}>code</a>]
       {% endif %}
+      {% if paper.bibtex %}
+      [<a href={{ site.url }}/{{ paper.bibtex }}>bibtex</a>]
+      {% endif %}
 
     </div><!--//item-->
   {% endfor %}
-
-Check out <a href="researchgate.net/profile/Siddharth_Choudhary">researchgate</a> for complete list of publications.
+<br>
+Check out <a href="http://researchgate.net/profile/Siddharth_Choudhary">ResearchGate</a> or <a href="https://scholar.google.com/citations?user=A9HxcJ8AAAAJ&hl=en">Google Scholar</a> for complete list of publications.
 </section><!--//section-->
 {% endif %}
