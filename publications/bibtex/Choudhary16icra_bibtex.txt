@@ -1,0 +1,13 @@
+@inproceedings{Choudhary16icra,
+  author    = {Siddharth Choudhary and
+               Luca Carlone and
+	       Carlos Nieto and
+	       John Rogers and
+               Henrik I. Christensen and
+               Frank Dellaert},
+  title     = {Distributed Trajectory Estimation with Privacy and Communication Constraints: 
+a Two-Stage Distributed Gauss-Seidel Approach},
+  booktitle = {{IEEE} International Conference on Robotics and Automation, {ICRA}
+               2016},
+  year      = {2016}
+}

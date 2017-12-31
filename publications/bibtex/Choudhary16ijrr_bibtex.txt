@@ -1,0 +1,24 @@
+@article{Choudhary16ijrr,
+author = {Siddharth Choudhary and Luca Carlone and Carlos Nieto and John Rogers and Henrik I Christensen and Frank Dellaert},
+title ={Distributed mapping with privacy and communication constraints: Lightweight algorithms and object-based models},
+journal = {The International Journal of Robotics Research},
+volume = {36},
+number = {12},
+pages = {1286-1311},
+year = {2017},
+doi = {10.1177/0278364917732640},
+
+URL = { 
+        https://doi.org/10.1177/0278364917732640
+    
+},
+eprint = { 
+        https://doi.org/10.1177/0278364917732640
+    
+}
+,
+    abstract = { We consider the following problem: a team of robots is deployed in an unknown environment and it has to collaboratively build a map of the area without a reliable infrastructure for communication. The backbone for modern mapping techniques is pose graph optimization, which estimates the trajectory of the robots, from which the map can be easily built. The first contribution of this paper is a set of distributed algorithms for pose graph optimization: rather than sending all sensor data to a remote sensor fusion server, the robots exchange very partial and noisy information to reach an agreement on the pose graph configuration. Our approach can be considered as a distributed implementation of a two-stage approach that already exists, where we use the Successive Over-Relaxation and the Jacobi Over-Relaxation as workhorses to split the computation among the robots. We also provide conditions under which the proposed distributed protocols converge to the solution of the centralized two-stage approach. As a second contribution, we extend the proposed distributed algorithms to work with the object-based map models. The use of object-based models avoids the exchange of raw sensor measurements (e.g. point clouds or RGB-D data) further reducing the communication burden. Our third contribution is an extensive experimental evaluation of the proposed techniques, including tests in realistic Gazebo simulations and field experiments in a military test facility. Abundant experimental evidence suggests that one of the proposed algorithms (the Distributed Gauss–Seidel method) has excellent performance. The Distributed Gauss–Seidel method requires minimal information exchange, has an anytime flavor, scales well to large teams (we demonstrate mapping with a team of 50 robots), is robust to noise, and is easy to implement. Our field tests show that the combined use of our distributed algorithms and object-based models reduces the communication requirements by several orders of magnitude and enables distributed mapping with large teams of robots in real-world problems. The source code is available for download at https://cognitiverobotics.github.io/distributed-mapper/ }
+}
+
+
+

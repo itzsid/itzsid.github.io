@@ -1,0 +1,9 @@
+@inproceedings{Choudhary15iros,
+  author    = {Siddharth Choudhary and
+               Luca Carlone and
+               Henrik I. Christensen and
+               Frank Dellaert},
+  title     = {Exactly Sparse Memory Efficient SLAM using the Multi-Block Alternating Direction Method of Multipliers},
+  booktitle = {2015 {IEEE/RSJ} International Conference on Intelligent Robots and Systems, Hamburg, Germany},
+  year      = {2015}
+}

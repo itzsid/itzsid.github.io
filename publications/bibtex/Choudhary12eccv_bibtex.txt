@@ -1,0 +1,16 @@
+@inproceedings{DBLP:conf/eccv/ChoudharyN12,
+  author    = {Siddharth Choudhary and
+               P. J. Narayanan},
+  title     = {Visibility Probability Structure from SfM Datasets and Applications},
+  booktitle = {Computer Vision - {ECCV} 2012 - 12th European Conference on Computer
+               Vision, Florence, Italy, October 7-13, 2012, Proceedings, Part {V}},
+  pages     = {130--143},
+  year      = {2012},
+  crossref  = {DBLP:conf/eccv/2012-5},
+  url       = {https://doi.org/10.1007/978-3-642-33715-4_10},
+  doi       = {10.1007/978-3-642-33715-4_10},
+  timestamp = {Sat, 16 Sep 2017 12:09:42 +0200},
+  biburl    = {http://dblp.org/rec/bib/conf/eccv/ChoudharyN12},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
