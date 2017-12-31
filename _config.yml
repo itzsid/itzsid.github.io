@@ -1,129 +1,41 @@
-# This is the default format. 
-# For more see: https://github.com/mojombo/jekyll/wiki/Permalinks
-permalink: /:categories/:year/:month/:day/:title 
+# Site Settings
+title: Personal Website
+url: ''
+baseurl: '' #change it according to your repository name
 
-exclude: [".rvmrc", ".rbenv-version", "README.md", "Rakefile", "changelog.md"]
-auto: true
-pygments: true
+# Enable one of these styles by removing #. Style will be applied only after restarting the build or serve.
+#style: styles-2
+#style: styles-3
+#style: styles-4
+#style: styles-5
+#style: styles-6
 
-# Themes are encouraged to use these universal variables 
-# so be sure to set them if your theme uses them.
-#
-title : Tech Dump
-tagline: Site Taglin
-author :
-  name: Siddharth Choudhary
-  email : itzsid@gmail.com
-  github : itzsid
+#Profile information
+name: Siddharth Choudhary
+tagline: Computer Vision Researcher/Engineer <br> @ Magic Leap
+pic: profile.png  #place a 100x100 picture inside /assets/images/ folder and provide the name of the file below
+summary: 'I am a Computer Vision Researcher/Engineer (2017-) at <a href="http://magicleap.com">Magic Leap</a>. My primary research interests are in the areas of Robotics and Computer Vision and its intersection with Machine Learning and High Performance Computing. <br><br>
+ Before this, I was PhD candidate (2012-2017) in the <a href="http://sic.gatech.edu">School of Interactive Computing</a>, which is a part of <a href="http://cc.gatech.edu">College of Computing</a> at <a href="http://gatech.edu">Georgia Tech</a>.
+I was associated with <a href="http://cogrob.org/">Cognitive Robotics</a> and <a href="http://borg.cc.gatech.edu">BORG</a> lab and I was advised by <a href="http://www.hichristensen.net/">Henrik I. Christensen</a> and <a href="http://frank.dellaert.com">Frank Dellaert</a>. I also collaborated with <a href="http://lucacarlone.com">Luca Carlone</a>, <a href="http://vindelman.net.technion.ac.il/">Vadim Indelman</a>, <a href="http://ajbt.net">Alex Trevor</a>, <a href="https://www.cc.gatech.edu/~cnieto6/">Carlos Nieto</a>, <a href="https://scholar.google.com/citations?user=uH_LDocAAAAJ&hl=en">John Rogers</a> and many others over the course of my PhD. I completed my Bachelors and Masters in Computer Science from <a href="http://iiit.ac.in">IIIT Hyderabad</a> in July 2012 working with <a href="http://iiit.ac.in/~pjn">P J Narayanan</a> at <a href="http://cvit.iiit.ac.in">CVIT</a>.
+<br><br>
+I have also interned at <a href="http://fyusion.com">Fyusion Inc.</a> and spent some time collaborating with researchers from <a href="https://www.arl.army.mil/www/default.cfm">Army Research Lab</a> which also has funded my research.  
+'
 
-# The production_url is only used when full-domain names are needed
-# such as sitemap.txt 
-# Most places will/should use BASE_PATH to make the urls
-#
-# If you have set a CNAME (pages.github.com) set your custom domain here.
-# Else if you are pushing to username.github.io, replace with your username.
-# Finally if you are pushing to a GitHub project page, include the project name at the end.
-#
-production_url : http://itzsid.github.io
+#sidebar links
+email: itzsid@gmail.com
+phone: 404 519 2452 
+website: schoudhary.net #do not add http://
+linkedin: siddharthchoudhary
+github: itzsid
+twitter: '@itzsid'
+#Update all the sections by editing the files inside _data folder.
 
-# All Jekyll-Bootstrap specific configurations are namespaced into this hash
-#
-JB :
-  version : 0.3.0
+# Tracker
+analytics: UA-83979019-1
 
-  # All links will be namespaced by BASE_PATH if defined.
-  # Links in your website should always be prefixed with {{BASE_PATH}}
-  # however this value will be dynamically changed depending on your deployment situation.
-  #
-  # CNAME (http://yourcustomdomain.com)
-  #   DO NOT SET BASE_PATH 
-  #   (urls will be prefixed with "/" and work relatively)
-  #
-  # GitHub Pages (http://username.github.io)
-  #   DO NOT SET BASE_PATH 
-  #   (urls will be prefixed with "/" and work relatively)
-  #
-  # GitHub Project Pages (http://username.github.io/project-name)
-  #
-  #   A GitHub Project site exists in the `gh-pages` branch of one of your repositories.
-  #  REQUIRED! Set BASE_PATH to: http://username.github.io/project-name
-  #
-  # CAUTION:
-  #   - When in Localhost, your site will run from root "/" regardless of BASE_PATH
-  #   - Only the following values are falsy: ["", null, false]
-  #   - When setting BASE_PATH it must be a valid url.
-  #     This means always setting the protocol (http|https) or prefixing with "/"
-  BASE_PATH : false
-
-  # By default, the asset_path is automatically defined relative to BASE_PATH plus the enabled theme.
-  # ex: [BASE_PATH]/assets/themes/[THEME-NAME]
-  #
-  # Override this by defining an absolute path to assets here.
-  # ex: 
-  #   http://s3.amazonaws.com/yoursite/themes/watermelon
-  #   /assets
-  #
-  ASSET_PATH : false
-
-  # These paths are to the main pages Jekyll-Bootstrap ships with.
-  # Some JB helpers refer to these paths; change them here if needed.
-  #
-  archive_path: /archive.html
-  categories_path : /categories.html
-  tags_path : /tags.html
-  atom_path : /atom.xml
-  rss_path : /rss.xml
-
-  # Settings for comments helper
-  # Set 'provider' to the comment provider you want to use.
-  # Set 'provider' to false to turn commenting off globally.
-  #
-  comments :
-    provider : facebook
-    disqus :
-      short_name : itzsid
-    livefyre :
-      site_id : 123
-    intensedebate :
-      account : 123abc
-    facebook :
-      appid : 270275072995149
-      num_posts: 5
-      width: 580
-      colorscheme: light
-   
-  # Settings for analytics helper
-  # Set 'provider' to the analytics provider you want to use.
-  # Set 'provider' to false to turn analytics off globally.
-  #        
-  analytics :
-    provider : google 
-    google : 
-        tracking_id : 'UA-123-12'
-    getclicky :
-      site_id : 
-    mixpanel :
-        token : '_MIXPANEL_TOKEN_'
-    piwik :
-        baseURL : 'myserver.tld/piwik' # Piwik installation address (without protocol)
-        idsite : '1'                   # the id of the site on Piwik
-
-  # Settings for sharing helper. 
-  # Sharing is for things like tweet, plusone, like, reddit buttons etc.
-  # Set 'provider' to the sharing provider you want to use.
-  # Set 'provider' to false to turn sharing off globally.
-  #
-  sharing :
-    provider : false
-    
-  # Settings for all other include helpers can be defined by creating 
-  # a hash with key named for the given helper. ex:
-  #
-  #   pages_list :
-  #     provider : "custom"   
-  #
-  # Setting any helper's provider to 'custom' will bypass the helper code
-  # and include your custom code. Your custom file must be defined at:
-  #   ./_includes/custom/[HELPER]
-  # where [HELPER] is the name of the helper you are overriding.
-  
+# Build settings
+encoding: "utf-8"
+compress_html: # - http://jch.penibelst.de/
+  clippings: all
+  ignore:
+    envs: development
