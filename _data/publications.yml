@@ -6,7 +6,7 @@
   ppt: 'publications/defense.pdf' 
 
 - paper:
-  title: 'Distributed Mapping with Privacy and Communication Constraints: Lightweight Algorithms and Object-based Models'
+  title: 'Distributed Mapping with Privacy and Communication Constraints: <br> Lightweight Algorithms and Object-based Models'
   authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, 
 John Rogers, Henrik I. Christensen, Frank Dellaert'
   conference: "IJRR 2017"
@@ -16,14 +16,14 @@ John Rogers, Henrik I. Christensen, Frank Dellaert'
  
 - paper:
   title: 'Multi Robot Object-based SLAM'
-  authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, 
+  authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, <br> 
 John Rogers, Zhen Liu, Henrik I. Christensen, Frank Dellaert'
   conference: "ISER 2016"
   pdf: 'publications/Choudhary16iser.pdf'
   bibtex: 'publications/bibtex/Choudhary16iser_bibtex.txt'
 
 - paper:
-  title: 'Distributed Trajectory Estimation with Privacy and Communication Constraints: 
+  title: 'Distributed Trajectory Estimation with Privacy and Communication Constraints: <br> 
 a Two-Stage Distributed Gauss-Seidel Approach'
   authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, John Rogers, Henrik I. Christensen, Frank Dellaert'
   conference: "ICRA 2016"
