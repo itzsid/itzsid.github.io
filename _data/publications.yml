@@ -1,0 +1,8 @@
+- paper:
+  title: 'Distributed Mapping with Privacy and Communication Constraints: Lightweight Algorithms and Object-based Models'
+  authors: 'Siddharth Choudhary, Luca Carlone, Carlos Nieto, 
+John Rogers, Henrik I. Christensen, Frank Dellaert'
+  conference: "IJRR 2017"
+  code: 'https://cognitiverobotics.github.io/distributed-mapper/'
+  arxiv: 'https://arxiv.org/pdf/1702.03435.pdf'
+  
