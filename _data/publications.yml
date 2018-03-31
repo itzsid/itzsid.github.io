@@ -4,6 +4,14 @@
   authors: 'Siddharth Choudhary'
   conference: "Ph.D. Thesis"
   ppt: 'publications/defense.pdf' 
+  pdf: 'publications/Choudhary17dissertation.pdf'
+
+- paper:
+  title: 'Data-Efficient Decentralized Visual SLAM'
+  authors: 'Titus Cieslewski, Siddharth Choudhary, Davide Scaramuzza'
+  conference: "ICRA 2018"
+  pdf: 'publications/Cieslewski18icra.pdf'
+
 
 - paper:
   title: 'Distributed Mapping with Privacy and Communication Constraints: <br> Lightweight Algorithms and Object-based Models'
