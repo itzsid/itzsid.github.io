@@ -2,6 +2,9 @@
 title: Siddharth Choudhary - Personal Website
 url: 'itzsid.github.io'
 baseurl: '' #change it according to your repository name
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
 
 # Enable one of these styles by removing #. Style will be applied only after restarting the build or serve.
 #style: styles-2
