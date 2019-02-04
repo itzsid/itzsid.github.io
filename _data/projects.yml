@@ -4,7 +4,7 @@
 - project:
   title: Data-Efficient Decentralized Visual SLAM 
   link: 'https://github.com/uzh-rpg/dslam_open'
-  tagline: "This is the code for the 2018 ICRA paper Data-Efficient Decentralized Visual SLAM by Titus Cieslewski, Siddharth Choudhary and Davide Scaramuzza"
+  tagline: "This is the code for the 2018 ICRA paper Data-Efficient Decentralized Visual SLAM by Titus Cieslewski, Siddharth Choudhary and Davide Scaramuzza."
 
 - project:
   title: Distributed-Mapper 
