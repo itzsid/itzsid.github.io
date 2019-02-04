@@ -1,14 +1,16 @@
 {% if site.data.publications %}
 <section class="section projects-section">
 
-  <h2 class="section-title"><i class="fa fa-archive"></i>Selected Publications</h2>
+  <h2 class="section-title"><i class="fa fa-archive"></i>Publications</h2>
 
   {% for paper in site.data.publications %}
     <div class="item">
 
       <span class="publication-authors">{{ paper.authors }}</span> <br>
       <span class="publication-title">{{ paper.title }}</span> <br>
+      {% if paper.conference %}
       <span class="publication-conference">{{ paper.conference }}</span>
+      {% endif %}
       {% if paper.arxiv %}
       [<a href={{ paper.arxiv }}>arxiv</a>]
       {% endif %}
