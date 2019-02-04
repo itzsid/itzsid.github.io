@@ -42,10 +42,10 @@ a Two-Stage Distributed Gauss-Seidel Approach'
   pdf: 'publications/Choudhary16icra.pdf'
 
 - paper:
-   title: 'Active Planning based Extrinsic Calibration of Exteroceptive Sensors in Unknown Environments'
-   authors: 'Varun Murali, Carlos Nieto, Siddharth Choudhary, Henrik I. Christensen'
-   conference: "IROS 2016"
-   pdf: 'publications/Murali16iros.pdf'
+  title: 'Active Planning based Extrinsic Calibration of Exteroceptive Sensors in Unknown Environments'
+  authors: 'Varun Murali, Carlos Nieto, Siddharth Choudhary, Henrik I. Christensen'
+  conference: "IROS 2016"
+  pdf: 'publications/Murali16iros.pdf'
 
 - paper:
   title: 'Information based Reduced Landmark SLAM'
