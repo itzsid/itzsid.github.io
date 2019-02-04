@@ -42,12 +42,26 @@ a Two-Stage Distributed Gauss-Seidel Approach'
   pdf: 'publications/Choudhary16icra.pdf'
 
 - paper:
+   title: 'Active Planning based Extrinsic Calibration of Exteroceptive Sensors in Unknown Environments'
+   authors: 'Varun Murali, Carlos Nieto, Siddharth Choudhary, Henrik I. Christensen'
+   conference: "IROS 2016"
+   pdf: 'publications/Murali16iros.pdf'
+
+- paper:
   title: 'Information based Reduced Landmark SLAM'
   authors: 'Siddharth Choudhary, Vadim Indelman, Henrik I. Christensen, Frank Dellaert'
   conference: "ICRA 2015"
   ppt: 'publications/web/icra15/Choudhary15icra_ppt.pdf'
   bibtex: 'publications/bibtex/Choudhary15icra_bibtex.txt'
   pdf: 'publications/Choudhary15icra.pdf'
+
+- paper:
+  title: 'SLAM with Object Discovery, Modeling and Mapping'
+  authors: 'Siddharth Choudhary, Alex Trevor, Henrik I. Christensen, Frank Dellaert'
+  conference: "IROS 2014"
+  www: 'publications/web/iros14'
+  bibtex: 'publications/bibtex/Choudhary14iros_bibtex.txt'
+  pdf: 'publications/Choudhary14iros.pdf'
 
 - paper:
   title: 'Visibility Probability Structure from SfM Datasets and Applications'
@@ -67,5 +81,4 @@ a Two-Stage Distributed Gauss-Seidel Approach'
 - paper:
   title: 'Bundle Adjustment - A Tutorial'
   authors: 'Siddharth Choudhary'
-  conference: ""
   ppt: 'publications/Bundle_Adjustment_Tutorial.pdf'
