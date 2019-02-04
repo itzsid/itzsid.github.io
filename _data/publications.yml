@@ -10,7 +10,8 @@
   title: 'Data-Efficient Decentralized Visual SLAM'
   authors: 'Titus Cieslewski, Siddharth Choudhary, Davide Scaramuzza'
   conference: "ICRA 2018"
-  pdf: 'publications/Cieslewski18icra.pdf'
+  code: 'https://github.com/uzh-rpg/dslam_open'
+  pdf: 'publications/Cieslewski18icra.pdf' 
 
 
 - paper:
@@ -55,3 +56,16 @@ a Two-Stage Distributed Gauss-Seidel Approach'
   www: 'publications/web/eccv12/'
   bibtex: 'publications/bibtex/Choudhary12eccv_bibtex.txt'
   pdf: 'publications/Choudhary12eccv.pdf'
+
+- paper:
+  title: 'Practical Time Bundle Adjustment for 3D Reconstruction on GPU'
+  authors: 'Siddharth Choudhary, Shubham Gupta and P J Narayanan'
+  conference: "ECCV 2010 Workshop"
+  ppt: 'publications/BundleAdjustmentCVGPU.pdf'
+  pdf: 'publications/Siddharth10Practical.pdf'
+
+- paper:
+  title: 'Bundle Adjustment - A Tutorial'
+  authors: 'Siddharth Choudhary'
+  conference: ""
+  ppt: 'publications/Bundle_Adjustment_Tutorial.pdf'
