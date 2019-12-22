@@ -1,0 +1,8 @@
+@Article{Cieslewski18icra,
+  author        = {Titus Cieslewski and Siddharth Choudhary and Davide
+                  Scaramuzza},
+  title         = {Data-Efficient Decentralized Visual {SLAM}},
+  journal       = {{IEEE} Int. Conf. Robot. Autom. ({ICRA})},
+  year          = 2018,
+  month         = may
+}
