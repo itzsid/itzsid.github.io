@@ -2,5 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /libs/
 
-Sitemap: /sitemap.xml
-
+Sitemap: http://itzsid.github.io/sitemap.xml
