@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+		<!--	created with www.mysitemapgenerator.com	-->
+		<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+	<loc>http://itzsid.github.io/</loc>
+	<lastmod>2020-04-17T19:26:33+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/index.html</loc>
+	<lastmod>2020-04-17T19:26:33+01:00</lastmod>
+	<priority>1.0</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/resume/resume.pdf</loc>
+	<lastmod>2020-04-17T19:26:33+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Bundle_Adjustment_Tutorial.pdf</loc>
+	<lastmod>2020-04-17T19:26:34+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/SLAM_Lit_Survey.pdf</loc>
+	<lastmod>2020-04-17T19:26:35+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/minimal_mapping_navigation.pdf</loc>
+	<lastmod>2020-04-17T19:26:35+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary10cvgpu.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary12thesis.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary15icra.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary15iros.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary15iros_supplemental.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary16icra.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary16iser.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Choudhary16iser_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Choudhary16ijrr_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary14iros.pdf</loc>
+	<lastmod>2020-04-17T19:26:36+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Choudhary14iros_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:37+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary17dissertation.pdf</loc>
+	<lastmod>2020-04-17T19:26:38+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/defense.pdf</loc>
+	<lastmod>2020-04-17T19:26:39+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary16icra.pdf</loc>
+	<lastmod>2020-04-17T19:26:39+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/web/icra16/presentation.pdf</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.4</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/web/icra16/</loc>
+	<lastmod>2020-04-17T19:26:39+01:00</lastmod>
+	<priority>0.4</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Choudhary16icra_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:39+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Cieslewski18icra.pdf</loc>
+	<lastmod>2020-04-17T19:26:39+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Cieslewski18icra_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Choudhary12eccv.pdf</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/web/eccv12/</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.4</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/bibtex/Choudhary12eccv_bibtex.txt</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.6</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/Siddharth10Practical.pdf</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/BundleAdjustmentCVGPU.pdf</loc>
+	<lastmod>2020-04-17T19:26:41+01:00</lastmod>
+	<priority>0.8</priority>
+</url>
+<url>
+	<loc>http://itzsid.github.io/publications/web/iros14/</loc>
+	<lastmod>2020-04-17T19:26:40+01:00</lastmod>
+	<priority>0.4</priority>
+</url>
+</urlset>
