@@ -96,7 +96,7 @@
     <div class="col-md-12">
       <ul>
           <li><span style="font-weight:bold">2020.06 - </span>Giving a <a href="https://sites.google.com/view/perceptionatmagicleap/">tutorial</a> in CVPR 2020 on the perception technologies behind the <a href="https://www.magicleap.com/en-us/news/op-ed/magicverse">MagicVerse (AR Cloud)</a>.
-              <li><span style="font-weight:bold">2020.03 - </span>Released 3D Object Recognition feature which runs in the AR Cloud. Checkout some videos at <a href="https://twitter.com/i/status/1244571040250056704">here</a> and <a href="https://twitter.com/i/status/1243221852694163457">here</a>. 
+              <li><span style="font-weight:bold">2020.03 - </span>Released 3D Object Recognition feature which runs in the MagicVerse (AR Cloud). Checkout videos <a href="https://twitter.com/i/status/1244571040250056704">here</a> and <a href="https://twitter.com/i/status/1243221852694163457">here</a>. 
           <li><span style="font-weight:bold">2019.06 - </span>Gave a tutorial in CVPR 2019 on <a href="https://sites.google.com/view/perceptionatmagicleap/cvpr2019?authuser=0">Perception at Magic Leap</a>.
       <li><span style="font-weight:bold">2017.10 - </span> Joined the computer vision team at Magic Leap.
       <li><span style="font-weight:bold">2017.08 - </span> Gave a successful demo of decentralized exploration and mapping system during the Micro Autonomous Systems and Technology (MAST) Collaborative Technology Alliance (CTA) Capstone event. The event was covered in <a href="https://www.economist.com/science-and-technology/2017/12/14/military-robots-are-getting-smaller-and-more-capable">The Economist</a>, <a
@@ -110,27 +110,32 @@
 
 <!-- publication -->
 <div class="container">
-  <h2 id="research">Research Projects</h2>
+    <h2 id="research">Selected Research Projects (check <a href="https://scholar.google.com/citations?user=A9HxcJ8AAAAJ&hl=en&authuser=1">Google Scholar</a> for the complete list)</h2>
   <hr/>
-   <h3>Multiuser, Scalable 3D Object Detection in the Cloud</h3>
+   <h3>Multiuser, Scalable 3D Object Detection in the AR Cloud</h3>
    <br/>
 
    <div class="row">
      <div class="col-md-6">
-       <div class="embed-responsive embed-responsive-16by9">
-         <iframe src="https://twitter.com/i/status/1244571040250056704" allowfullscreen></iframe>
-       </div>
+         <img class="img-thumbnail" src="publications/3D_object_detection.jpeg" ></img>
      </div>
      <div class="col-md-6">
        <p>
+       As AR Cloud gains importance, one key challenge is large scale, multi-user 3D object detection. Current approaches typically focus on the single-room, single-user scenarios. In this work, we present an approach for multi-user and scalable 3D object detection, based on distributed data association and fusion. We use an off-the-shelf detector to detect object instances in 2D and then combine them in 3D, per object while allowing asynchronous updates to the map. The distributed data association and fusion allows us to scale the detection to a large number of users concurrently, while maintaining a lower memory footprint without loss in accuracy. We show empirical results,  where the distributed and centralized approaches achieve comparable accuracy on the ScanNet dataset while reducing the memory consumption by a factor of 15.
+
        </p>
 
              <br/>
+
+             This feature was released on ML-19 and it runs in the MagicVerse (AR Cloud). Checkout some videos at <a href="https://twitter.com/i/status/1244571040250056704">here</a> and <a     href="https://twitter.com/i/status/1243221852694163457">here</a>. Below is the initial pre-print. Full publication is a work in progress. 
+             <br/>
+             <br/>
        <p>
-       <span style="font-weight: bold;">Publication:</span>
+       <span style="font-weight: bold;">Preprint (with initial results):</span>
        </p>
        <span style='font-size: 14px;'>
        <p>
+      [1] S. Choudhary, S. Mahendran et al. Multi-user, Scalable 3D Object Detection in AR Cloud, in submission at CVPR 2020 workshop [<a href=https://itzsid.github.io/publications/CVPR_workshop_preprint.pdf>pdf</a>]
        </p>
       </span>
     </div>
@@ -320,6 +325,21 @@ Constraints: a Two-Stage Distributed Gauss-Seidel Approach, in ICRA 2016. [<a hr
      </div>
    </div>
 
+         <h3>ADMM SLAM</h3>
+
+    <div class="row">
+      <div class="col-md-2">
+        <p>
+        <a href="https://itzsid.github.io/admm-slam/"><img class="img-thumbnail img-responsive" src="images/admm_slam.png"></a>
+        </p>
+      </div>
+      <div class="col-md-9">
+          <p>
+          This <a href="https://itzsid.github.io/admm-slam/">library</a> is an implementation of the algorithm described in Exactly Sparse Memory Efficient SLAM using the Multi-Block Alternating Direction Method of Multipliers (IROS 2015). The core library is developed in C++ language.
+
+        </p>
+      </div>
+    </div>
 
    <h3>Planning to Calibrate</h3>
 
