@@ -1,0 +1,8 @@
+ @Article{Choudhary20cvpr,
+   author        = {Siddharth Choudhary and Nitesh Sekhar and Siddharth Mahendran and Prateek Singhal},
+   title         = {Multi-user, Scalable 3D Object Detection in AR Cloud
+},
+   journal       = {CVPR Workshop on Computer Vision for Augmented and Virtual Reality, Seattle, WA, 2020},
+   year          = 2020,
+   month         = june
+ }
