@@ -1,0 +1,977 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Speech-to-Speech Models: A Literature Review</title>
+    <meta name="author" content="Siddharth Choudhary">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Comprehensive literature review of speech-to-speech and omni-modal voice interaction models from SpeechGPT (2023) to Qwen3-Omni (2025)">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>">
+
+    <style type="text/css">
+        body {
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 300;
+            font-size: 17px;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 900px;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        h1 {
+            font-weight: 300;
+            font-size: 2.2em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-weight: 400;
+            font-size: 1.5em;
+            border-bottom: 2px solid #1367a7;
+            padding-bottom: 5px;
+            margin-top: 40px;
+        }
+
+        h3 {
+            font-weight: 400;
+            font-size: 1.2em;
+            color: #1367a7;
+            margin-top: 30px;
+        }
+
+        h4 {
+            font-weight: 500;
+            font-size: 1.1em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        .author {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .author a {
+            color: #1367a7;
+            text-decoration: none;
+        }
+
+        a:link, a:visited {
+            color: #1367a7;
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #208799;
+            text-decoration: underline;
+        }
+
+        .abstract {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1367a7;
+            padding: 15px 20px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #1367a7;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .diagram-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+
+        .diagram-caption {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .paper-box {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .paper-box h4 {
+            margin-top: 0;
+            color: #1367a7;
+        }
+
+        .paper-meta {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .innovation-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #208799;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+
+        .architecture-list {
+            background-color: #f0f0f0;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .toc {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .back-link {
+            margin-bottom: 20px;
+        }
+
+        svg text {
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .year-section {
+            border-left: 3px solid #1367a7;
+            padding-left: 20px;
+            margin-left: 10px;
+        }
+
+        .timeline-year {
+            background-color: #1367a7;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="back-link">
+        <a href="../index.html">← Back to Home</a>
+    </div>
+
+    <h1>Speech-to-Speech Models</h1>
+    <h1 style="font-size: 1.2em; font-weight: 300; margin-top: 0;">A Literature Review</h1>
+
+    <div class="author">
+        <a href="https://itzsid.github.io">Siddharth Choudhary</a><br>
+        January 2026
+    </div>
+
+    <div class="abstract">
+        This review traces the evolution of end-to-end speech-to-speech models from SpeechGPT (May 2023) through Qwen3-Omni (September 2025), covering 13 models that progressively reduced latency, added full-duplex capabilities, and scaled to hundreds of billions of parameters.
+    </div>
+
+    <div class="toc">
+        <strong>Contents</strong>
+        <ul>
+            <li><a href="#overview">1. Overview: Cascaded vs End-to-End</a></li>
+            <li><a href="#timeline">2. Chronological Timeline</a></li>
+            <li><a href="#architectures">3. Key Architectures Explained</a></li>
+            <li><a href="#comparison">4. Comparison Tables</a></li>
+            <li><a href="#references">5. References</a></li>
+        </ul>
+    </div>
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <h2 id="overview">1. Overview: Cascaded vs End-to-End</h2>
+
+    <p>Traditional voice assistants follow a cascaded pipeline: ASR (Automatic Speech Recognition) transcribes speech to text, an LLM generates a text response, and TTS (Text-to-Speech) synthesizes the output. This approach introduces latency at each stage and loses paralinguistic information—emotion, prosody, speaker identity—that doesn't survive the text bottleneck.</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200">
+            <!-- Cascaded Pipeline -->
+            <text x="400" y="25" text-anchor="middle" font-weight="bold" font-size="14">Cascaded Pipeline (Traditional)</text>
+
+            <rect x="50" y="45" width="100" height="50" rx="5" fill="#ffcccc" stroke="#cc0000"/>
+            <text x="100" y="75" text-anchor="middle" font-size="12">Speech In</text>
+
+            <line x1="150" y1="70" x2="180" y2="70" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="180" y="45" width="80" height="50" rx="5" fill="#ffe0cc" stroke="#cc6600"/>
+            <text x="220" y="75" text-anchor="middle" font-size="12">ASR</text>
+
+            <line x1="260" y1="70" x2="290" y2="70" stroke="#333" stroke-width="2"/>
+            <text x="275" y="60" text-anchor="middle" font-size="10" fill="#666">text</text>
+
+            <rect x="290" y="45" width="80" height="50" rx="5" fill="#fff0cc" stroke="#cc9900"/>
+            <text x="330" y="75" text-anchor="middle" font-size="12">LLM</text>
+
+            <line x1="370" y1="70" x2="400" y2="70" stroke="#333" stroke-width="2"/>
+            <text x="385" y="60" text-anchor="middle" font-size="10" fill="#666">text</text>
+
+            <rect x="400" y="45" width="80" height="50" rx="5" fill="#ccffe0" stroke="#00cc66"/>
+            <text x="440" y="75" text-anchor="middle" font-size="12">TTS</text>
+
+            <line x1="480" y1="70" x2="510" y2="70" stroke="#333" stroke-width="2"/>
+
+            <rect x="510" y="45" width="100" height="50" rx="5" fill="#cce0ff" stroke="#0066cc"/>
+            <text x="560" y="75" text-anchor="middle" font-size="12">Speech Out</text>
+
+            <text x="680" y="75" text-anchor="middle" font-size="11" fill="#cc0000">❌ High latency</text>
+            <text x="680" y="92" text-anchor="middle" font-size="11" fill="#cc0000">❌ Loses prosody</text>
+
+            <!-- End-to-End Pipeline -->
+            <text x="400" y="135" text-anchor="middle" font-weight="bold" font-size="14">End-to-End Pipeline (Modern)</text>
+
+            <rect x="50" y="150" width="100" height="50" rx="5" fill="#ffcccc" stroke="#cc0000"/>
+            <text x="100" y="180" text-anchor="middle" font-size="12">Speech In</text>
+
+            <line x1="150" y1="175" x2="250" y2="175" stroke="#333" stroke-width="2"/>
+
+            <rect x="250" y="150" width="200" height="50" rx="5" fill="#d4edda" stroke="#28a745"/>
+            <text x="350" y="180" text-anchor="middle" font-size="12">Speech LLM (unified)</text>
+
+            <line x1="450" y1="175" x2="510" y2="175" stroke="#333" stroke-width="2"/>
+
+            <rect x="510" y="150" width="100" height="50" rx="5" fill="#cce0ff" stroke="#0066cc"/>
+            <text x="560" y="180" text-anchor="middle" font-size="12">Speech Out</text>
+
+            <text x="680" y="175" text-anchor="middle" font-size="11" fill="#28a745">✓ Low latency</text>
+            <text x="680" y="192" text-anchor="middle" font-size="11" fill="#28a745">✓ Preserves prosody</text>
+
+            <!-- Arrow marker -->
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#333"/>
+                </marker>
+            </defs>
+        </svg>
+        <div class="diagram-caption">Figure 1: Cascaded vs end-to-end speech processing. The text bottleneck in cascaded systems loses paralinguistic information.</div>
+    </div>
+
+    <!-- ==================== TIMELINE ==================== -->
+    <h2 id="timeline">2. Chronological Timeline</h2>
+
+    <!-- 2023 -->
+    <div class="timeline-year">2023: Foundation</div>
+    <div class="year-section">
+        <div class="paper-box">
+            <h4>1. SpeechGPT (May 2023)</h4>
+            <div class="paper-meta">
+                Zhang et al. · <a href="https://arxiv.org/abs/2305.11000">arXiv:2305.11000</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation:</strong> Uses <strong>HuBERT</strong> to discretize speech into discrete units, then treats these units as a new "language" that the LLM learns alongside text.
+            </div>
+            <p><strong>Three-stage training:</strong></p>
+            <ol>
+                <li>Modality-adaptation pre-training: LLaMA-7B on LibriLight speech units</li>
+                <li>Cross-modal instruction fine-tuning on SpeechInstruct dataset</li>
+                <li>Chain-of-modality instruction fine-tuning with LoRA</li>
+            </ol>
+            <p>This work established the foundational paradigm: convert speech to discrete tokens, process with LLM backbone, generate speech tokens that decode back to audio.</p>
+        </div>
+    </div>
+
+    <!-- 2024 -->
+    <div class="timeline-year">2024: The Cambrian Explosion</div>
+    <div class="year-section">
+
+        <div class="paper-box">
+            <h4>2. Mini-Omni (August 2024)</h4>
+            <div class="paper-meta">
+                Xie & Wu · <a href="https://arxiv.org/abs/2408.16725">arXiv:2408.16725</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Text-Instruct Delay Parallel Decoding.</strong> In a single forward pass, generates 8 tokens: 1 text + 7 SNAC audio codec layers. Text and speech produced simultaneously.
+            </div>
+            <div class="architecture-list">
+                <strong>Architecture:</strong>
+                <ul>
+                    <li><strong>SNAC codec:</strong> 7 complementary token layers with one-step delay</li>
+                    <li><strong>"Any Model Can Talk":</strong> Preserves base LLM reasoning while adding speech</li>
+                    <li><strong>Batch approach:</strong> Two parallel samples for text-to-audio capability transfer</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <svg width="700" height="180" viewBox="0 0 700 180">
+                <text x="350" y="20" text-anchor="middle" font-weight="bold" font-size="14">Mini-Omni: Parallel Text-Speech Decoding</text>
+
+                <!-- LLM -->
+                <rect x="50" y="50" width="150" height="80" rx="5" fill="#e8f4f8" stroke="#1367a7" stroke-width="2"/>
+                <text x="125" y="85" text-anchor="middle" font-size="12" font-weight="bold">LLM</text>
+                <text x="125" y="105" text-anchor="middle" font-size="10">Hidden State</text>
+
+                <line x1="200" y1="90" x2="250" y2="90" stroke="#333" stroke-width="2"/>
+
+                <!-- Output heads -->
+                <rect x="250" y="35" width="80" height="30" rx="3" fill="#fff0cc" stroke="#cc9900"/>
+                <text x="290" y="55" text-anchor="middle" font-size="11">Text Head</text>
+
+                <rect x="250" y="75" width="80" height="30" rx="3" fill="#d4edda" stroke="#28a745"/>
+                <text x="290" y="95" text-anchor="middle" font-size="11">Audio Head 1</text>
+
+                <rect x="250" y="115" width="80" height="30" rx="3" fill="#d4edda" stroke="#28a745"/>
+                <text x="290" y="135" text-anchor="middle" font-size="11">Audio Head 2-7</text>
+
+                <text x="295" y="160" text-anchor="middle" font-size="10" fill="#666">...</text>
+
+                <!-- Outputs -->
+                <line x1="330" y1="50" x2="380" y2="50" stroke="#333" stroke-width="2"/>
+                <line x1="330" y1="90" x2="380" y2="90" stroke="#333" stroke-width="2"/>
+                <line x1="330" y1="130" x2="380" y2="130" stroke="#333" stroke-width="2"/>
+
+                <text x="420" y="55" text-anchor="start" font-size="12">"Hello"</text>
+                <text x="420" y="95" text-anchor="start" font-size="12">[SNAC layer 1]</text>
+                <text x="420" y="135" text-anchor="start" font-size="12">[SNAC layers 2-7]</text>
+
+                <!-- Bracket -->
+                <text x="580" y="95" text-anchor="start" font-size="12">} 8 tokens/step</text>
+
+            </svg>
+            <div class="diagram-caption">Figure 2: Mini-Omni generates text and 7 SNAC audio layers in parallel at each timestep.</div>
+        </div>
+
+        <div class="paper-box">
+            <h4>3. LLaMA-Omni (September 2024)</h4>
+            <div class="paper-meta">
+                Fang et al. · <a href="https://arxiv.org/abs/2409.06666">arXiv:2409.06666</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Non-autoregressive CTC speech decoder.</strong> Uses Connectionist Temporal Classification to predict the <em>entire</em> discrete unit sequence in parallel, eliminating sequential decoding latency.
+            </div>
+            <div class="architecture-list">
+                <strong>Architecture:</strong>
+                <ul>
+                    <li>Speech encoder + adaptor + Llama-3.1-8B + <strong>NAR Transformer decoder</strong> (425M params)</li>
+                    <li>Decoder: 2 Transformer layers, upsample factor λ=25</li>
+                    <li>CTC learns alignment without pre-aligned training data</li>
+                </ul>
+            </div>
+            <p><strong>Key metrics:</strong> 226ms latency, trained in &lt;3 days on 4 GPUs</p>
+        </div>
+
+        <div class="diagram-container">
+            <svg width="750" height="220" viewBox="0 0 750 220">
+                <text x="375" y="20" text-anchor="middle" font-weight="bold" font-size="14">CTC vs Autoregressive Decoding</text>
+
+                <!-- AR Decoder -->
+                <text x="190" y="50" text-anchor="middle" font-size="12" font-weight="bold">Autoregressive (AR)</text>
+                <rect x="50" y="65" width="60" height="35" rx="3" fill="#ffe0cc" stroke="#cc6600"/>
+                <text x="80" y="87" text-anchor="middle" font-size="10">u₁</text>
+                <line x1="110" y1="82" x2="130" y2="82" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+                <rect x="130" y="65" width="60" height="35" rx="3" fill="#ffe0cc" stroke="#cc6600"/>
+                <text x="160" y="87" text-anchor="middle" font-size="10">u₂</text>
+                <line x1="190" y1="82" x2="210" y2="82" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+                <rect x="210" y="65" width="60" height="35" rx="3" fill="#ffe0cc" stroke="#cc6600"/>
+                <text x="240" y="87" text-anchor="middle" font-size="10">u₃</text>
+                <line x1="270" y1="82" x2="290" y2="82" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+                <text x="320" y="87" text-anchor="middle" font-size="14">...</text>
+
+                <text x="190" y="120" text-anchor="middle" font-size="11" fill="#cc0000">Sequential: O(N) steps</text>
+
+                <!-- CTC Decoder -->
+                <text x="190" y="155" text-anchor="middle" font-size="12" font-weight="bold">CTC (Non-autoregressive)</text>
+
+                <rect x="50" y="170" width="280" height="35" rx="3" fill="#d4edda" stroke="#28a745" stroke-width="2"/>
+                <text x="80" y="192" text-anchor="middle" font-size="10">u₁</text>
+                <text x="130" y="192" text-anchor="middle" font-size="10">u₂</text>
+                <text x="180" y="192" text-anchor="middle" font-size="10">u₃</text>
+                <text x="230" y="192" text-anchor="middle" font-size="10">u₄</text>
+                <text x="280" y="192" text-anchor="middle" font-size="10">...</text>
+                <text x="310" y="192" text-anchor="middle" font-size="10">uₙ</text>
+
+                <text x="190" y="220" text-anchor="middle" font-size="11" fill="#28a745">Parallel: O(1) steps</text>
+
+                <!-- Divider -->
+                <line x1="400" y1="40" x2="400" y2="210" stroke="#ddd" stroke-width="1" stroke-dasharray="5,5"/>
+
+                <!-- CTC Explanation -->
+                <text x="570" y="50" text-anchor="middle" font-size="12" font-weight="bold">CTC Collapsing Rules</text>
+
+                <text x="420" y="80" font-size="11">Path: [C, C, ε, A, ε, T, T]</text>
+                <text x="420" y="100" font-size="11">1. Remove duplicates: [C, ε, A, ε, T]</text>
+                <text x="420" y="120" font-size="11">2. Remove blanks (ε): [C, A, T]</text>
+                <text x="420" y="145" font-size="11" font-weight="bold">Output: "CAT"</text>
+
+                <text x="420" y="180" font-size="11" fill="#666">Many paths → same output</text>
+                <text x="420" y="200" font-size="11" fill="#666">Loss sums over all valid paths</text>
+
+            </svg>
+            <div class="diagram-caption">Figure 3: CTC enables parallel prediction of all output tokens. The blank token (ε) allows flexible alignment.</div>
+        </div>
+
+        <div class="paper-box">
+            <h4>4. Moshi (September/October 2024)</h4>
+            <div class="paper-meta">
+                Défossez et al. (Kyutai) · <a href="https://arxiv.org/abs/2410.00037">arXiv:2410.00037</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Inner Monologue + Depth-Temporal Factorization.</strong> Predicts time-aligned text tokens as prefix to audio tokens. Separates inter-codebook (Depth Transformer) from inter-timestep (Temporal Transformer) dependencies.
+            </div>
+            <div class="architecture-list">
+                <strong>Architecture:</strong>
+                <ul>
+                    <li><strong>Helium:</strong> 7B text LLM backbone (2.1T tokens)</li>
+                    <li><strong>Mimi codec:</strong> 12.5Hz, 1.1kbps, 80ms latency</li>
+                    <li><strong>Three streams:</strong> User audio, Moshi audio, inner monologue text</li>
+                </ul>
+            </div>
+            <p><strong>Latency:</strong> 160ms theoretical, 200ms practical—first real-time full-duplex spoken LLM.</p>
+        </div>
+
+        <div class="diagram-container">
+            <svg width="750" height="280" viewBox="0 0 750 280">
+                <text x="375" y="20" text-anchor="middle" font-weight="bold" font-size="14">Moshi: Depth-Temporal Architecture with Inner Monologue</text>
+
+                <!-- Temporal Transformer -->
+                <rect x="150" y="45" width="450" height="60" rx="5" fill="#e8f4f8" stroke="#1367a7" stroke-width="2"/>
+                <text x="375" y="70" text-anchor="middle" font-size="12" font-weight="bold">Temporal Transformer (7B)</text>
+                <text x="375" y="90" text-anchor="middle" font-size="10">Dependencies across timesteps</text>
+
+                <!-- Hidden states -->
+                <line x1="250" y1="105" x2="250" y2="130" stroke="#333" stroke-width="2"/>
+                <line x1="375" y1="105" x2="375" y2="130" stroke="#333" stroke-width="2"/>
+                <line x1="500" y1="105" x2="500" y2="130" stroke="#333" stroke-width="2"/>
+
+                <text x="250" y="145" text-anchor="middle" font-size="10">h₁</text>
+                <text x="375" y="145" text-anchor="middle" font-size="10">h₂</text>
+                <text x="500" y="145" text-anchor="middle" font-size="10">h₃</text>
+
+                <!-- Branches for each timestep -->
+                <!-- t1 -->
+                <line x1="250" y1="150" x2="200" y2="175" stroke="#333" stroke-width="1.5"/>
+                <line x1="250" y1="150" x2="300" y2="175" stroke="#333" stroke-width="1.5"/>
+
+                <rect x="160" y="175" width="80" height="30" rx="3" fill="#fff0cc" stroke="#cc9900"/>
+                <text x="200" y="195" text-anchor="middle" font-size="10">Text: "Hel"</text>
+
+                <rect x="260" y="175" width="80" height="30" rx="3" fill="#d4edda" stroke="#28a745"/>
+                <text x="300" y="195" text-anchor="middle" font-size="10">Depth TF</text>
+
+                <!-- t2 -->
+                <line x1="375" y1="150" x2="325" y2="175" stroke="#333" stroke-width="1.5"/>
+                <line x1="375" y1="150" x2="425" y2="175" stroke="#333" stroke-width="1.5"/>
+
+                <rect x="285" y="175" width="80" height="30" rx="3" fill="#fff0cc" stroke="#cc9900"/>
+                <text x="325" y="195" text-anchor="middle" font-size="10">Text: "lo"</text>
+
+                <rect x="385" y="175" width="80" height="30" rx="3" fill="#d4edda" stroke="#28a745"/>
+                <text x="425" y="195" text-anchor="middle" font-size="10">Depth TF</text>
+
+                <!-- Audio outputs -->
+                <line x1="300" y1="205" x2="300" y2="230" stroke="#333" stroke-width="1.5"/>
+                <line x1="425" y1="205" x2="425" y2="230" stroke="#333" stroke-width="1.5"/>
+
+                <rect x="260" y="230" width="80" height="25" rx="3" fill="#cce0ff" stroke="#0066cc"/>
+                <text x="300" y="247" text-anchor="middle" font-size="9">[c₀,c₁,...,cₖ]</text>
+
+                <rect x="385" y="230" width="80" height="25" rx="3" fill="#cce0ff" stroke="#0066cc"/>
+                <text x="425" y="247" text-anchor="middle" font-size="9">[c₀,c₁,...,cₖ]</text>
+
+                <!-- Labels -->
+                <text x="650" y="85" text-anchor="start" font-size="10" fill="#666">Time →</text>
+                <text x="650" y="195" text-anchor="start" font-size="10" fill="#666">Inner Monologue</text>
+                <text x="650" y="210" text-anchor="start" font-size="10" fill="#666">(text prefix)</text>
+                <text x="650" y="245" text-anchor="start" font-size="10" fill="#666">Audio codecs</text>
+
+            </svg>
+            <div class="diagram-caption">Figure 4: Moshi separates temporal dependencies (7B Transformer) from depth/codebook dependencies (small Depth Transformer). Inner Monologue predicts text before audio at each timestep.</div>
+        </div>
+
+        <div class="paper-box">
+            <h4>5. Baichuan-Omni (October 2024)</h4>
+            <div class="paper-meta">
+                Li et al. · <a href="https://arxiv.org/abs/2410.08565">arXiv:2410.08565</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation:</strong> First open-source 7B model to process four modalities simultaneously: <strong>image, video, audio, and text</strong>.
+            </div>
+            <p>Two-stage training: multimodal alignment → multitask fine-tuning across all modalities.</p>
+        </div>
+
+        <div class="paper-box">
+            <h4>6. Mini-Omni2 (October 2024)</h4>
+            <div class="paper-meta">
+                Xie & Wu · <a href="https://arxiv.org/abs/2410.11190">arXiv:2410.11190</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Command-based interruption.</strong> Recognizes vocal commands like "Stop Omni" during generation. Uses batch-based dual-model approach that halves memory.
+            </div>
+            <div class="architecture-list">
+                <ul>
+                    <li><strong>Visual encoder:</strong> CLIP ViT-B/32 → 50 feature tokens</li>
+                    <li><strong>Audio encoder:</strong> Whisper-small</li>
+                    <li><strong>LLM backbone:</strong> Qwen2-0.5B</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2025 -->
+    <div class="timeline-year">2025: Industrial Scale</div>
+    <div class="year-section">
+
+        <div class="paper-box">
+            <h4>7. MinMo (January 2025)</h4>
+            <div class="paper-meta">
+                Chen et al. · <a href="https://arxiv.org/abs/2501.06282">arXiv:2501.06282</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Token interleaving with AR streaming decoder.</strong> Uses fixed ratio: <strong>5 semantic tokens followed by 15 speech tokens</strong>.
+            </div>
+            <p><strong>Scale:</strong> ~8B parameters trained on <strong>1.4 million hours</strong> of speech data.</p>
+            <div class="architecture-list">
+                <ul>
+                    <li><strong>Voice encoder:</strong> SenseVoice-large</li>
+                    <li><strong>LLM:</strong> Qwen2.5-7B-Instruct</li>
+                    <li><strong>Voice decoder:</strong> AR streaming Transformer + CosyVoice 2</li>
+                </ul>
+            </div>
+            <p><strong>Four-stage curriculum:</strong> STT → TTS → S2S → duplex alignment</p>
+            <p><strong>Latency:</strong> ~100ms STT, ~600ms full-duplex</p>
+        </div>
+
+        <div class="paper-box">
+            <h4>8. Baichuan-Omni-1.5 (January 2025)</h4>
+            <div class="paper-meta">
+                Li et al. · <a href="https://arxiv.org/abs/2501.15368">arXiv:2501.15368</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: 8-layer RVQ audio tokenizer at 12.5Hz.</strong> Uses Whisper Large encoder → 8-layer Residual Vector Quantizer preserving both semantic and acoustic properties.
+            </div>
+            <p><strong>Training data:</strong> 500B tokens (text, audio, vision)</p>
+        </div>
+
+        <div class="paper-box">
+            <h4>9. Step-Audio (February 2025)</h4>
+            <div class="paper-meta">
+                Huang et al. · <a href="https://arxiv.org/abs/2502.11946">arXiv:2502.11946</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Dual-codebook tokenization with 2:3 temporal interleaving.</strong> Semantic (16.7Hz, 1024 codebook) + acoustic (25Hz, 4096 codebook) tokenizers.
+            </div>
+            <p><strong>Scale:</strong> <strong>130B parameters</strong>—first production-ready open-source solution at this scale.</p>
+            <div class="architecture-list">
+                <ul>
+                    <li><strong>Foundation:</strong> Step-1 130B with audio-contextualized pretraining</li>
+                    <li><strong>Speech decoder:</strong> Hybrid flow matching + neural vocoding</li>
+                    <li><strong>Capabilities:</strong> Dialect, emotion, singing, RAP, tool calling</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="paper-box">
+            <h4>10. Qwen2.5-Omni (March 2025)</h4>
+            <div class="paper-meta">
+                Xu et al. · <a href="https://arxiv.org/abs/2503.20215">arXiv:2503.20215</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Thinker-Talker architecture.</strong> Talker directly reads Thinker's <strong>hidden states</strong> (not text output), preserving information that would be lost in text serialization.
+            </div>
+            <div class="architecture-list">
+                <ul>
+                    <li><strong>Thinker:</strong> Transformer decoder + Whisper-large-v3 encoder</li>
+                    <li><strong>Talker:</strong> Dual-track autoregressive Transformer</li>
+                    <li><strong>TMRoPE:</strong> 40ms = 1 temporal unit for audio-video alignment</li>
+                    <li><strong>Sliding-window DiT:</strong> Reduces first-packet delay</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="diagram-container">
+            <svg width="750" height="250" viewBox="0 0 750 250">
+                <text x="375" y="20" text-anchor="middle" font-weight="bold" font-size="14">Qwen2.5-Omni: Thinker-Talker Architecture</text>
+
+                <!-- Thinker -->
+                <rect x="100" y="50" width="250" height="100" rx="8" fill="#e8f4f8" stroke="#1367a7" stroke-width="2"/>
+                <text x="225" y="75" text-anchor="middle" font-size="13" font-weight="bold">Thinker</text>
+                <text x="225" y="95" text-anchor="middle" font-size="11">(Standard LLM)</text>
+
+                <rect x="130" y="105" width="80" height="30" rx="3" fill="#fff" stroke="#1367a7"/>
+                <text x="170" y="125" text-anchor="middle" font-size="10">Text Head</text>
+
+                <line x1="210" y1="120" x2="320" y2="120" stroke="#333" stroke-width="1.5"/>
+                <text x="330" y="125" text-anchor="start" font-size="11">"Hello, how..."</text>
+
+                <!-- Hidden states arrow -->
+                <rect x="250" y="105" width="80" height="30" rx="3" fill="#d4edda" stroke="#28a745"/>
+                <text x="290" y="125" text-anchor="middle" font-size="10">Hidden h</text>
+
+                <line x1="290" y1="150" x2="290" y2="175" stroke="#28a745" stroke-width="3"/>
+                <text x="295" y="165" text-anchor="start" font-size="9" fill="#28a745">hidden states</text>
+
+                <!-- Talker -->
+                <rect x="100" y="175" width="250" height="60" rx="8" fill="#d4edda" stroke="#28a745" stroke-width="2"/>
+                <text x="225" y="200" text-anchor="middle" font-size="13" font-weight="bold">Talker</text>
+                <text x="225" y="220" text-anchor="middle" font-size="11">(Dual-track AR Transformer)</text>
+
+                <line x1="350" y1="205" x2="420" y2="205" stroke="#333" stroke-width="1.5"/>
+                <rect x="420" y="190" width="100" height="30" rx="3" fill="#cce0ff" stroke="#0066cc"/>
+                <text x="470" y="210" text-anchor="middle" font-size="10">Audio tokens</text>
+
+                <!-- Key insight box -->
+                <rect x="550" y="80" width="180" height="80" rx="5" fill="#fff3cd" stroke="#ffc107"/>
+                <text x="640" y="105" text-anchor="middle" font-size="11" font-weight="bold">Key Insight</text>
+                <text x="640" y="125" text-anchor="middle" font-size="10">Talker sees hidden states,</text>
+                <text x="640" y="140" text-anchor="middle" font-size="10">not text output.</text>
+                <text x="640" y="155" text-anchor="middle" font-size="10">→ Richer information</text>
+
+            </svg>
+            <div class="diagram-caption">Figure 5: Qwen's Thinker-Talker separation. The Talker receives high-dimensional hidden states rather than discrete text tokens.</div>
+        </div>
+
+        <div class="paper-box">
+            <h4>11. LLaMA-Omni2 (May 2025)</h4>
+            <div class="paper-meta">
+                Fang et al. · <a href="https://arxiv.org/abs/2505.02625">arXiv:2505.02625</a> · ACL 2025
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: Autoregressive streaming decoder</strong> (vs LLaMA-Omni's CTC). Switches to AR + CosyVoice 2 flow matching, trading latency for better audio quality.
+            </div>
+            <p><strong>Key insight:</strong> 200K well-curated dialogues outperform millions of hours of noisy data.</p>
+            <p><strong>Latency:</strong> ~600ms (higher than v1's 226ms, but better UTMOS quality scores)</p>
+        </div>
+
+        <div class="paper-box">
+            <h4>12. Step-Audio 2 (July 2025)</h4>
+            <div class="paper-meta">
+                Wu et al. · <a href="https://arxiv.org/abs/2507.16632">arXiv:2507.16632</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: RL-based reasoning + RAG.</strong> PPO for sequence quality, GRPO for audio realism. RAG with web search and audio search for timbre switching.
+            </div>
+            <p><strong>Scale:</strong> Trained on <strong>8 million hours</strong> of speech data.</p>
+            <p><strong>Performance:</strong> 3.18% WER (LibriSpeech), 76.55% paralinguistic accuracy</p>
+        </div>
+
+        <div class="paper-box">
+            <h4>13. Qwen3-Omni (September 2025)</h4>
+            <div class="paper-meta">
+                Xu et al. · <a href="https://arxiv.org/abs/2509.17765">arXiv:2509.17765</a>
+            </div>
+            <div class="innovation-box">
+                <strong>Core Innovation: 32-codebook MTP + causal ConvNet.</strong> Multi-token prediction for all codebook layers. Lightweight ConvNet replaces DiT for streaming from first codec frame.
+            </div>
+            <div class="architecture-list">
+                <ul>
+                    <li><strong>MoE Thinker-Talker:</strong> 30B total, 3B active</li>
+                    <li><strong>AuT encoder:</strong> Trained from scratch on <strong>20M hours</strong></li>
+                    <li><strong>Code2Wav:</strong> Causal ConvNet replacing block-wise DiT</li>
+                </ul>
+            </div>
+            <p><strong>Results:</strong> Open-source SOTA on <strong>32/36 benchmarks</strong>. 234ms first-packet latency.</p>
+        </div>
+    </div>
+
+    <!-- ==================== KEY ARCHITECTURES ==================== -->
+    <h2 id="architectures">3. Key Architectures Explained</h2>
+
+    <h3>Audio Tokenization Approaches</h3>
+
+    <table>
+        <tr>
+            <th>Model</th>
+            <th>Codec</th>
+            <th>Frame Rate</th>
+            <th>Key Property</th>
+        </tr>
+        <tr>
+            <td>SpeechGPT</td>
+            <td>HuBERT discrete units</td>
+            <td>—</td>
+            <td>Semantic-focused</td>
+        </tr>
+        <tr>
+            <td>Mini-Omni/2</td>
+            <td>SNAC</td>
+            <td>7 layers</td>
+            <td>Hierarchical with delay</td>
+        </tr>
+        <tr>
+            <td>Moshi</td>
+            <td>Mimi</td>
+            <td>12.5Hz</td>
+            <td>Semantic in early acoustic layers</td>
+        </tr>
+        <tr>
+            <td>Baichuan-Omni-1.5</td>
+            <td>8-layer RVQ</td>
+            <td>12.5Hz</td>
+            <td>Whisper encoder + dual properties</td>
+        </tr>
+        <tr>
+            <td>Step-Audio</td>
+            <td>Dual-codebook</td>
+            <td>16.7Hz + 25Hz</td>
+            <td>Separate semantic/acoustic</td>
+        </tr>
+        <tr>
+            <td>Qwen3-Omni</td>
+            <td>32-codebook MTP</td>
+            <td>—</td>
+            <td>Multi-track prediction</td>
+        </tr>
+    </table>
+
+    <h3>Decoder Types and Latency</h3>
+
+    <table>
+        <tr>
+            <th>Model</th>
+            <th>Latency</th>
+            <th>Decoder Type</th>
+            <th>Technique</th>
+        </tr>
+        <tr>
+            <td>LLaMA-Omni</td>
+            <td>226ms</td>
+            <td>Non-autoregressive CTC</td>
+            <td>Parallel discrete unit prediction</td>
+        </tr>
+        <tr>
+            <td>Moshi</td>
+            <td>160-200ms</td>
+            <td>Depth + Temporal</td>
+            <td>Parallel stream modeling</td>
+        </tr>
+        <tr>
+            <td>MinMo STT</td>
+            <td>~100ms</td>
+            <td>AR streaming</td>
+            <td>Token interleaving (5:15)</td>
+        </tr>
+        <tr>
+            <td>LLaMA-Omni2</td>
+            <td>~600ms</td>
+            <td>AR + CosyVoice 2</td>
+            <td>Quality over latency</td>
+        </tr>
+        <tr>
+            <td>Qwen3-Omni</td>
+            <td>234ms</td>
+            <td>MTP + ConvNet</td>
+            <td>Streaming from first frame</td>
+        </tr>
+    </table>
+
+    <!-- ==================== COMPARISON ==================== -->
+    <h2 id="comparison">4. Comparison Tables</h2>
+
+    <h3>Model Overview</h3>
+
+    <table>
+        <tr>
+            <th>Model</th>
+            <th>Date</th>
+            <th>Params</th>
+            <th>Training Data</th>
+            <th>Key Innovation</th>
+        </tr>
+        <tr>
+            <td>SpeechGPT</td>
+            <td>May 2023</td>
+            <td>7B</td>
+            <td>SpeechInstruct</td>
+            <td>HuBERT + chain-of-modality</td>
+        </tr>
+        <tr>
+            <td>Mini-Omni</td>
+            <td>Aug 2024</td>
+            <td>—</td>
+            <td>VoiceAssistant-400K</td>
+            <td>Parallel 8 tokens/step</td>
+        </tr>
+        <tr>
+            <td>LLaMA-Omni</td>
+            <td>Sep 2024</td>
+            <td>8B</td>
+            <td>200K pairs</td>
+            <td>NAR CTC decoder</td>
+        </tr>
+        <tr>
+            <td>Moshi</td>
+            <td>Sep 2024</td>
+            <td>7B</td>
+            <td>2.1T tokens</td>
+            <td>Inner Monologue + full-duplex</td>
+        </tr>
+        <tr>
+            <td>Baichuan-Omni</td>
+            <td>Oct 2024</td>
+            <td>7B</td>
+            <td>—</td>
+            <td>First omni-modal 7B</td>
+        </tr>
+        <tr>
+            <td>Mini-Omni2</td>
+            <td>Oct 2024</td>
+            <td>0.5B</td>
+            <td>Limited</td>
+            <td>Command-based interruption</td>
+        </tr>
+        <tr>
+            <td>MinMo</td>
+            <td>Jan 2025</td>
+            <td>8B</td>
+            <td>1.4M hours</td>
+            <td>Token interleaving (5:15)</td>
+        </tr>
+        <tr>
+            <td>Baichuan-Omni-1.5</td>
+            <td>Jan 2025</td>
+            <td>—</td>
+            <td>500B tokens</td>
+            <td>8-layer RVQ at 12.5Hz</td>
+        </tr>
+        <tr>
+            <td>Step-Audio</td>
+            <td>Feb 2025</td>
+            <td>130B</td>
+            <td>—</td>
+            <td>Dual-codebook (2:3 interleave)</td>
+        </tr>
+        <tr>
+            <td>Qwen2.5-Omni</td>
+            <td>Mar 2025</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Thinker-Talker (hidden states)</td>
+        </tr>
+        <tr>
+            <td>LLaMA-Omni2</td>
+            <td>May 2025</td>
+            <td>0.5-32B</td>
+            <td>200K dialogues</td>
+            <td>AR decoder (quality focus)</td>
+        </tr>
+        <tr>
+            <td>Step-Audio 2</td>
+            <td>Jul 2025</td>
+            <td>—</td>
+            <td>8M hours</td>
+            <td>RL (PPO/GRPO) + RAG</td>
+        </tr>
+        <tr>
+            <td>Qwen3-Omni</td>
+            <td>Sep 2025</td>
+            <td>30B (3B active)</td>
+            <td>20M hours</td>
+            <td>32-codebook + ConvNet</td>
+        </tr>
+    </table>
+
+    <h3>The Arc of Innovation</h3>
+
+    <div class="diagram-container">
+        <svg width="700" height="150" viewBox="0 0 700 150">
+            <!-- Timeline -->
+            <line x1="50" y1="75" x2="650" y2="75" stroke="#1367a7" stroke-width="3"/>
+
+            <!-- 2023 -->
+            <circle cx="100" cy="75" r="8" fill="#1367a7"/>
+            <text x="100" y="55" text-anchor="middle" font-size="12" font-weight="bold">2023</text>
+            <text x="100" y="100" text-anchor="middle" font-size="10">Feasibility</text>
+            <text x="100" y="115" text-anchor="middle" font-size="9" fill="#666">"Can we do this?"</text>
+
+            <!-- Early 2024 -->
+            <circle cx="250" cy="75" r="8" fill="#1367a7"/>
+            <text x="250" y="55" text-anchor="middle" font-size="12" font-weight="bold">Early 2024</text>
+            <text x="250" y="100" text-anchor="middle" font-size="10">Latency</text>
+            <text x="250" y="115" text-anchor="middle" font-size="9" fill="#666">"How fast?"</text>
+
+            <!-- Late 2024 -->
+            <circle cx="400" cy="75" r="8" fill="#1367a7"/>
+            <text x="400" y="55" text-anchor="middle" font-size="12" font-weight="bold">Late 2024</text>
+            <text x="400" y="100" text-anchor="middle" font-size="10">Full-Duplex</text>
+            <text x="400" y="115" text-anchor="middle" font-size="9" fill="#666">"How naturally?"</text>
+
+            <!-- 2025 -->
+            <circle cx="550" cy="75" r="8" fill="#1367a7"/>
+            <text x="550" y="55" text-anchor="middle" font-size="12" font-weight="bold">2025</text>
+            <text x="550" y="100" text-anchor="middle" font-size="10">Scale + Quality</text>
+            <text x="550" y="115" text-anchor="middle" font-size="9" fill="#666">"How well?"</text>
+
+            <!-- Arrow -->
+            <polygon points="645,75 660,70 660,80" fill="#1367a7"/>
+        </svg>
+        <div class="diagram-caption">Figure 6: Evolution of focus areas in speech-to-speech research.</div>
+    </div>
+
+    <!-- ==================== REFERENCES ==================== -->
+    <h2 id="references">5. References</h2>
+
+    <ol>
+        <li>Zhang et al. "SpeechGPT: Empowering Large Language Models with Intrinsic Cross-Modal Conversational Abilities." <a href="https://arxiv.org/abs/2305.11000">arXiv:2305.11000</a>, May 2023.</li>
+        <li>Xie & Wu. "Mini-Omni: Language Models Can Hear, Talk While Thinking in Streaming." <a href="https://arxiv.org/abs/2408.16725">arXiv:2408.16725</a>, Aug 2024.</li>
+        <li>Fang et al. "LLaMA-Omni: Seamless Speech Interaction with Large Language Models." <a href="https://arxiv.org/abs/2409.06666">arXiv:2409.06666</a>, Sep 2024.</li>
+        <li>Défossez et al. "Moshi: A Speech-Text Foundation Model for Real-Time Dialogue." <a href="https://arxiv.org/abs/2410.00037">arXiv:2410.00037</a>, Oct 2024.</li>
+        <li>Li et al. "Baichuan-Omni Technical Report." <a href="https://arxiv.org/abs/2410.08565">arXiv:2410.08565</a>, Oct 2024.</li>
+        <li>Xie & Wu. "Mini-Omni2: Towards Open-source GPT-4o with Vision, Speech and Duplex Capabilities." <a href="https://arxiv.org/abs/2410.11190">arXiv:2410.11190</a>, Oct 2024.</li>
+        <li>Chen et al. "MinMo: A Multimodal Large Language Model for Seamless Voice Interaction." <a href="https://arxiv.org/abs/2501.06282">arXiv:2501.06282</a>, Jan 2025.</li>
+        <li>Li et al. "Baichuan-Omni-1.5 Technical Report." <a href="https://arxiv.org/abs/2501.15368">arXiv:2501.15368</a>, Jan 2025.</li>
+        <li>Huang et al. "Step-Audio: Unified Understanding and Generation in Intelligent Speech Interaction." <a href="https://arxiv.org/abs/2502.11946">arXiv:2502.11946</a>, Feb 2025.</li>
+        <li>Xu et al. "Qwen2.5-Omni Technical Report." <a href="https://arxiv.org/abs/2503.20215">arXiv:2503.20215</a>, Mar 2025.</li>
+        <li>Fang et al. "LLaMA-Omni2: LLM-based Real-time Spoken Chatbot with Autoregressive Streaming Speech Synthesis." <a href="https://arxiv.org/abs/2505.02625">arXiv:2505.02625</a>, May 2025. ACL 2025.</li>
+        <li>Wu et al. "Step-Audio 2 Technical Report." <a href="https://arxiv.org/abs/2507.16632">arXiv:2507.16632</a>, Jul 2025.</li>
+        <li>Xu et al. "Qwen3-Omni Technical Report." <a href="https://arxiv.org/abs/2509.17765">arXiv:2509.17765</a>, Sep 2025.</li>
+        <li>Ji et al. "WavChat: A Survey of Spoken Dialogue Models." <a href="https://arxiv.org/abs/2411.13577">arXiv:2411.13577</a>, Nov 2024. (Survey reference)</li>
+    </ol>
+
+    <hr style="margin-top: 40px;">
+    <p style="text-align: center; color: #666; font-size: 0.9em;">
+        Last updated: January 2026 · <a href="https://itzsid.github.io">Siddharth Choudhary</a>
+    </p>
+
+</body>
+</html>
