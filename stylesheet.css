@@ -76,8 +76,24 @@
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   color: var(--ink);
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 a {
