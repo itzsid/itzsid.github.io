@@ -380,6 +380,17 @@ span.highlight {
 @media (max-width: 640px) {
   name { font-size: 26px; }
 
+  /* Force all wrapper tables to behave as blocks so content intrinsic
+     widths (long URLs etc.) cannot stretch the layout. */
+  body > table,
+  body > table > tbody,
+  body > table > tbody > tr,
+  body > table > tbody > tr > td {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
   /* Header: stack photo above text, centered */
   .profile-header-row,
   .profile-header-row tbody {
