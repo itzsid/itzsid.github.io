@@ -63,14 +63,32 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+:root {
+  --ink: #1a1a1a;
+  --ink-soft: #454545;
+  --ink-mute: #8a8a8a;
+  --rule: #e6e6e6;
+  --rule-soft: #f0f0f0;
+  --accent: #1772d0;
+  --accent-hover: #f09228;
+  --highlight: #ffffd0;
+  --font-sans: 'Lato', Verdana, Helvetica, sans-serif;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+body {
+  color: var(--ink);
+}
+
 a {
-  color: #1772d0;
+  color: var(--accent);
   text-decoration: none;
+  transition: color 0.18s var(--ease);
 }
 
 a:focus,
 a:hover {
-  color: #f09228;
+  color: var(--accent-hover);
   text-decoration: none;
 }
 
@@ -80,29 +98,31 @@ th,
 tr,
 p,
 a {
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
-  font-size: 14px
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 strong {
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
 }
 
 heading {
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 22px;
 }
 
 papertitle {
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
-  font-weight: 700
+  font-weight: 700;
 }
 
 name {
-  font-family: 'Lato', Verdana, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   font-size: 32px;
+  letter-spacing: -0.01em;
 }
 
 .one {
@@ -127,6 +147,213 @@ name {
 }
 
 span.highlight {
-  background-color: #ffffd0;
+  background-color: var(--highlight);
+}
+
+/* Profile --------------------------------------------------------------- */
+.profile-links {
+  text-align: center;
+  margin: 14px 0 0;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  font-family: var(--font-sans);
+}
+
+.profile-links a {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px 9px;
+  color: var(--ink-soft);
+  position: relative;
+  transition: color 0.18s var(--ease);
+  white-space: nowrap;
+}
+
+.profile-links a + a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--rule);
+  transform: translate(-50%, -50%);
+}
+
+.profile-links a:hover,
+.profile-links a:focus {
+  color: var(--accent);
+}
+
+/* Thesis block ---------------------------------------------------------- */
+.thesis {
+  padding: 8px 20px 28px;
+  margin-top: 12px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.thesis-lead {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-mute);
+  margin: 16px 0 6px;
+  display: block;
+}
+
+.thesis-heading {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  display: inline-block;
+  position: relative;
+  padding-bottom: 6px;
+  margin: 0 0 12px;
+}
+
+.thesis-heading::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.thesis p {
+  color: var(--ink-soft);
+  max-width: 70ch;
+  margin: 0;
+}
+
+.thesis p b { color: var(--ink); }
+
+/* Link lists (Side Projects, Notes) ------------------------------------- */
+.link-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+}
+
+.link-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  display: block;
+}
+
+.link-list li:last-child {
+  border-bottom: 0;
+}
+
+.link-list .link-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.link-list .link-desc {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+/* Tabs ------------------------------------------------------------------ */
+.tab-nav {
+  display: flex;
+  gap: 32px;
+  padding: 0 20px;
+  margin: 4px 0 0;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-sans);
+}
+
+.tab-btn {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  background: none;
+  border: 0;
+  padding: 16px 0 14px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.18s var(--ease);
+}
+
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.28s var(--ease);
+}
+
+.tab-btn:hover { color: var(--ink); }
+
+.tab-btn.active {
+  color: var(--ink);
+}
+
+.tab-btn.active::after {
+  transform: scaleX(1);
+}
+
+.tab-btn:focus-visible {
+  outline: none;
+  color: var(--ink);
+}
+
+.tab-panel {
+  display: none;
+  animation: panel-in 0.32s var(--ease) both;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Section labels inside panels ----------------------------------------- */
+.section-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  display: inline-block;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Footer ---------------------------------------------------------------- */
+.site-footer {
+  color: var(--ink-mute);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-align: right;
+  padding: 28px 20px 8px;
+  border-top: 1px solid var(--rule-soft);
+  margin-top: 24px;
 }
 

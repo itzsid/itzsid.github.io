@@ -17,49 +17,46 @@
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
           <tr style="padding:0px">
             <td style="padding:2.5%;width:63%;vertical-align:middle">
-              <p style="text-align:center">
+              <p style="text-align:center;margin-bottom:10px;">
                 <name>Siddharth Choudhary</name>
               </p>
-              <p>I am a Principal Applied Scientist in Amazon AGI. I closely collaborate with AWS AI Labs. Before this, I was an applied scientist in Amazon Halo where I worked on problems at the intersection of Computer Vision and Health. 
+              <p>I am a Principal Applied Scientist in Amazon AGI. I closely collaborate with AWS AI Labs. Before this, I was an applied scientist in Amazon Halo where I worked on problems at the intersection of Computer Vision and Health.
               </p>
               <p>
 Prior to Amazon, I was a Principal Computer Vision Researcher at <a href="https://www.magicleap.com/">Magic Leap</a>. I finished my Ph.D. from the School of Interactive Computing at Georgia Institute of Technology. I was advised by Professor <a href="http://www.hichristensen.net/">Henrik I. Christensen</a> and Professor <a href="https://www.cc.gatech.edu/~dellaert/FrankDellaert/Frank_Dellaert/Frank_Dellaert.html">Frank Dellaert</a>. I completed my Bachelors and Masters in Computer Science from IIIT Hyderabad
         where I was advised by Prof. <a href="https://faculty.iiit.ac.in/~pjn/">P J Narayanan</a>.
-
               </p>
-              <p style="text-align:center">
-                <a href="mailto:itzsid@gmail.com">Email</a> &nbsp/&nbsp
-                <a href="resume/resume.pdf">CV</a> &nbsp/&nbsp
-                <a href="https://scholar.google.com/citations?user=A9HxcJ8AAAAJ&hl=en">Google Scholar</a> &nbsp/&nbsp
-                <a href="https://twitter.com/siddharth0708">Twitter</a> &nbsp/&nbsp
-                <a href="https://www.linkedin.com/in/siddharthchoudhary/">LinkedIn</a> &nbsp/&nbsp
-                <a href="https://github.com/itzsid/">Github</a>
-              </p>
+              <nav class="profile-links">
+                <a href="mailto:itzsid@gmail.com">Email</a>
+                <a href="resume/resume.pdf">CV</a>
+                <a href="https://scholar.google.com/citations?user=A9HxcJ8AAAAJ&hl=en">Scholar</a>
+                <a href="https://twitter.com/siddharth0708">Twitter</a>
+                <a href="https://www.linkedin.com/in/siddharthchoudhary/">LinkedIn</a>
+                <a href="https://github.com/itzsid/">GitHub</a>
+              </nav>
             </td>
             <td style="padding:2.5%;width:40%;max-width:40%">
               <a href="images/profile.jpg"><img style="width:80%;max-width:100%" alt="profile photo" src="images/profile.jpg" class="hoverZoomLink"></a>
             </td>
           </tr>
         </tbody></table>
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-            <td style="padding:20px;width:100%;vertical-align:middle">
-              <heading>Research</heading>
-              <p>
-                I'm interested in multimodal LLMs and its applications in computer vision and robotics. 
-              </p>
-            </td>
-          </tr>
-        </tbody></table>
+        <section class="thesis">
+          <span class="thesis-lead">What I&rsquo;m building toward &mdash;</span>
+          <h2 class="thesis-heading">The Multimodal Mind</h2>
+          <p>
+            The next frontier in AI is a single model that understands the physical world well enough to imagine its futures and act to shape them &mdash; a natively multimodal foundation model that perceives, reasons, and generates across all modalities (image, video, text, speech, action), organized around a three-stage cognitive loop: <b>Perceive &rarr; Imagine &rarr; Act</b>. <b>Perceive</b> ingests the current state across modalities in a unified space. <b>Imagine</b> thinks in multimodal space &mdash; mental video of the planned trajectory, predicted proprioception, anticipated contact forces &mdash; and this imagination <em>is</em> the world model. <b>Act</b> generates whatever output the task requires (motor commands, keyboard/mouse, speech), conditioned on the imagined plan. Under this view, controllable video generation, computer use, robotics, world simulation, autonomous driving, and creative tools are all different routes through the same architecture &mdash; and improvements to the shared backbone benefit every task simultaneously. [<a href="publications/multimodal_mind.pdf">full writeup</a>]
+          </p>
+        </section>
 
+        <nav class="tab-nav" role="tablist">
+          <button class="tab-btn active" role="tab" data-tab="research">Research</button>
+          <button class="tab-btn" role="tab" data-tab="past">Past Research</button>
+          <button class="tab-btn" role="tab" data-tab="projects">Side Projects</button>
+          <button class="tab-btn" role="tab" data-tab="notes">Notes &amp; Reviews</button>
+        </nav>
+
+        <div class="tab-panel active" id="tab-research" role="tabpanel">
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-            <td style="padding:20px;vertical-align:top">
-               <p style="margin-bottom: -10px;">
-                    <b>Multimodal LLMs</b>
-                </p>
-            </td>
-          </tr>
           <tr>
             <td style="padding:20px;;vertical-align:middle">
               <div class="one">
@@ -155,14 +152,19 @@ Tech-lead on multimodal pre-training team responsible for developing image/video
               <p></p>
             </td>
           </tr>
+        </tbody></table>
+        </div>
+
+        <div class="tab-panel" id="tab-past" role="tabpanel">
+        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
           <tr>
             <td style="padding:20px;vertical-align:top">
                <p style="margin-bottom: -10px;">
-                    <b>3D Human Reconstruction and Health CVML</b>
+                    <span class="section-label">3D Human Reconstruction and Health CVML</span>
                 </p>
             </td>
-          </tr>	
-   
+          </tr>
+
           <tr>
             <td style="padding:20px;;vertical-align:middle">
               <div class="one">
@@ -274,7 +276,7 @@ Tech-lead on multimodal pre-training team responsible for developing image/video
           <tr>
             <td style="padding:20px;vertical-align:top">
                <p style="margin-bottom: -10px;">
-                    <b>Augmented Reality</b>
+                    <span class="section-label">Augmented Reality</span>
                 </p>
             </td>
           </tr>
@@ -308,7 +310,7 @@ Tech-lead on multimodal pre-training team responsible for developing image/video
           <tr>
             <td style="padding:20px;vertical-align:top">
                <p style="margin-bottom: -10px;">
-                    <b>Distributed Object SLAM</b>
+                    <span class="section-label">Distributed Object SLAM</span>
                 </p>
             </td>
           </tr>
@@ -564,7 +566,7 @@ landmarks to help localize the robot in an online manner.
           <tr>
             <td style="padding:20px;vertical-align:top">
                <p style="margin-bottom: -10px;">
-                    <b>Structure from Motion / GPU Computing</b>
+                    <span class="section-label">Structure from Motion / GPU Computing</span>
                 </p>
             </td>
           </tr>
@@ -687,106 +689,69 @@ landmarks to help localize the robot in an online manner.
               <a href=publications/Choudhary10cvgpu.pdf>pdf</a> / <a href=publications/BundleAdjustmentCVGPU.pdf>ppt</a> / <a href="https://itzsid.github.io/publications/Bundle_Adjustment_Tutorial.pdf">tutorial</a>
        </p>
               <p></p>
-              <p>Hybrid implementation of sparse bundle adjustment on the GPU using CUDA, with the CPU working in parallel. 
-            </td>
-          </tr>
-
-
-
-        </tbody></table>
-
-        <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20"><tbody>
-          <tr>
-            <td>
-              <heading>Professional Activities</heading>
+              <p>Hybrid implementation of sparse bundle adjustment on the GPU using CUDA, with the CPU working in parallel.
             </td>
           </tr>
         </tbody></table>
-        <table width="100%" align="center" border="0" cellpadding="20"><tbody>
+        </div>
 
-          <tr>
-            <td width="75%" valign="center">
-	    Reviewer for CVPR, ICCV, ECCV, 3DV, ICRA, IROS, TRO, IJRR <br>
-            Organizer for <a href="https://sites.google.com/view/perceptionatmagicleap/cvpr2019">CVPR 2019 tutorial on Perception at Magic Leap</a>
-            </td>
-          </tr>
-        </tbody></table>
+        <div class="tab-panel" id="tab-projects" role="tabpanel">
+          <ul class="link-list" style="padding-left:20px;padding-right:20px;">
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/llm-sandbox/">LLM Sandbox</a>
+              <span class="link-desc">Train small language models in the browser with real-time visualization.</span>
+            </li>
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/physical-therapy/">Physical Therapy Exercise Programs</a>
+              <span class="link-desc">Interactive anatomy-based PT exercise programs.</span>
+            </li>
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/ml-coding-lab/">ML Coding Lab</a>
+              <span class="link-desc">LeetCode-style practice problems for ML interviews.</span>
+            </li>
+          </ul>
+        </div>
 
-        <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20"><tbody>
-          <tr>
-            <td>
-              <heading>Patents</heading>
-            </td>
-          </tr>
-        </tbody></table>
-        <table width="100%" align="center" border="0" cellpadding="20"><tbody>
-					
-          <tr>
-            <td width="75%" valign="center">
-              <a href="https://patents.google.com/patent/US11227435B2/en">Cross Reality System</a>
-              <br>
-              <a href="https://patents.google.com/patent/US20220139057A1/en">Scalable three-dimensional object recognition in a cross reality system</a>
-                            <br>
-              <a href="https://patents.google.com/patent/US20230096013A1/en">Body dimensions from two-dimensional body images</a>
-              
-            </td>
-          </tr>
-        </tbody></table>
+        <div class="tab-panel" id="tab-notes" role="tabpanel">
+          <ul class="link-list" style="padding-left:20px;padding-right:20px;">
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/speech-to-speech-review/">Speech-to-Speech Models: A Literature Review</a>
+              <span class="link-desc">Comprehensive review of end-to-end speech models from SpeechGPT (2023) to Qwen3-Omni (2025).</span>
+            </li>
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/publications/minimal_mapping_navigation.pdf">Literature Review on Minimal Mapping for Navigation</a>
+            </li>
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/publications/SLAM_Lit_Survey.pdf">SLAM Literature Review</a>
+            </li>
+            <li>
+              <a class="link-title" href="https://itzsid.github.io/publications/Bundle_Adjustment_Tutorial.pdf">Bundle Adjustment Tutorial</a>
+            </li>
+          </ul>
+        </div>
 
-
-        <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20"><tbody>
-          <tr>
-            <td>
-              <heading>Side Projects</heading>
-            </td>
-          </tr>
-        </tbody></table>
-        <table width="100%" align="center" border="0" cellpadding="20"><tbody>
-          <tr>
-            <td width="75%" valign="center">
-              <a href="https://itzsid.github.io/llm-sandbox/">LLM Sandbox</a> - Train small language models in the browser with real-time visualization
-              <br>
-              <a href="https://itzsid.github.io/physical-therapy/">Physical Therapy Exercise Programs</a> - Interactive anatomy-based PT exercise programs
-              <br>
-              <a href="https://itzsid.github.io/ml-coding-lab/">ML Coding Lab</a> - LeetCode-style practice problems for ML interviews
-            </td>
-          </tr>
-        </tbody></table>
-
-        <table width="100%" align="center" border="0" cellspacing="0" cellpadding="20"><tbody>
-          <tr>
-            <td>
-              <heading>Notes & Reviews</heading>
-            </td>
-          </tr>
-        </tbody></table>
-        <table width="100%" align="center" border="0" cellpadding="20"><tbody>
-          <tr>
-            <td width="75%" valign="center">
-              <a href="https://itzsid.github.io/speech-to-speech-review/">Speech-to-Speech Models: A Literature Review</a> - Comprehensive review of end-to-end speech models from SpeechGPT (2023) to Qwen3-Omni (2025)
-              <br>
-              <a href="https://itzsid.github.io/publications/minimal_mapping_navigation.pdf">Literature Review on Minimal Mapping for Navigation</a>
-              <br>
-              <a href="https://itzsid.github.io/publications/SLAM_Lit_Survey.pdf">SLAM Literature Review</a>
-              <br>
-              <a href="https://itzsid.github.io/publications/Bundle_Adjustment_Tutorial.pdf">Bundle Adjustment Tutorial</a>
-            </td>
-          </tr>
-        </tbody></table>
-
-        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-          <tr>
-            <td style="padding:0px">
-              <br>
-              <p style="text-align:right;font-size:small;">
-Credits to <a href="https://jonbarron.info/">Jon Barron</a> for website template. 
-              </p>
-            </td>
-          </tr>
-        </tbody></table>
+        <footer class="site-footer">
+          Template adapted from <a href="https://jonbarron.info/">Jon Barron</a>.
+        </footer>
       </td>
     </tr>
   </table>
+  <script>
+    (function() {
+      var btns = document.querySelectorAll('.tab-btn');
+      var panels = document.querySelectorAll('.tab-panel');
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var target = btn.getAttribute('data-tab');
+          btns.forEach(function(b) { b.classList.remove('active'); });
+          panels.forEach(function(p) { p.classList.remove('active'); });
+          btn.classList.add('active');
+          var panel = document.getElementById('tab-' + target);
+          if (panel) panel.classList.add('active');
+        });
+      });
+    })();
+  </script>
 </body>
 
 </html>
