@@ -357,3 +357,101 @@ span.highlight {
   margin-top: 24px;
 }
 
+.site-footer a { color: var(--ink-mute); }
+.site-footer a:hover { color: var(--accent); }
+
+/* Responsive ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  name { font-size: 26px; }
+
+  /* Header: stack photo above text, centered */
+  .profile-header-row,
+  .profile-header-row tbody {
+    display: block;
+    width: 100%;
+  }
+  .profile-header-row tr {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+  .profile-header-row td {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    padding: 12px 18px !important;
+    text-align: center;
+  }
+  .profile-header-row p {
+    text-align: left;
+  }
+  .profile-header-row p:first-child,
+  .profile-header-row .profile-links {
+    text-align: center;
+  }
+  .profile-header-row img {
+    width: 55% !important;
+    max-width: 180px !important;
+    border-radius: 50%;
+  }
+
+  /* Paper entries: stack image above text */
+  .paper-row,
+  .paper-row tbody {
+    display: block;
+    width: 100%;
+  }
+  .paper-row tr {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .paper-row td {
+    display: block;
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 10px 16px !important;
+  }
+  .one {
+    width: 100%;
+    height: auto;
+    max-width: 220px;
+    margin: 0 auto;
+  }
+  .one img {
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  /* Tab nav: let it scroll horizontally rather than wrap */
+  .tab-nav {
+    gap: 22px;
+    padding: 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Profile links: wrap is OK on mobile */
+  .profile-links { flex-wrap: wrap; }
+  .profile-links a { padding: 6px 8px; }
+
+  /* Thesis: less padding */
+  .thesis { padding: 4px 16px 20px; }
+  .thesis-heading { font-size: 16px; }
+
+  /* Link lists: tighter */
+  .link-list { padding-left: 16px !important; padding-right: 16px !important; }
+
+  .site-footer { padding: 22px 16px 6px; font-size: 11px; }
+}
+
