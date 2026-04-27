@@ -261,17 +261,32 @@ span.highlight {
 .link-list li {
   padding: 14px 0;
   border-bottom: 1px solid var(--rule-soft);
-  display: block;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  column-gap: 16px;
+  align-items: baseline;
 }
 
 .link-list li:last-child {
   border-bottom: 0;
 }
 
+.link-list .link-date {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .link-list .link-title {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.005em;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .link-list .link-desc {
@@ -280,6 +295,8 @@ span.highlight {
   font-size: 13px;
   color: var(--ink-soft);
   line-height: 1.55;
+  grid-column: 2;
+  grid-row: 2;
 }
 
 /* Tabs ------------------------------------------------------------------ */
