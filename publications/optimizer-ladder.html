@@ -1,0 +1,3305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Optimizer Ladder: From SGD to MuonH</title>
+<meta name="description" content="An interactive tour of how neural-network optimizers evolved — each one solving a specific problem in the previous.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --color-bg: #fdfcf8;
+  --color-bg-secondary: #f3efe7;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #4a4a4a;
+  --color-text-tertiary: #888;
+  --color-border-tertiary: #e5e0d6;
+  --color-accent: #b8761e;
+  --color-accent-soft: #d9a957;
+  --border-radius-md: 8px;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --font-sans: 'Newsreader', Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 1.65;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+article {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+}
+
+/* Header */
+header.post-header {
+  margin: 2rem auto 5rem;
+  max-width: 680px;
+  text-align: left;
+}
+header.post-header h1 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.25rem;
+  color: var(--color-text-primary);
+}
+header.post-header h1 .accent {
+  color: var(--color-accent);
+  font-style: italic;
+  font-weight: 400;
+}
+header.post-header time {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  display: block;
+}
+header.post-header .lede {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 1.5rem 0 0;
+  font-weight: 350;
+  max-width: 620px;
+}
+
+/* Chapter index */
+.chapter-index {
+  max-width: 680px;
+  margin: 0 auto 6rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-border-tertiary);
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+.chapter-index .label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: 1.25rem;
+}
+.chapter-index ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: chapter;
+  column-count: 2;
+  column-gap: 2.5rem;
+}
+.chapter-index ol li {
+  counter-increment: chapter;
+  margin: 0 0 0.55rem;
+  break-inside: avoid;
+  position: relative;
+  padding-left: 2.2rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+.chapter-index ol li::before {
+  content: counter(chapter, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+.chapter-index a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.chapter-index a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+/* Article sections */
+section.chapter {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 4rem 0 2rem;
+}
+section.chapter:first-of-type { padding-top: 0; }
+
+section.chapter h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 1.95rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0 0 2rem;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 1.1rem;
+}
+section.chapter h2 .num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+section.chapter h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.005em;
+  margin: 2.5rem 0 0.9rem;
+  color: var(--color-text-primary);
+}
+section.chapter h4 {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin: 2rem 0 0.6rem;
+}
+
+section.chapter p {
+  margin: 0 0 1.1rem;
+}
+section.chapter p + p { margin-top: 0; }
+
+section.chapter strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+section.chapter em {
+  font-style: italic;
+}
+
+section.chapter a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-soft);
+  transition: border-color 0.15s;
+}
+section.chapter a:hover {
+  border-bottom-color: var(--color-accent);
+}
+
+/* Code styling */
+section.chapter code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--color-bg-secondary);
+  padding: 0.1em 0.32em;
+  border-radius: 3px;
+  color: var(--color-text-primary);
+}
+section.chapter pre {
+  background: var(--color-bg-secondary);
+  padding: 1.1rem 1.3rem;
+  border-radius: var(--border-radius-md);
+  border-left: 2px solid var(--color-accent);
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+section.chapter pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Math display */
+.math-display {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  text-align: center;
+  margin: 1.4rem 0;
+  padding: 0.4rem 0;
+  color: var(--color-text-primary);
+}
+
+/* Pull quote / highlight */
+.callout {
+  margin: 2rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-secondary);
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+.callout strong { font-style: normal; }
+
+/* Tables */
+section.chapter table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.92rem;
+}
+section.chapter th, section.chapter td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+section.chapter th {
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-text-secondary);
+}
+section.chapter td code {
+  font-size: 0.82em;
+}
+
+/* Lists */
+section.chapter ul, section.chapter ol {
+  padding-left: 1.4rem;
+  margin: 0 0 1.1rem;
+}
+section.chapter li {
+  margin: 0.35rem 0;
+}
+
+/* Widget container — can break out wider than text */
+.widget-container {
+  margin: 2.5rem -120px;
+  max-width: none;
+}
+.widget-container.standard {
+  margin: 2.5rem 0;
+}
+.widget-inner {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem 1.75rem;
+  margin: 0 auto;
+  max-width: 720px;
+}
+.widget-caption {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 auto 0.9rem;
+  max-width: 720px;
+  padding: 0 1.75rem;
+}
+.widget-caption .num {
+  color: var(--color-accent);
+  font-weight: 600;
+  margin-right: 0.6rem;
+}
+
+/* Shared widget styles (inputs, buttons, controls) */
+.widget-inner input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-border-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.widget-inner input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+.widget-inner input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+.widget-inner button {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.55rem 1rem;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.widget-inner button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.widget-inner select {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+}
+
+/* Section separator */
+hr.section-break {
+  border: none;
+  text-align: center;
+  margin: 3rem 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.5em;
+}
+hr.section-break::before {
+  content: "* * *";
+}
+
+/* Footer */
+footer.post-footer {
+  max-width: 680px;
+  margin: 6rem auto 0;
+  padding: 3rem 0 0;
+  border-top: 1px solid var(--color-border-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  body { font-size: 17px; }
+  article { padding: 2rem 1.25rem 4rem; }
+  .widget-container { margin: 2rem 0; }
+  .widget-inner { padding: 1.25rem 1rem; }
+  .widget-caption { padding: 0 1rem; }
+  header.post-header { margin-bottom: 3rem; }
+  header.post-header h1 { font-size: 2rem; }
+  .chapter-index ol { column-count: 1; }
+  section.chapter { padding: 3rem 0 1rem; }
+  section.chapter h2 {
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-start;
+  }
+}
+
+/* Subtle scroll-fade animations on widget reveal */
+@media (prefers-reduced-motion: no-preference) {
+  section.chapter {
+    animation: fade-in 0.6s ease;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+</style>
+</head>
+<body>
+
+<article>
+
+<header class="post-header">
+  <time datetime="2026-05-11">May 2026</time>
+  <h1>The Optimizer Ladder<br><span class="accent">from SGD to MuonH</span></h1>
+  <p class="lede">A guided tour through neural-network optimizers, with twelve interactive widgets. Each one solves a specific problem in the previous, and the trajectory tells you something about where deep learning is going.</p>
+</header>
+
+<nav class="chapter-index" aria-label="Table of contents">
+  <div class="label">Contents</div>
+  <ol>
+    <li><a href="#ch-sgd">SGD &amp; the stochastic gradient</a></li>
+    <li><a href="#ch-momentum">Momentum</a></li>
+    <li><a href="#ch-adam">Adam: AdaGrad to RMSProp to Adam</a></li>
+    <li><a href="#ch-snr">Adam as a signal-to-noise ratio</a></li>
+    <li><a href="#ch-adamw">AdamW: the one-line fix</a></li>
+    <li><a href="#ch-signsgd">Interlude — SignSGD</a></li>
+    <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
+    <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
+    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
+    <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
+    <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
+  </ol>
+</nav>
+
+<section class="chapter" id="ch-sgd">
+<h2><span class="num">Ch. 01</span> <span>SGD &amp; the stochastic gradient</span></h2>
+
+<p>A neural network is just a giant pile of numbers — the parameters. Training it means finding the values of those numbers that make the model's predictions good. We measure "good" with a single scalar called the <em>loss</em>: lower is better.</p>
+
+<p>So training is a search problem. Imagine the loss as the height of a landscape, and every possible setting of the parameters as a location on that landscape. Training a model is finding the lowest valley while wandering around blindfolded.</p>
+
+<h3>Gradient descent: the simplest possible idea</h3>
+
+<p>You can't see the landscape, but at any point you can feel which way the ground tilts. That tilt is the gradient — it points uphill. So you do the obvious thing: step in the opposite direction. That's the entire algorithm:</p>
+
+<div class="math-display">new_position = old_position − step_size × gradient</div>
+
+<p>The <code>step_size</code> (also called the learning rate) is the only knob you really tune. Too small and you crawl. Too big and you overshoot the valley and fly out the other side.</p>
+
+<h3>The "stochastic" part</h3>
+
+<p>Here's the catch. To compute the <em>true</em> gradient, you'd need to evaluate the loss on every training example — millions or billions of them — before you could take a single step. That is wildly impractical.</p>
+
+<p>The trick: don't compute the true gradient. Compute a <em>noisy estimate</em> of it using a small random batch of examples. That estimate is wrong in the details but right on average — and it costs almost nothing.</p>
+
+<p>So instead of one careful step using all the data, you take thousands of slightly drunk steps using slivers of data. You wobble more, but you cover ground much faster. That's stochastic gradient descent.</p>
+
+<p>Set the learning rate, set how noisy the gradient is (low = like a big batch, high = like a single example), and watch the trajectory unfold. The orange dot is the minimum we're trying to reach.</p>
+
+<div class="widget-caption"><span class="num">Fig. 1.1</span>The loss landscape, one step at a time.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.opt-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.opt-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.opt-row .val { font-size: 13px; font-weight: 500; min-width: 44px; text-align: right; font-family: var(--font-mono); }
+.opt-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.opt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.opt-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.opt-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.opt-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+.opt-canvas-wrap { display: flex; justify-content: center; }
+canvas.opt { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); }
+.opt-hint { font-size: 12px; color: var(--color-text-tertiary); margin: 0.5rem 0 1rem; text-align: center; }
+</style>
+<div class="opt-canvas-wrap">
+  <canvas id="opt-canvas" class="opt" width="540" height="380"></canvas>
+</div>
+<p class="opt-hint">parameter space — the bowl is the loss, lower is better</p>
+<div class="opt-row">
+  <label>Learning rate</label>
+  <input type="range" id="opt-lr" min="0.02" max="0.4" step="0.01" value="0.1" style="flex: 1;">
+  <span class="val" id="opt-lr-val">0.10</span>
+</div>
+<div class="opt-row">
+  <label>Gradient noise</label>
+  <input type="range" id="opt-noise" min="0" max="2" step="0.05" value="0.7" style="flex: 1;">
+  <span class="val" id="opt-noise-val">0.70</span>
+</div>
+<div class="opt-btns">
+  <button id="opt-step">Take a step</button>
+  <button id="opt-play">Auto-step</button>
+  <button id="opt-reset">Reset</button>
+</div>
+<div class="opt-stats">
+  <div class="opt-stat"><div class="lbl">Steps</div><div class="num" id="opt-steps">0</div></div>
+  <div class="opt-stat"><div class="lbl">Loss</div><div class="num" id="opt-loss">6.81</div></div>
+  <div class="opt-stat"><div class="lbl">Distance to min</div><div class="num" id="opt-dist">3.69</div></div>
+</div>
+</div>
+</div>
+
+<h3>A concrete example: fitting a line</h3>
+
+<p>Forget abstract bowls for a moment. Here's the simplest learning problem that exists. You have 24 data points — each is a pair <code>(x, y)</code>. Some unknown rule generated them. You believe the rule is roughly a straight line through the origin, so your model is <code>ŷ = w · x</code>. There is exactly <em>one</em> parameter to learn: the slope <code>w</code>.</p>
+
+<p>For a single point <code>(x, y)</code>, your prediction will usually be a little off. We measure how off with the squared error <code>(w·x − y)²</code>. Zero if you nailed it, bigger if you didn't. The total loss is the average of those squared errors over all points.</p>
+
+<p>For a single point the gradient with respect to <code>w</code> is <code>2x · (w·x − y)</code>. You don't need to memorize that — just read off the sign. If your prediction is too low the gradient is negative, so SGD raises <code>w</code>. If it's too high the gradient is positive, so SGD lowers <code>w</code>. Each data point is yelling "you got me wrong by <em>this much</em>, in <em>this direction</em>", and SGD nudges <code>w</code> accordingly. The whole algorithm in three lines:</p>
+
+<pre><code>1. pick a random data point (or a small batch)
+2. compute the gradient using just that point
+3. w ← w − lr · gradient</code></pre>
+
+<p>In the demo below, the top plot shows the data and your current line (<code>y = w·x</code>). The highlighted coral points are the ones being used in this step — the dashed lines show how wrong the line is for each. The bottom plot is the loss curve: a parabola in <code>w</code>, with the orange dot marking the true minimum and the green dot showing where you currently are.</p>
+
+<div class="widget-caption"><span class="num">Fig. 1.2</span>Linear regression with one parameter, trained by SGD.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.lin-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.lin-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 110px; }
+.lin-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.lin-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.lin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.lin-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.lin-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.lin-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+canvas.lin { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.lin-cap { font-size: 12px; color: var(--color-text-tertiary); margin: 0.5rem 0 1rem; text-align: center; }
+</style>
+<canvas id="lin-data" class="lin" width="540" height="220"></canvas>
+<p class="lin-cap">data points (gray) and current fit y = w·x (green)</p>
+<canvas id="lin-loss" class="lin" width="540" height="130"></canvas>
+<p class="lin-cap">loss as a function of w — green dot is current w, orange dot is the optimum</p>
+<div class="lin-row">
+  <label>Batch size</label>
+  <select id="lin-batch" style="flex: 1; max-width: 240px;">
+    <option value="1">1 point (most stochastic)</option>
+    <option value="4" selected>4 points</option>
+    <option value="24">all 24 points (true gradient)</option>
+  </select>
+</div>
+<div class="lin-row">
+  <label>Learning rate</label>
+  <input type="range" id="lin-lr" min="0.005" max="0.05" step="0.005" value="0.020" style="flex: 1;">
+  <span class="val" id="lin-lr-val">0.020</span>
+</div>
+<div class="lin-btns">
+  <button id="lin-step">Take a step</button>
+  <button id="lin-play">Auto-step</button>
+  <button id="lin-reset">Reset</button>
+</div>
+<div class="lin-stats">
+  <div class="lin-stat"><div class="lbl">Steps</div><div class="num" id="lin-steps">0</div></div>
+  <div class="lin-stat"><div class="lbl">Current w</div><div class="num" id="lin-w">0.20</div></div>
+  <div class="lin-stat"><div class="lbl">Loss</div><div class="num" id="lin-l">—</div></div>
+</div>
+</div>
+</div>
+
+<h3>What this earned us, and what it didn't</h3>
+
+<p>Try batch size <strong>1</strong> with <code>lr = 0.02</code> and hit auto-step. The line snaps toward the data, then starts wobbling once it's roughly fit. The green dot bounces around the orange minimum but never quite settles. That's stochastic noise — even when <code>w</code> is right, a single random point still pulls it.</p>
+
+<p>Now switch to all 24 points. The path is dead smooth. Every step uses the true gradient, so there's no noise to cancel. This is vanilla gradient descent. It looks great, but in real training, doing this every step would mean a forward+backward pass through your entire dataset to take <em>one</em> update. With a trillion-token corpus that's a non-starter.</p>
+
+<p>SGD's deal: cheap, scalable, good enough to actually train large models. The noise that looks like a bug here is part of why it works at scale — those random kicks help models escape bad local regions of the loss landscape.</p>
+
+<p>But three problems are now obvious enough that you can name them just from playing with the demo. <strong>First</strong>, even at the optimum, the noise never goes away — <code>w</code> keeps wobbling. <strong>Second</strong>, every step is memoryless. If the last twenty gradients all said "go right", the twenty-first step ignores all of that history and only listens to the current point. <strong>Third</strong>, in real models different parameters have wildly different gradient scales. One global learning rate that works for the whole network is asking a lot.</p>
+
+<p>The next chapter — momentum — fixes the second of these and partially the first. After that, RMSprop and Adam will tackle the third.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-momentum">
+<h2><span class="num">Ch. 02</span> <span>Momentum</span></h2>
+
+<p>Look back at the very first demo from chapter 1, with the bowl and the ball. Now imagine stretching that bowl out so it's a long narrow valley instead of a circular dish — steep walls running left-and-right, very gentle slope running along the length.</p>
+
+<p>That's what real loss landscapes look like in deep learning. A few directions are extremely curved (a small change in the parameter changes the loss a lot) and most directions are almost flat. Watch SGD on a landscape like that and you'll see the same disaster every time. The gradient is dominated by the steep directions, so each step is a big sideways lurch across the valley. The slow component along the valley — the direction we actually need to make progress in — barely moves.</p>
+
+<p>The deeper diagnosis: SGD's steps are <em>memoryless</em>. The seventeenth step has no idea that the previous sixteen gradients had a nice consistent component pointing down the valley.</p>
+
+<h3>The fix: give the optimizer a velocity</h3>
+
+<p>Stop treating the gradient as the <em>direction to move</em>. Treat it as a <em>force pushing on a velocity vector</em>. The optimizer carries the velocity from step to step. Useful directions (where the force keeps pushing the same way) cause the velocity to grow. Useless directions (where the force flips back and forth) cause the velocity contributions to cancel.</p>
+
+<pre><code>v ← β · v + g
+w ← w − lr · v</code></pre>
+
+<p>That's it. Two lines. <code>β</code> is a number close to 1 (a typical default is 0.9), controlling how much of the old velocity persists. With <code>β = 0</code> you get plain SGD back. With <code>β = 0.9</code> the velocity is a kind of running tally of roughly the last ten gradients' worth of motion.</p>
+
+<p>In the steep-wall directions, the gradient alternates sign each step, so when you accumulate it into <code>v</code>, the contributions cancel and the velocity stays small. In the consistent valley direction, every gradient pushes the same way, so the velocity grows — at steady state with β=0.9, it's about ten times a single gradient, which means the effective step is ten times bigger than SGD's would have been. And under noise, the noise terms in successive gradients are independent and average toward zero in <code>v</code>, while the real signal accumulates.</p>
+
+<p>Below, both optimizers start at the same point, see the same noisy gradients, and use the same learning rate. The <em>only</em> difference is momentum. The contour ellipses are very flat horizontal ovals — that's the elongated valley.</p>
+
+<div class="widget-caption"><span class="num">Fig. 2.1</span>SGD vs SGD-with-momentum on an anisotropic valley.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.mom-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.mom-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.mom-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.mom-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.mom-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.mom-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.mom-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.mom-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+canvas.mom { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.mom-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.6rem 0 1rem; }
+.mom-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.mom-leg-dot { width: 12px; height: 12px; border-radius: 50%; }
+</style>
+<canvas id="mom-canvas" class="mom" width="540" height="380"></canvas>
+<div class="mom-leg">
+  <div class="mom-leg-it"><span class="mom-leg-dot" style="background: #D85A30;"></span>SGD</div>
+  <div class="mom-leg-it"><span class="mom-leg-dot" style="background: #1D9E75;"></span>SGD with momentum</div>
+</div>
+<div class="mom-row">
+  <label>Momentum (β)</label>
+  <input type="range" id="mom-beta" min="0" max="0.95" step="0.05" value="0.9" style="flex: 1;">
+  <span class="val" id="mom-beta-val">0.90</span>
+</div>
+<div class="mom-row">
+  <label>Learning rate</label>
+  <input type="range" id="mom-lr" min="0.005" max="0.05" step="0.005" value="0.035" style="flex: 1;">
+  <span class="val" id="mom-lr-val">0.035</span>
+</div>
+<div class="mom-row">
+  <label>Gradient noise</label>
+  <input type="range" id="mom-noise" min="0" max="1.5" step="0.05" value="0.5" style="flex: 1;">
+  <span class="val" id="mom-noise-val">0.50</span>
+</div>
+<div class="mom-btns">
+  <button id="mom-step">Take a step</button>
+  <button id="mom-play">Auto-step</button>
+  <button id="mom-reset">Reset</button>
+</div>
+<div class="mom-stats">
+  <div class="mom-stat"><div class="lbl">Steps</div><div class="num" id="mom-steps">0</div></div>
+  <div class="mom-stat"><div class="lbl">SGD distance</div><div class="num" id="mom-d-sgd">3.69</div></div>
+  <div class="mom-stat"><div class="lbl">Momentum distance</div><div class="num" id="mom-d-mom">3.69</div></div>
+</div>
+</div>
+</div>
+
+<p>Hit auto-step with the defaults and watch what happens. SGD (coral) does the classic disaster: it slams across the valley walls, bounces back, slams across again, and meanwhile barely creeps to the right. Momentum (teal) has a different shape entirely — it overshoots once or twice early on as the velocity builds up, then settles into a smooth glide along the valley floor.</p>
+
+<p>Drag β to 0 and reset. Both paths overlap exactly. Momentum with β=0 <em>is</em> SGD. Push β to 0.95 and you'll see the cost of memory — too much inertia carries momentum past the minimum, and the teal path orbits around before settling. β=0.9 is the canonical default because it's a sweet spot between "useful inertia" and "loops around forever."</p>
+
+<h3>What momentum did and didn't fix</h3>
+
+<p>Momentum fixed the second of SGD's three complaints — steps now use information from past gradients. It partially fixed the first — under noise, the velocity buffer cancels independent noise terms. And it gave a real speedup along the slow valley directions that show up everywhere in real loss landscapes.</p>
+
+<p>What it did not touch is the third complaint: there is still one global learning rate, applied uniformly to every parameter. In real models, some parameters have gradients on the order of 100 and others on the order of 0.001 <em>at the same time</em>. No single global <code>lr</code> is right for both. The fix everyone arrived at, more or less independently, in the early 2010s: keep a per-parameter estimate of recent gradient magnitudes, and divide each parameter's step by that estimate.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-adam">
+<h2><span class="num">Ch. 03</span> <span>Adam: AdaGrad to RMSProp to Adam</span></h2>
+
+<p>Momentum gave the optimizer a memory and a velocity. It made progress along slow valleys faster, oscillations smaller, and noise damped. But the third complaint from the SGD chapter is still untouched: <strong>there is exactly one learning rate, applied to every parameter in the network</strong>.</p>
+
+<p>In the toy 2D demos this looks harmless. In a real network it's catastrophic. Different parameters live in wildly different gradient regimes. The bias of a softmax output and a weight matrix two layers back can have gradient magnitudes that differ by 1000×. Pick <code>lr</code> for the loud parameters and the quiet ones never move. Pick <code>lr</code> for the quiet ones and the loud ones blow up. The fix the field converged on is per-parameter learning rates, computed automatically from gradient statistics. The story arrives in three steps.</p>
+
+<h3>AdaGrad: the first try (and why it broke)</h3>
+
+<p>Keep, for each parameter, a running sum of how big its gradients have been:</p>
+
+<pre><code>G ← G + g²
+w ← w − lr · g / sqrt(G + ε)</code></pre>
+
+<p>A parameter that's been seeing huge gradients gets divided by a huge <code>sqrt(G)</code>, so its effective step shrinks. A parameter with tiny gradients keeps a near-full <code>lr</code>. This is exactly what we wanted — automatic per-parameter scaling.</p>
+
+<p>The catch: <code>G</code> only ever grows. After a few thousand steps, every parameter's effective learning rate is approaching zero, and the optimizer just stops. Fine for sparse problems; fatal for deep learning where we'll train for millions of steps.</p>
+
+<h3>RMSprop: just take an average</h3>
+
+<p>Replace the running sum with an exponential moving average:</p>
+
+<pre><code>v ← β₂ · v + (1 − β₂) · g²
+w ← w − lr · g / sqrt(v + ε)</code></pre>
+
+<p>Now <code>v</code> is bounded — it tracks the <em>recent</em> squared-gradient magnitude rather than the lifetime sum. Per-parameter scaling without monotonic decay. If gradients are roughly stationary at some long-run value, the steady-state <code>v</code> satisfies "EMA equals itself" and plateaus at the average squared gradient. The effective learning rate is preserved forever.</p>
+
+<p>Compare the two accumulators on the same constant gradient stream:</p>
+
+<div class="widget-caption"><span class="num">Fig. 3.1</span>AdaGrad's accumulator grows linearly forever. RMSProp's plateaus.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.acc-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.acc-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.acc-row .val { font-size: 13px; font-weight: 500; min-width: 60px; text-align: right; font-family: var(--font-mono); }
+canvas.acc { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.acc-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.6rem 0 1rem; }
+.acc-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.acc-leg-bar { width: 16px; height: 2px; }
+.acc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.acc-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.acc-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.acc-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+</style>
+<canvas id="acc-canvas" class="acc" width="540" height="280"></canvas>
+<div class="acc-leg">
+  <div class="acc-leg-it"><span class="acc-leg-bar" style="background: #D85A30;"></span>AdaGrad (sum)</div>
+  <div class="acc-leg-it"><span class="acc-leg-bar" style="background: #7F77DD;"></span>RMSProp (EMA)</div>
+</div>
+<div class="acc-row">
+  <label>β₂</label>
+  <input type="range" id="acc-b2" min="0.5" max="0.9995" step="0.0005" value="0.999" style="flex: 1;">
+  <span class="val" id="acc-b2-val">0.9990</span>
+</div>
+<div class="acc-stats">
+  <div class="acc-stat"><div class="lbl">AdaGrad G at step 3000</div><div class="num" id="acc-ada">3000</div></div>
+  <div class="acc-stat"><div class="lbl">RMSProp v at step 3000</div><div class="num" id="acc-rms">0.95</div></div>
+</div>
+</div>
+</div>
+
+<p>Drag β₂ down to 0.9. RMSProp's plateau is unchanged (still 1) but it gets there in about ten steps — short memory, fast adaptation, noisier. Push β₂ up to 0.9995 and RMSProp warms up so slowly it barely reaches its plateau by the end of the run; long memory, smooth, but more AdaGrad-ish. At β₂=1 exactly, the EMA stops accumulating entirely.</p>
+
+<h3>Adam: RMSProp meets momentum</h3>
+
+<p>Adam's contribution is conceptually small but practically enormous. It just stacks the two ideas: keep a momentum term (EMA of gradients) <em>and</em> a per-parameter scale term (EMA of squared gradients), and use both:</p>
+
+<pre><code>m ← β₁ · m + (1 − β₁) · g          ← this is momentum
+v ← β₂ · v + (1 − β₂) · g²         ← this is RMSProp
+
+m̂ = m / (1 − β₁ᵗ)                  ← bias correction
+v̂ = v / (1 − β₂ᵗ)
+
+w ← w − lr · m̂ / (sqrt(v̂) + ε)</code></pre>
+
+<p>Defaults that have proven nearly universal: β₁=0.9, β₂=0.999, ε=10⁻⁸, lr in the 10⁻³ to 10⁻⁴ range.</p>
+
+<p>The bias correction handles a subtle bootstrapping problem: both <code>m</code> and <code>v</code> start at zero, so the first few EMAs are biased toward zero. Dividing by <code>(1 − β^t)</code> compensates — it's small for small <code>t</code> (boosting the early estimate) and approaches 1 as <code>t</code> grows. After a few thousand steps the correction is invisible.</p>
+
+<p>Here's the punchline that took the field a few years to fully internalize. Look at the term <code>m / sqrt(v)</code>. If gradients are roughly stationary, then <code>v ≈ g²</code> and <code>m ≈ g</code>, so <code>m/sqrt(v) ≈ g/|g| = sign(g)</code>. In other words, <strong>Adam's update is approximately a momentum-smoothed sign of the gradient</strong>, scaled by <code>lr</code>. Every parameter, regardless of its gradient magnitude, moves by approximately <code>lr</code> in some direction each step.</p>
+
+<p>That's why Adam works so well on heterogeneous networks. Loud parameters and quiet parameters both step by ~<code>lr</code>, and you only need to tune one number for the whole network.</p>
+
+<div class="widget-caption"><span class="num">Fig. 3.2</span>Same valley, same noise, same lr. Only the optimizer differs.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.adm-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.adm-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.adm-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.adm-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.adm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.adm-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.adm-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.adm-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+canvas.adm { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.adm-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.6rem 0 1rem; }
+.adm-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.adm-leg-dot { width: 12px; height: 12px; border-radius: 50%; }
+</style>
+<canvas id="adm-canvas" class="adm" width="540" height="380"></canvas>
+<div class="adm-leg">
+  <div class="adm-leg-it"><span class="adm-leg-dot" style="background: #888;"></span>SGD with momentum</div>
+  <div class="adm-leg-it"><span class="adm-leg-dot" style="background: #7F77DD;"></span>Adam</div>
+</div>
+<div class="adm-row">
+  <label>Learning rate</label>
+  <input type="range" id="adm-lr" min="0.005" max="0.10" step="0.005" value="0.050" style="flex: 1;">
+  <span class="val" id="adm-lr-val">0.050</span>
+</div>
+<div class="adm-row">
+  <label>Momentum (β)</label>
+  <input type="range" id="adm-beta" min="0" max="0.95" step="0.05" value="0.9" style="flex: 1;">
+  <span class="val" id="adm-beta-val">0.90</span>
+</div>
+<div class="adm-row">
+  <label>Gradient noise</label>
+  <input type="range" id="adm-noise" min="0" max="1.5" step="0.05" value="0.4" style="flex: 1;">
+  <span class="val" id="adm-noise-val">0.40</span>
+</div>
+<div class="adm-btns">
+  <button id="adm-step">Take a step</button>
+  <button id="adm-play">Auto-step</button>
+  <button id="adm-reset">Reset</button>
+</div>
+<div class="adm-stats">
+  <div class="adm-stat"><div class="lbl">Steps</div><div class="num" id="adm-steps">0</div></div>
+  <div class="adm-stat"><div class="lbl">Momentum distance</div><div class="num" id="adm-d-mom">3.69</div></div>
+  <div class="adm-stat"><div class="lbl">Adam distance</div><div class="num" id="adm-d-adm">3.69</div></div>
+</div>
+</div>
+</div>
+
+<p>At lr=0.05, both work, but Adam glides toward the minimum in a clean, almost-straight line while momentum does its familiar oscillation. Crank <strong>lr to 0.08</strong>: momentum diverges off the canvas. Adam doesn't care — its update in the steep direction is still ~<code>lr</code> regardless of how big the gradient is, because the <code>sqrt(v)</code> divisor scales with gradient magnitude.</p>
+
+<p>Adam works at default settings on most problems. That single fact — "default Adam works on a new problem" — is why it became the field's reflexive choice for nearly a decade.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-snr">
+<h2><span class="num">Ch. 04</span> <span>Adam as a signal-to-noise ratio</span></h2>
+
+<p>"Smoothed gradient over square root of squared gradients" is a mouthful. Here's the cleaner reading: Adam's update is computing a <strong>per-parameter signal-to-noise ratio</strong>, on a scale of −1 to +1.</p>
+
+<p>Walk through a single parameter, observing a noisy gradient written as <code>signal + noise</code> at each step. Imagine the signal as the true mean (what the gradient <em>should</em> be) and the noise as a zero-mean random kick with standard deviation σ. After many steps:</p>
+
+<ul>
+<li><code>m</code> averages the gradient, so <code>m → signal</code> — the noise cancels in the running mean.</li>
+<li><code>v</code> averages the <em>squared</em> gradient, so <code>v → signal² + σ²</code> — the noise variance contributes here even though it cancelled in <code>m</code>.</li>
+<li>The update <code>m / sqrt(v) → signal / sqrt(signal² + σ²)</code> — exactly the signal-to-noise ratio.</li>
+</ul>
+
+<p>This works out across many scenarios:</p>
+
+<table>
+<thead><tr><th>scenario</th><th>signal</th><th>σ</th><th>m →</th><th>sqrt(v) →</th><th>update</th><th>interpretation</th></tr></thead>
+<tbody>
+<tr><td>A — clean strong</td><td>0.3</td><td>0</td><td>0.3</td><td>0.3</td><td>1.00</td><td>full step, clear direction</td></tr>
+<tr><td>B — moderate noise</td><td>0.3</td><td>1.0</td><td>0.3</td><td>1.04</td><td>0.29</td><td>direction known, magnitude uncertain</td></tr>
+<tr><td>C — weak signal</td><td>0.1</td><td>1.0</td><td>0.1</td><td>1.005</td><td>0.10</td><td>barely above noise, small step</td></tr>
+<tr><td>D — pure noise</td><td>0</td><td>1.0</td><td>0</td><td>1.0</td><td>0.00</td><td>no signal, no step</td></tr>
+<tr><td>E — oscillating</td><td>±1</td><td>0</td><td>0</td><td>1.0</td><td>0.00</td><td>at minimum in this direction</td></tr>
+<tr><td>F — loud parameter</td><td>100</td><td>0</td><td>100</td><td>100</td><td>1.00</td><td>same as A — magnitude normalized</td></tr>
+</tbody>
+</table>
+
+<p>Look down the "update" column. It's in <code>[−1, +1]</code> and it's measuring how confidently the optimizer should commit to <em>this direction</em>. Strong clean signal → 1. Strong noisy signal → ~0.3. Pure noise or oscillation → 0. And critically, magnitude alone (compare A and F) doesn't change the answer — only the <em>signal-to-magnitude ratio</em> matters.</p>
+
+<p>The widget below feeds three different gradient streams to the same Adam update. The line plotted is <code>m̂ / sqrt(v̂)</code> — the update direction, not the gradient itself.</p>
+
+<div class="widget-caption"><span class="num">Fig. 4.1</span>Three gradient streams. Adam responds to each with the right confidence.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.snr { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.snr-leg { display: flex; flex-direction: column; gap: 6px; font-size: 12px; margin: 0.8rem auto 0.5rem; max-width: 460px; }
+.snr-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.snr-leg-bar { width: 18px; height: 2px; flex-shrink: 0; }
+.snr-leg-it code { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-primary); }
+.snr-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.snr-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.snr-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.snr-stat .num { font-size: 18px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+</style>
+<canvas id="snr-canvas" class="snr" width="540" height="260"></canvas>
+<div class="snr-leg">
+  <div class="snr-leg-it"><span class="snr-leg-bar" style="background: #1D9E75;"></span>consistent gradient: <code>g(t) = 1</code></div>
+  <div class="snr-leg-it"><span class="snr-leg-bar" style="background: #D85A30;"></span>oscillating gradient: <code>g(t) = ±1 alternating</code></div>
+  <div class="snr-leg-it"><span class="snr-leg-bar" style="background: #7F77DD;"></span>noisy gradient: <code>g(t) = 0.3 + N(0, 1)</code></div>
+</div>
+<div class="snr-stats">
+  <div class="snr-stat"><div class="lbl">Consistent: m/sqrt(v)</div><div class="num" id="snr-c">1.00</div></div>
+  <div class="snr-stat"><div class="lbl">Oscillating: m/sqrt(v)</div><div class="num" id="snr-o">±0.05</div></div>
+  <div class="snr-stat"><div class="lbl">Noisy: m/sqrt(v)</div><div class="num" id="snr-n">0.29</div></div>
+</div>
+</div>
+</div>
+
+<p>The teal line shoots to 1 and stays there. The coral oscillating signal damps fast to a tight band near zero — the alternating gradient cancels in <code>m</code> but not in <code>sqrt(v)</code>, so the update is suppressed. The purple noisy signal settles around 0.29, which is exactly <code>0.3 / sqrt(0.3² + 1²) = 0.287</code>.</p>
+
+<p>One caveat: in strict steady state the update is bounded by 1, but during transients (especially early in training, or right after a learning rate change) the EMA window mismatch — <code>m</code> with β₁=0.9 has a short window while <code>v</code> with β₂=0.999 has a much longer one — can produce updates above 1. This is part of why gradient clipping is standard practice for transformer training: it prevents the numerator from temporarily outpacing the denominator and producing oversized parameter updates.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-adamw">
+<h2><span class="num">Ch. 05</span> <span>AdamW: the one-line fix</span></h2>
+
+<p>Adam was published in 2014. AdamW, the version everyone actually uses, came out in 2017. The change is one line of code. The reason it took three years is that nobody — including the people who originally wrote Adam — noticed the bug.</p>
+
+<p>Weight decay's job: at every step, gently pull parameters toward zero. Small parameters → simpler model → better generalization. The "gentle pull" is a multiplier slightly less than 1:</p>
+
+<pre><code>w ← w − lr · g                ← regular update
+w ← (1 − wd) · w              ← weight decay, applied separately</code></pre>
+
+<p>There's a math identity that's true for SGD: shrinking the parameters is equivalent to adding <code>wd · w</code> to the gradient. So for years it was standard practice to "implement weight decay" by just adding <code>wd · w</code> to the gradient before passing it to the optimizer. Cleaner code, same result — for SGD, momentum, RMSProp, anything that just multiplies the gradient by <code>lr</code> and subtracts.</p>
+
+<p>The original Adam paper followed this convention. So did every Adam implementation for the next three years.</p>
+
+<h3>Why it silently breaks for Adam</h3>
+
+<p>Adam doesn't just multiply the gradient by <code>lr</code> and subtract. It divides by <code>sqrt(v)</code> first. So when you fold <code>wd · w</code> into the gradient, the decay term goes through that divisor too. The decay each parameter actually receives is <code>lr · wd · w / sqrt(v)</code>, not <code>lr · wd · w</code>. Parameters with large <code>v</code> (loud gradients) get their weight decay <em>divided</em> by a large number — they're decayed less. Parameters with small <code>v</code> get decayed more.</p>
+
+<p>This is exactly backwards from what regularization should do. The parameters fitting the loudest signals — the ones most at risk of overfitting — get the <em>least</em> regularization. The quiet parameters that barely move get aggressively shrunk to zero.</p>
+
+<h3>The fix</h3>
+
+<p>Loshchilov and Hutter's observation: the identity that lets you fold weight decay into the gradient is <em>only</em> valid when the optimizer is <code>w ← w − lr · g</code>. The moment you preprocess the gradient — with <code>sqrt(v)</code>, with sign, with anything — the equivalence breaks. So just don't fold it in. Apply weight decay directly to the weights:</p>
+
+<pre><code>m ← β₁·m + (1−β₁)·g
+v ← β₂·v + (1−β₂)·g²
+m̂ = m / (1 − β₁ᵗ),  v̂ = v / (1 − β₂ᵗ)
+w ← w − lr · m̂ / (sqrt(v̂) + ε)    ← Adam update, no wd here
+w ← w − lr · wd · w                 ← decoupled weight decay</code></pre>
+
+<p>That's the entire change. Now every parameter gets the same proportional decay regardless of <code>v</code>, and <code>wd</code> is an independent knob from <code>lr</code>.</p>
+
+<p>This visualization isolates the effect: two parameters A (loud, large <code>v</code>) and B (quiet, small <code>v</code>) both starting at 1.0 with zero gradient. The only thing pulling them down is decay. So everything you see is the decay term in action, no other dynamics.</p>
+
+<div class="widget-caption"><span class="num">Fig. 5.1</span>Same nominal decay, very different effective regularization.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.dec-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.dec-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.dec-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+canvas.dec { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.dec-cap { font-size: 12px; color: var(--color-text-tertiary); margin: 0.4rem 0 1rem; text-align: center; }
+.dec-leg { display: flex; flex-direction: column; gap: 6px; font-size: 12px; margin: 0.6rem auto 0; max-width: 460px; }
+.dec-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.dec-leg-bar { width: 18px; height: 2px; flex-shrink: 0; }
+.dec-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.dec-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.dec-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.dec-stat .num { font-size: 18px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+</style>
+<canvas id="dec-canvas" class="dec" width="540" height="280"></canvas>
+<p class="dec-cap">parameter values over time. gradient set to zero so we see <em>only</em> the decay.</p>
+<div class="dec-leg">
+  <div class="dec-leg-it"><span class="dec-leg-bar" style="background: #D85A30;"></span>Adam with L2: param A (loud, large v) — barely decays</div>
+  <div class="dec-leg-it"><span class="dec-leg-bar" style="background: #E89A85;"></span>Adam with L2: param B (quiet, small v) — decays fast</div>
+  <div class="dec-leg-it"><span class="dec-leg-bar" style="background: #1D9E75;"></span>AdamW: both params (decay decoupled) — same rate</div>
+</div>
+<div class="dec-row" style="margin-top: 1rem;">
+  <label>v for param A (loud)</label>
+  <input type="range" id="dec-vA" min="0.1" max="20" step="0.1" value="10" style="flex: 1;">
+  <span class="val" id="dec-vA-val">10.0</span>
+</div>
+<div class="dec-row">
+  <label>v for param B (quiet)</label>
+  <input type="range" id="dec-vB" min="0.001" max="1" step="0.001" value="0.05" style="flex: 1;">
+  <span class="val" id="dec-vB-val">0.050</span>
+</div>
+<div class="dec-row">
+  <label>weight decay (wd)</label>
+  <input type="range" id="dec-wd" min="0.001" max="0.1" step="0.001" value="0.02" style="flex: 1;">
+  <span class="val" id="dec-wd-val">0.020</span>
+</div>
+<div class="dec-stats">
+  <div class="dec-stat"><div class="lbl">Adam-L2 final ratio (A / B)</div><div class="num" id="dec-ratio">—</div></div>
+  <div class="dec-stat"><div class="lbl">AdamW final ratio (A / B)</div><div class="num">1.00</div></div>
+</div>
+</div>
+</div>
+
+<p>The teal line is AdamW: both parameters decay at the same rate, because the decay is decoupled from <code>v</code>. They overlap perfectly. The two coral lines show Adam-with-L2: the dark coral (large <code>v</code>) is barely moving — its decay got divided by a big number, so it's effectively unregularized. The light coral (small <code>v</code>) drops fast — its decay got divided by a small number, amplifying it. Drag the <code>v</code> sliders apart and the gap widens dramatically.</p>
+
+<p>That's the bug. The optimizer was supposed to apply the same regularization to every parameter, and Adam-with-L2 silently made the regularization strength inversely proportional to gradient magnitude.</p>
+
+<p>AdamW is the optimizer that trained essentially every transformer between 2017 and ~2023. It's the silent default behind GPT-2, GPT-3, BERT, T5, ViT, CLIP, and most of what came in their wake.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-signsgd">
+<h2><span class="num">Ch. 06</span> <span>Interlude — SignSGD</span></h2>
+
+<p>Up to this point the story has been "track more statistics, use them more cleverly." SignSGD is the rude question: what if we tracked <em>less</em> and it worked anyway?</p>
+
+<p>We just spent two chapters building Adam, which carries two EMAs per parameter and computes <code>m / sqrt(v)</code>. Then we noticed that in steady state, that update is approximately <code>sign(g)</code>. So Adam is paying for two buffers of optimizer state to approximately compute the sign. A natural reaction: skip the machinery. Compute the sign directly.</p>
+
+<pre><code>w ← w − lr · sign(g)</code></pre>
+
+<p>That's it. No <code>m</code>, no <code>v</code>, no momentum, no per-parameter scale. Every parameter steps by exactly <code>lr</code> in some direction each step. The optimizer holds zero state — your only memory cost is the weights themselves.</p>
+
+<p>Two big practical wins. <strong>Optimizer state</strong>: AdamW costs 2× the model weights in optimizer state. For a 70B parameter model in mixed precision, that's ~280GB just for the optimizer. SignSGD costs zero. <strong>Distributed communication</strong>: in distributed training, you can compress each gradient to one bit per parameter — a 32× reduction in bandwidth.</p>
+
+<p>But SignSGD has two real issues.</p>
+
+<p><strong>No magnitude information.</strong> A parameter with gradient 0.0001 and one with gradient 1000 take <em>the same step</em>. If a parameter is already close to its optimum, SignSGD will overshoot by a fixed amount every step and oscillate around the minimum forever.</p>
+
+<p><strong>Noise is catastrophic.</strong> Adam's <code>sqrt(v)</code> term automatically scales steps down for noisy parameters. SignSGD doesn't: the sign of a nearly-zero gradient buried in noise is essentially random, and SignSGD will take a full <code>lr</code>-sized step in that random direction every time.</p>
+
+<p>Same anisotropic valley as before. SignSGD with no momentum, AdamW for comparison.</p>
+
+<div class="widget-caption"><span class="num">Fig. 6.1</span>SignSGD's strength (heterogeneity) and weaknesses (noise, convergence).</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.sgn-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.sgn-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.sgn-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.sgn-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.sgn-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.sgn-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.sgn-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.sgn-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+canvas.sgn { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.sgn-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.6rem 0 1rem; }
+.sgn-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.sgn-leg-dot { width: 12px; height: 12px; border-radius: 50%; }
+</style>
+<canvas id="sgn-canvas" class="sgn" width="540" height="380"></canvas>
+<div class="sgn-leg">
+  <div class="sgn-leg-it"><span class="sgn-leg-dot" style="background: #C8862C;"></span>SignSGD</div>
+  <div class="sgn-leg-it"><span class="sgn-leg-dot" style="background: #7F77DD;"></span>AdamW</div>
+</div>
+<div class="sgn-row">
+  <label>Learning rate</label>
+  <input type="range" id="sgn-lr" min="0.005" max="0.10" step="0.005" value="0.030" style="flex: 1;">
+  <span class="val" id="sgn-lr-val">0.030</span>
+</div>
+<div class="sgn-row">
+  <label>Gradient noise</label>
+  <input type="range" id="sgn-noise" min="0" max="2" step="0.05" value="0.3" style="flex: 1;">
+  <span class="val" id="sgn-noise-val">0.30</span>
+</div>
+<div class="sgn-btns">
+  <button id="sgn-step">Take a step</button>
+  <button id="sgn-play">Auto-step</button>
+  <button id="sgn-reset">Reset</button>
+</div>
+<div class="sgn-stats">
+  <div class="sgn-stat"><div class="lbl">Steps</div><div class="num" id="sgn-steps">0</div></div>
+  <div class="sgn-stat"><div class="lbl">SignSGD distance</div><div class="num" id="sgn-d-s">3.69</div></div>
+  <div class="sgn-stat"><div class="lbl">AdamW distance</div><div class="num" id="sgn-d-a">3.69</div></div>
+</div>
+</div>
+</div>
+
+<p>Run with default noise (0.3). SignSGD marches diagonally toward the minimum: each step is exactly <code>lr</code> in both axes regardless of the wildly different gradient magnitudes (~3 in x, ~150 in y). This is the heterogeneity-handling that made Adam great. But once close to the minimum, it can't slow down — watch it oscillate around the target. Crank noise to 1.5 and SignSGD goes haywire while AdamW stays composed.</p>
+
+<p>SignSGD is rarely used as-is in practice — too brittle. But it cleanly demonstrates two things that turn out to matter for what comes next. The <em>directionally normalized step</em> (everything moves by ~lr) is doing most of the work that makes Adam great. The magnitude correction in <code>m / sqrt(v)</code> is a refinement, not the core mechanism. And you can pay almost nothing in optimizer state and still get serviceable training, especially if you add back just a momentum buffer to handle noise.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-lion">
+<h2><span class="num">Ch. 07</span> <span>Lion: one buffer instead of two</span></h2>
+
+<p>Lion is the optimizer that emerged when Google Brain ran a massive program search over the space of optimizer update rules — they let an evolutionary algorithm hunt for new optimizers and Lion is what won. The result is striking: substantially simpler than AdamW, half the optimizer state, matches or beats AdamW on most large-scale benchmarks. The name stands for "EvoLved sIgn mOmeNtum."</p>
+
+<p>We have all the parts. SignSGD without momentum was brittle. The fix is: smooth the gradient first, then take the sign. The actual rule has one extra wrinkle — Lion uses <em>two different</em> mixing rates, one for taking the step and one for updating the momentum buffer:</p>
+
+<pre><code>update = sign(β₁ · m + (1 − β₁) · g)    ← what you step in this update
+w ← w − lr · update − lr · wd · w        ← step + decoupled weight decay
+m ← β₂ · m + (1 − β₂) · g                ← what you remember for next time</code></pre>
+
+<p>Defaults: β₁ = 0.9, β₂ = 0.99. Only one buffer of state. No <code>v</code>. No <code>sqrt</code>. No <code>ε</code>.</p>
+
+<p>Lion takes the step using a <em>fast</em> EMA of the gradient (window ≈ 10 steps with β₁=0.9), but stores a <em>slow</em> EMA for next time (window ≈ 100 steps with β₂=0.99). The faster average gives responsiveness; the slower average gives stability. The Lion paper found this asymmetric design materially outperforms using the same β for both — the kind of detail you only find by searching the space exhaustively.</p>
+
+<h3>What Lion gives up and what it gives back</h3>
+
+<p>Lion's update is in <code>{−1, 0, +1}</code> per parameter — strict sign, no fractional confidence weighting. A parameter Adam would have stepped by 0.1 Lion will step by 0 or full <code>lr</code>. And the per-parameter magnitude normalization from <code>sqrt(v)</code> is replaced by global normalization via the sign function. In practice, neither is fatal. Lion still works.</p>
+
+<p>What's earned: <strong>memory halved</strong> (only <code>m</code>, no <code>v</code>) and <strong>2-15% throughput improvement</strong> per step depending on hardware. The catch: Lion needs a smaller <code>lr</code> (3–10× smaller is typical) and stronger weight decay than AdamW. The hyperparameter sweet spot shifts.</p>
+
+<div class="widget-caption"><span class="num">Fig. 7.1</span>Lion and AdamW on the same valley. Note the recommended lr ratio.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.lio-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.lio-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.lio-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.lio-btns { display: flex; gap: 8px; margin: 1rem 0 0; }
+.lio-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.lio-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); }
+.lio-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.lio-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+canvas.lio { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.lio-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.6rem 0 1rem; }
+.lio-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.lio-leg-dot { width: 12px; height: 12px; border-radius: 50%; }
+</style>
+<canvas id="lio-canvas" class="lio" width="540" height="380"></canvas>
+<div class="lio-leg">
+  <div class="lio-leg-it"><span class="lio-leg-dot" style="background: #2BA17B;"></span>Lion</div>
+  <div class="lio-leg-it"><span class="lio-leg-dot" style="background: #7F77DD;"></span>AdamW</div>
+</div>
+<div class="lio-row">
+  <label>lr_lion</label>
+  <input type="range" id="lio-lrL" min="0.002" max="0.04" step="0.002" value="0.010" style="flex: 1;">
+  <span class="val" id="lio-lrL-val">0.010</span>
+</div>
+<div class="lio-row">
+  <label>lr_adamw</label>
+  <input type="range" id="lio-lrA" min="0.005" max="0.10" step="0.005" value="0.030" style="flex: 1;">
+  <span class="val" id="lio-lrA-val">0.030</span>
+</div>
+<div class="lio-row">
+  <label>Gradient noise</label>
+  <input type="range" id="lio-noise" min="0" max="2" step="0.05" value="0.4" style="flex: 1;">
+  <span class="val" id="lio-noise-val">0.40</span>
+</div>
+<div class="lio-btns">
+  <button id="lio-step">Take a step</button>
+  <button id="lio-play">Auto-step</button>
+  <button id="lio-reset">Reset</button>
+</div>
+<div class="lio-stats">
+  <div class="lio-stat"><div class="lbl">Steps</div><div class="num" id="lio-steps">0</div></div>
+  <div class="lio-stat"><div class="lbl">Lion distance</div><div class="num" id="lio-d-l">3.69</div></div>
+  <div class="lio-stat"><div class="lbl">AdamW distance</div><div class="num" id="lio-d-a">3.69</div></div>
+</div>
+</div>
+</div>
+
+<p>What makes Lion intellectually interesting isn't that it's better than AdamW — sometimes it is, sometimes it isn't. What's interesting is that it's <em>competitive</em> while throwing away half the machinery. That's strong evidence for a claim worth examining carefully in the next chapter: the most important thing Adam was doing all along was producing per-parameter normalized steps.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-norm">
+<h2><span class="num">Ch. 08</span> <span>The hidden invariant: per-parameter normalization</span></h2>
+
+<p>Time to pause and name the through-line. Looking back at SGD → momentum → AdamW → SignSGD → Lion, there's a single dimension that explains most of why each one outperforms the last. Call it <strong>per-parameter normalization</strong>: how does each parameter's gradient magnitude affect how far it moves?</p>
+
+<table>
+<thead><tr><th>optimizer</th><th>effective step for parameter <code>i</code></th><th>scales with |g<sub>i</sub>|?</th></tr></thead>
+<tbody>
+<tr><td>SGD</td><td><code>lr · g<sub>i</sub></code></td><td>yes — linearly</td></tr>
+<tr><td>SGD + momentum</td><td><code>lr · v<sub>i</sub></code> where v is EMA of g</td><td>yes — still linearly</td></tr>
+<tr><td>AdamW</td><td><code>lr · m<sub>i</sub> / sqrt(v<sub>i</sub>) ≈ lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
+<tr><td>Lion</td><td><code>lr · sign(β m<sub>i</sub> + (1−β) g<sub>i</sub>)</code></td><td>no — flat</td></tr>
+<tr><td>SignSGD</td><td><code>lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
+</tbody>
+</table>
+
+<p>This is a useful chance to correct something easy to get wrong. Momentum does <em>not</em> solve the heterogeneous-gradient problem. It accumulates gradients along consistent directions, which speeds you up in slow valleys, but it preserves the per-parameter magnitude. A parameter with 100× larger gradient still gets 100× larger steps under momentum. The thing that <em>did</em> solve heterogeneity was the <code>sqrt(v)</code> divisor in RMSProp / Adam, or the <code>sign()</code> function in Lion / SignSGD. Both produce roughly equal step sizes per parameter regardless of magnitude. Both are doing "spatial normalization across parameters" at each step. Momentum is "temporal smoothing within each parameter."</p>
+
+<p>Below: five parameters with gradient magnitudes spanning <code>10⁻³</code> to <code>10²</code>, and the displacement each optimizer takes for each. The y-axis is log scale because otherwise SGD's tallest bar would be 100,000× taller than its smallest.</p>
+
+<div class="widget-caption"><span class="num">Fig. 8.1</span>Displacement per parameter on a 10⁵× spread of gradient magnitudes.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.par { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.par-leg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; font-size: 12px; margin: 0.8rem auto 0; max-width: 460px; }
+.par-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.par-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 2px; }
+</style>
+<canvas id="par-canvas" class="par" width="540" height="320"></canvas>
+<div class="par-leg">
+  <div class="par-leg-it"><span class="par-leg-sw" style="background: #888;"></span>SGD: <code>lr · g</code></div>
+  <div class="par-leg-it"><span class="par-leg-sw" style="background: #1D9E75;"></span>Momentum: <code>lr · v ≈ 10·lr·g</code></div>
+  <div class="par-leg-it"><span class="par-leg-sw" style="background: #7F77DD;"></span>AdamW: <code>lr · sign(g)</code></div>
+  <div class="par-leg-it"><span class="par-leg-sw" style="background: #2BA17B;"></span>Lion: <code>lr · sign(...)</code></div>
+</div>
+</div>
+</div>
+
+<p>The SGD bars span five orders of magnitude. Momentum's bars are uniformly ten times taller — same shape, just scaled. AdamW's bars are all the same height: a parameter with gradient 0.001 and one with gradient 100 take the same step. Lion's bars are identical to AdamW's.</p>
+
+<p>This lens reframes Lion's success. Lion isn't beating AdamW because <code>sign()</code> is smarter than <code>m/sqrt(v)</code>. It's beating it because both reach the same destination — flat, per-parameter normalized steps — and Lion gets there with one buffer and one operation while AdamW needs two buffers, a square, a square root, a division, and a bias correction. The work AdamW was doing turned out to be approximating something simpler.</p>
+
+<p>It also points at what comes next. Once you see "per-parameter normalization" as the underlying principle, the obvious question is whether per-parameter is even the right granularity. Real network parameters aren't a flat list — they're organized into matrices, which have richer structure that per-parameter operations throw away. Two chapters from now, Muon will exploit exactly this. But first, a detour into what optimizers <em>still</em> aren't seeing.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-second-order">
+<h2><span class="num">Ch. 09</span> <span>What first-order optimizers can't see</span></h2>
+
+<p>Every optimizer so far — SGD, momentum, Adam, Lion, all of them — uses one piece of information at each parameter: the gradient. That tells you the slope. It doesn't tell you the <em>curvature</em>.</p>
+
+<p>Here's the difference. Imagine two parameters, both with the same gradient right now. The first is in a gently curving region — small changes in the parameter barely change the slope. The second is in a sharply curving region — small changes in the parameter rapidly change the slope. The optimal step for these two cases is very different. The gently curving parameter can take a big step safely. The sharply curving one is about to roll past its minimum if you step too far.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.1</span>Same gradient, very different optimal step.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.crv { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.crv-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.crv-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.crv-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.crv-leg { display: flex; justify-content: center; gap: 20px; font-size: 12px; margin: 0.5rem 0 1rem; }
+.crv-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.crv-leg-bar { width: 16px; height: 2px; }
+</style>
+<canvas id="crv-canvas" class="crv" width="540" height="280"></canvas>
+<div class="crv-leg">
+  <div class="crv-leg-it"><span class="crv-leg-bar" style="background: #1D9E75;"></span>gentle bowl (low curvature)</div>
+  <div class="crv-leg-it"><span class="crv-leg-bar" style="background: #D85A30;"></span>sharp bowl (high curvature)</div>
+</div>
+<div class="crv-row">
+  <label>Step size</label>
+  <input type="range" id="crv-step" min="0.05" max="2.5" step="0.05" value="0.5" style="flex: 1;">
+  <span class="val" id="crv-step-val">0.50</span>
+</div>
+</div>
+</div>
+
+<p>Both green and coral curves have the same slope at the green dot (the starting point). The slider is the step size — i.e., how far you move in the direction the gradient suggests. On the gentle curve, a big step lands you closer to the minimum. On the sharp curve, the same big step overshoots and lands you higher up the other side.</p>
+
+<p>This is the third recurring complaint about first-order methods. The optimizer can't see how much each parameter "wants" you to step — only the direction. Adam's <code>sqrt(v)</code> normalizes by recent gradient magnitudes, which is a noisy proxy for curvature. SignSGD throws away even that. None of them are using the actual curvature of the loss landscape.</p>
+
+<h3>What "curvature" means precisely</h3>
+
+<p>For a single parameter, curvature is just the second derivative — the rate of change of the slope. Call it <code>H</code> (for "Hessian," which is the multi-parameter generalization). Then near a current point <code>w</code>, the loss looks like:</p>
+
+<div class="math-display">L(w + Δ) ≈ L(w) + g · Δ + ½ · H · Δ²</div>
+
+<p>This is just the Taylor expansion. The optimal Δ — the one that minimizes the quadratic — is the value that makes the derivative zero: <code>g + H · Δ = 0</code>, so <code>Δ = −g / H</code>. That's Newton's method. The <code>−g / H</code> step takes you directly to the bottom of the local parabola in one move.</p>
+
+<p>The geometric picture is satisfying. The gradient <code>g</code> is the current slope. The Hessian <code>H</code> is how fast that slope is changing. The ratio <code>g / H</code> is "how far do I need to walk before the slope reaches zero" — i.e., the distance to the bottom of the local parabolic bowl.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.2</span>Newton's step: walk until the slope hits zero.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.nwt { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.nwt-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.nwt-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.nwt-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.nwt-cap { font-size: 12px; color: var(--color-text-tertiary); margin: 0.4rem 0 0.8rem; text-align: center; }
+</style>
+<canvas id="nwt-canvas" class="nwt" width="540" height="280"></canvas>
+<p class="nwt-cap">bottom plot: the slope (gradient). Newton walks until the slope hits zero.</p>
+<div class="nwt-row">
+  <label>Starting position</label>
+  <input type="range" id="nwt-pos" min="-3" max="3" step="0.05" value="2.0" style="flex: 1;">
+  <span class="val" id="nwt-pos-val">2.00</span>
+</div>
+<div class="nwt-row">
+  <label>Curvature H</label>
+  <input type="range" id="nwt-h" min="0.3" max="3" step="0.1" value="1.0" style="flex: 1;">
+  <span class="val" id="nwt-h-val">1.00</span>
+</div>
+</div>
+</div>
+
+<p>The top plot is the loss <code>L(w) = ½ H w²</code>. The bottom plot is its slope, <code>g = H w</code>. The Newton step takes you from where you are to where the slope crosses zero — and on a quadratic that's exactly the minimum, in one step. Try different curvature values: high curvature means the slope drops fast and the Newton step is short. Low curvature means the slope drops slowly and the step is long. The step is automatically calibrated to the curvature.</p>
+
+<h3>The Hessian in 2D</h3>
+
+<p>For multiple parameters, the Hessian generalizes to a matrix:</p>
+
+<div class="math-display">H<sub>ij</sub> = ∂²L / ∂w<sub>i</sub> ∂w<sub>j</sub></div>
+
+<p>For two parameters that's a 2×2 matrix. The diagonal entries are the curvatures along each axis. The off-diagonal entries — these are the interesting ones — say whether the two parameters' curvatures are "tilted" or "rotated" relative to the axes. They're zero only when the level curves are perfectly aligned with the axes.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.3</span>The 2D Hessian: diagonal entries set axis curvature, off-diagonal entries tilt the bowl.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.hes-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.hes-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 120px; }
+.hes-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.hes-mat { font-family: var(--font-mono); font-size: 13px; background: var(--color-bg-secondary); padding: 0.6rem 1rem; border-radius: var(--border-radius-md); margin: 0.8rem 0; text-align: center; }
+</style>
+<canvas id="hes-canvas" class="hes" width="540" height="320"></canvas>
+<div class="hes-row">
+  <label>H<sub>xx</sub> (x curvature)</label>
+  <input type="range" id="hes-xx" min="0.5" max="5" step="0.1" value="2.0" style="flex: 1;">
+  <span class="val" id="hes-xx-val">2.0</span>
+</div>
+<div class="hes-row">
+  <label>H<sub>yy</sub> (y curvature)</label>
+  <input type="range" id="hes-yy" min="0.5" max="5" step="0.1" value="2.0" style="flex: 1;">
+  <span class="val" id="hes-yy-val">2.0</span>
+</div>
+<div class="hes-row">
+  <label>H<sub>xy</sub> (coupling)</label>
+  <input type="range" id="hes-xy" min="-2" max="2" step="0.05" value="0.0" style="flex: 1;">
+  <span class="val" id="hes-xy-val">0.00</span>
+</div>
+<div class="hes-mat" id="hes-disp">H = [ 2.0  0.0 ; 0.0  2.0 ]</div>
+</div>
+</div>
+
+<p>At <code>H<sub>xx</sub> = H<sub>yy</sub> = 2, H<sub>xy</sub> = 0</code> you get circular level sets — same curvature in every direction. Crank <code>H<sub>xx</sub></code> to 5 keeping <code>H<sub>yy</sub> = 2</code>: the bowl flattens to a horizontal ellipse — that's the anisotropic valley from chapter 2. Push <code>H<sub>xy</sub></code> to 1: the ellipse rotates. The off-diagonals are the source of all the geometric weirdness real neural networks have. Real Hessians have non-zero off-diagonals because parameters interact through the network — the curvature of one parameter depends on the others' values.</p>
+
+<h3>How you'd actually compute one</h3>
+
+<p>The gradient <code>g</code> is what backpropagation gives you for free — it's the same machinery that trains the network. The Hessian needs <em>second</em> derivatives. The classic trick: differentiate the gradient. If you ran backprop to get <code>g</code>, then run backprop <em>again</em> on each entry of <code>g</code>, you get the Hessian row by row. This is called "double backprop."</p>
+
+<p>For a tiny example: <code>L = ½ (w₁² + 4 w₂² + 2 w₁ w₂)</code>. First backward pass gives <code>g = [w₁ + w₂, 4 w₂ + w₁]</code>. Now backprop <code>g[0] = w₁ + w₂</code> with respect to <code>w</code>: that gives the first row of <code>H</code>. Repeat for <code>g[1]</code>: second row.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.4</span>Double backprop, symbolically.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+.dbp-step { background: var(--color-bg-secondary); padding: 0.8rem 1.1rem; border-radius: var(--border-radius-md); margin: 0.5rem 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; border-left: 2px solid var(--color-border-tertiary); }
+.dbp-step.active { border-left-color: var(--color-accent); background: rgba(184, 118, 30, 0.06); }
+.dbp-step .lbl { font-family: var(--font-serif); font-size: 12px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem; }
+.dbp-btns { display: flex; gap: 8px; margin: 1rem 0 0.5rem; }
+</style>
+<div id="dbp-steps">
+  <div class="dbp-step active" data-step="0">
+    <div class="lbl">Step 0 — start</div>
+    L = ½(w₁² + 4w₂² + 2w₁w₂)
+  </div>
+  <div class="dbp-step" data-step="1">
+    <div class="lbl">Step 1 — first backward pass</div>
+    g = ∂L/∂w = [ w₁ + w₂ ,  4w₂ + w₁ ]
+  </div>
+  <div class="dbp-step" data-step="2">
+    <div class="lbl">Step 2 — backprop g[0] = w₁ + w₂</div>
+    ∂g[0]/∂w = [ 1 , 1 ]    ← row 0 of H
+  </div>
+  <div class="dbp-step" data-step="3">
+    <div class="lbl">Step 3 — backprop g[1] = 4w₂ + w₁</div>
+    ∂g[1]/∂w = [ 1 , 4 ]    ← row 1 of H
+  </div>
+  <div class="dbp-step" data-step="4">
+    <div class="lbl">Step 4 — assemble</div>
+    H = [[ 1, 1 ],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ 1, 4 ]]
+  </div>
+</div>
+<div class="dbp-btns">
+  <button id="dbp-next">Next step</button>
+  <button id="dbp-reset">Reset</button>
+</div>
+</div>
+</div>
+
+<p>Two backward passes give you the full 2×2 Hessian for a 2-parameter model. For an N-parameter model, you'd need N backward passes — one per row. Even N = 10⁶ is intractable. For modern LLMs with N ≈ 10⁹–10¹², materializing the full Hessian isn't merely expensive, it's <em>physically impossible</em> — it wouldn't fit in any storage. So full Newton's method is dead on arrival.</p>
+
+<p>But there's a useful escape hatch. We rarely want the whole Hessian — what we usually want is <code>H · v</code> for some vector <code>v</code>. And that's surprisingly cheap: differentiate <code>g · v</code> (a scalar!) once more, and you get <code>H · v</code> directly. One backward pass instead of N. These "Hessian-vector products" are the basis of every practical second-order optimizer ever proposed.</p>
+
+<p>So the second-order story is: don't try to materialize <code>H</code>. Don't try to invert it. Get cheap approximations, ideally factored into pieces that match the matrix structure of your network. The next two chapters — Muon and Shampoo — are the two main answers the field has converged on for how to do that.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-muon">
+<h2><span class="num">Ch. 10</span> <span>Muon: per-matrix orthogonalization</span></h2>
+
+<p>Here's the assumption that every optimizer until now smuggled in: a neural network's parameters are a flat list. Adam looks at each scalar entry of each weight matrix independently and decides how much to step it. The fact that those scalars are organized into a matrix — with rows that mean something, columns that mean something, and a structure that survives matrix multiplication — is information the optimizer throws away.</p>
+
+<p>Muon's bet is that this structure is exactly the information you need.</p>
+
+<h3>The picture: singular values</h3>
+
+<p>Any matrix <code>M</code> has a singular value decomposition: <code>M = U Σ V<sup>T</sup></code>. <code>U</code> and <code>V</code> are rotation matrices. <code>Σ</code> is a diagonal matrix of <em>singular values</em> — these say how much the matrix stretches space along each principal direction. A matrix with one huge singular value and many tiny ones acts almost like a rank-1 projection: it pours all input variation onto one output direction. A matrix with uniform singular values acts like a rotation that preserves the geometry of the input space.</p>
+
+<p>The gradient of a weight matrix has its own singular value structure. And empirically, gradient matrices in training have <em>very</em> unequal singular values. A few directions dominate; most are nearly zero. This means a vanilla gradient step is mostly making progress in one or two directions and barely moving in others.</p>
+
+<h3>Muon's update</h3>
+
+<p>Compute the momentum-smoothed gradient as usual. Then, before stepping, <strong>flatten all its singular values to 1</strong>. Equivalently: replace <code>Σ</code> with the identity. What you get is a "whitened" version of the gradient — same directions as the original (same <code>U</code> and <code>V</code>) but every direction now contributes equally.</p>
+
+<pre><code>u ← β · u + g                  ← momentum buffer
+û = orthogonalize(u)           ← replace u's singular values with 1s
+W ← W − lr · û</code></pre>
+
+<p>For hidden weight matrices only — embeddings, biases, and norm parameters use AdamW. That's why Muon comes packaged with a side-by-side optimizer in practice: it only knows what to do with matrices.</p>
+
+<p>Replacing the singular values directly via SVD is too slow for every step of training. The Muon paper uses <strong>Newton-Schulz iteration</strong>: a degree-5 polynomial in the matrix that, applied iteratively (typically 5 times), pushes all singular values toward 1 without ever computing the SVD. Each iteration is just matrix multiplications, which GPUs are exceptionally good at.</p>
+
+<div class="widget-caption"><span class="num">Fig. 10.1</span>What orthogonalization does to a matrix's singular value spectrum.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.muo-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.muo-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
+.muo-row .val { font-size: 13px; font-weight: 500; min-width: 60px; text-align: right; font-family: var(--font-mono); }
+.muo-leg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin: 0.6rem auto 0; max-width: 460px; }
+.muo-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.muo-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 2px; }
+</style>
+<canvas id="muo-canvas" class="muo" width="540" height="280"></canvas>
+<div class="muo-leg">
+  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #888;"></span>raw gradient (skewed spectrum)</div>
+  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #2BA17B;"></span>after orthogonalization</div>
+</div>
+<div class="muo-row">
+  <label>Skew (how unequal)</label>
+  <input type="range" id="muo-skew" min="0" max="3" step="0.05" value="2.0" style="flex: 1;">
+  <span class="val" id="muo-skew-val">2.00</span>
+</div>
+<div class="muo-row">
+  <label>Newton-Schulz iters</label>
+  <input type="range" id="muo-iters" min="0" max="8" step="1" value="5" style="flex: 1;">
+  <span class="val" id="muo-iters-val">5</span>
+</div>
+</div>
+</div>
+
+<p>Drag <strong>skew</strong>: the raw gradient's spectrum (gray) goes from uniform to extremely skewed. Drag <strong>iters</strong>: at 0, the green bars match gray (no orthogonalization). By 3-4 iterations the green spectrum is essentially flat at 1. With heavy skew you can see why standard Newton-Schulz uses 5 iterations as a practical default — it's the smallest count that handles realistic spectra.</p>
+
+<h3>Why this works</h3>
+
+<p>The vanilla momentum step is dominated by a few large singular directions. Muon's orthogonalized step has equal magnitude in every direction <code>U Σ V<sup>T</sup></code> defines. Every direction the gradient knows about gets attention. Parameters that would have been ignored under vanilla momentum (because they sat in low-singular-value directions of the gradient) get the same step size as the dominant directions.</p>
+
+<p>Practically, Muon set the current speed records for nanoGPT training and was used at the trillion-parameter scale for Kimi K2. The Muon comes with built-in μP scaling — as you make the model bigger, you don't need to retune the learning rate, which is one of the most labor-intensive parts of training large models.</p>
+
+<p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. The next chapter — Shampoo — goes one level deeper and asks: what if the optimizer also tracks the <em>curvature</em> structure of each matrix?</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-shampoo">
+<h2><span class="num">Ch. 11</span> <span>Shampoo: curvature-aware preconditioning</span></h2>
+
+<p>Shampoo predates Muon by several years (the original paper is from 2018) and was actually the first matrix-aware optimizer to gain real attention. The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
+
+<p>Shampoo's pitch: approximate the full Hessian using just <em>two</em> matrices per layer, one capturing how rows interact and one capturing how columns interact. For a weight matrix <code>W ∈ ℝ<sup>m×n</sup></code> with gradient <code>G</code>, maintain:</p>
+
+<pre><code>L ← L + G G<sup>T</sup>      ← m × m left preconditioner (row curvature)
+R ← R + G<sup>T</sup> G      ← n × n right preconditioner (column curvature)
+W ← W − lr · L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code></pre>
+
+<p>The <code>−1/4</code> exponents come from a Kronecker-factorization argument — the full Hessian is approximately <code>L ⊗ R</code>, so its inverse-square-root applied to <code>G</code> works out to multiplying by <code>L<sup>−1/4</sup></code> on the left and <code>R<sup>−1/4</sup></code> on the right.</p>
+
+<p>Three optimizers, same gradient, same matrix, three different updates:</p>
+
+<div class="widget-caption"><span class="num">Fig. 11.1</span>How each optimizer transforms the same gradient.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.sha-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.sha-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
+.sha-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.sha-leg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 11px; margin: 0.6rem auto 0; }
+.sha-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.sha-leg-sw { width: 12px; height: 12px; flex-shrink: 0; border-radius: 2px; }
+</style>
+<canvas id="sha-canvas" class="sha" width="540" height="320"></canvas>
+<div class="sha-leg">
+  <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #7F77DD;"></span>AdamW (per-entry)</div>
+  <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #2BA17B;"></span>Muon (orthogonalize)</div>
+  <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #C8862C;"></span>Shampoo (precondition)</div>
+</div>
+<div class="sha-row">
+  <label>Row skew</label>
+  <input type="range" id="sha-rs" min="0.3" max="3" step="0.05" value="2.0" style="flex: 1;">
+  <span class="val" id="sha-rs-val">2.00</span>
+</div>
+<div class="sha-row">
+  <label>Column skew</label>
+  <input type="range" id="sha-cs" min="0.3" max="3" step="0.05" value="0.8" style="flex: 1;">
+  <span class="val" id="sha-cs-val">0.80</span>
+</div>
+</div>
+</div>
+
+<p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) flattens the singular value spectrum — same row/column structure, but reshaped to equal magnitude in every direction. Shampoo (gold) does something subtly different: it uses the empirical row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't.</p>
+
+<h3>Practical considerations</h3>
+
+<p>Shampoo's chief practical issues are cost (computing matrix square roots is expensive — typically every few hundred steps, not every step), memory (the two preconditioners take additional space proportional to <code>m² + n²</code>), and tuning (more hyperparameters than Muon). Variants like Distributed Shampoo and SOAP (Shampoo + Adam fused) have made it more practical. Recent benchmarks have it roughly tied with Muon at small scale and behind Muon at large scale once optimizer-aware learning rate transfer (μP) is factored in.</p>
+
+<p>The interesting question this raises — and Sid you've thought about this — is whether μP plus Muon plus Shampoo is redundant. If μP already gives you scale-invariant learning rates, and Muon already orthogonalizes per-matrix, what additional curvature signal is Shampoo capturing that the others miss? The answer seems to be: not as much as you'd hope at large scale, but enough at moderate scale to keep Shampoo in the conversation. It's the optimizer that proved matrix-aware preconditioning was a real direction — even if Muon turned out to be the simpler practical winner.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-muonh">
+<h2><span class="num">Ch. 12</span> <span>MuonH: pinning the weight norm</span></h2>
+
+<p>Every optimizer so far has been about <em>the update direction</em>. SGD: raw gradient. Momentum: smoothed. Adam: per-element normalized. Muon: per-matrix orthogonalized. Shampoo: curvature-aware. But there's a parallel question we've only touched lightly in the AdamW chapter: <strong>how should we control the magnitude of the weights themselves?</strong></p>
+
+<p>Weight decay was the default answer. MuonH is a more radical one.</p>
+
+<h3>Scale invariance reframes the question</h3>
+
+<p>Modern transformers wrap every weight matrix in RMSNorm layers — the "RMSNorm sandwich." RMSNorm is <em>scale-invariant</em>: scaling its input by any positive α produces identical output. As a consequence, the weight matrix's magnitude doesn't actually affect what function the layer computes. Only its <em>direction</em> matters.</p>
+
+<p>But weights still grow during training. Without any weight decay, the Frobenius norm grows roughly as <code>√t</code>, which inflates the parameter scale relative to step size and shrinks the effective learning signal. AdamW's decoupled weight decay handles this by gently pulling weights toward zero each step, creating an equilibrium norm that weights "hover" near.</p>
+
+<p>The Hyperball question is: if magnitude doesn't matter functionally, why not just <em>fix</em> the magnitude exactly?</p>
+
+<h3>The Hyperball update</h3>
+
+<p>Pick a target radius <code>R</code> — typically <code>R = ||W₀||<sub>F</sub></code>, the matrix's initial Frobenius norm. After every optimizer step, project the weight matrix back to that radius:</p>
+
+<pre><code>U_t      = −η · R · Normalize(proposed_update)    ← normalize update to scale ηR
+W_temp   = W_t + U_t                              ← take the step
+W_{t+1}  = R · Normalize(W_temp)                  ← retract back to radius R</code></pre>
+
+<p>The weight matrix lives on a hypersphere of radius <code>R</code> for the entire training run. (Despite the name "hyperball," you're constrained to the boundary — a hypersphere.) The update magnitude <code>||U_t||<sub>F</sub> = η · R</code> is fixed, so <code>η</code> takes on a clean geometric meaning: it's the relative step size in units of weight norm. MuonH means "Muon with Hyperball," parallel to AdamW meaning "Adam with decoupled Weight decay."</p>
+
+<h3>The geometric picture</h3>
+
+<p>In 2D this is a circle. <code>W_t</code> is a point on the circle. The proposed update <code>U_t</code> is a vector starting at <code>W_t</code>. The sum <code>W_t + U_t</code> generally lands off the circle. The retraction projects it back radially — that's <code>W_{t+1}</code>. The actual step <code>ΔW = W_{t+1} − W_t</code> is a chord of the circle.</p>
+
+<div class="widget-caption"><span class="num">Fig. 12.1</span>The Hyperball retraction in 2D.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.hyp-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0 0; }
+.hyp-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
+.hyp-row .val { font-size: 13px; font-weight: 500; min-width: 50px; text-align: right; font-family: var(--font-mono); }
+.hyp-leg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; font-size: 12px; margin: 0.7rem auto 0; max-width: 460px; }
+.hyp-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.hyp-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 50%; }
+.hyp-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 1rem 0 0; }
+.hyp-stat { background: var(--color-bg-secondary); padding: 0.6rem 0.9rem; border-radius: var(--border-radius-md); }
+.hyp-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.hyp-stat .num { font-size: 16px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+</style>
+<canvas id="hyp-canvas" class="hyp" width="540" height="380"></canvas>
+<div class="hyp-leg">
+  <div class="hyp-leg-it"><span class="hyp-leg-sw" style="background: #1D9E75;"></span>W_t (current weight, on the sphere)</div>
+  <div class="hyp-leg-it"><span class="hyp-leg-sw" style="background: #C8862C;"></span>U_t (proposed update)</div>
+  <div class="hyp-leg-it"><span class="hyp-leg-sw" style="background: #888;"></span>W_t + U_t (off-sphere)</div>
+  <div class="hyp-leg-it"><span class="hyp-leg-sw" style="background: #7F77DD;"></span>W_{t+1} (after retraction)</div>
+</div>
+<div class="hyp-row" style="margin-top: 1rem;">
+  <label>η (relative step)</label>
+  <input type="range" id="hyp-eta" min="0.05" max="0.6" step="0.01" value="0.30" style="flex: 1;">
+  <span class="val" id="hyp-eta-val">0.30</span>
+</div>
+<div class="hyp-row">
+  <label>γ = cos(W_t, U_t)</label>
+  <input type="range" id="hyp-gamma" min="-0.95" max="0.95" step="0.05" value="0.0" style="flex: 1;">
+  <span class="val" id="hyp-gamma-val">0.00</span>
+</div>
+<div class="hyp-stats">
+  <div class="hyp-stat"><div class="lbl">||U_t|| / R (proposed)</div><div class="num" id="hyp-u">0.30</div></div>
+  <div class="hyp-stat"><div class="lbl">||ΔW|| / R (after retract)</div><div class="num" id="hyp-d">0.30</div></div>
+</div>
+</div>
+</div>
+
+<p>At default position (γ=0, η=0.3), the proposed update is tangent to the circle. The retraction does almost nothing — actual <code>||ΔW||/R</code> ≈ proposed. This is the best case.</p>
+
+<p>Drag γ toward +1: the update points radially outward. The retraction now has to slice off the radial component, and the actual step shrinks dramatically. Drag γ toward −1: same in reverse. The geometric punchline: <strong>retraction implicitly cancels any radial component of the update</strong>. Only tangential motion survives.</p>
+
+<h3>The spectral squeeze</h3>
+
+<p>Muon was already controlling the spectrum of the <em>update</em> by flattening its singular values. With Hyperball, you also pin the weight matrix's Frobenius norm. So MuonH gives you complete control over both update structure and weight magnitude — the cleanest version of the matrix-aware story.</p>
+
+<p>But empirically, MuonH doesn't uniformly beat MuonW (Muon with ordinary weight decay). At lower learning rates MuonH wins; at higher rates MuonW pulls ahead. The mechanism: MuonW lets the weight norm grow over training, which provides an <em>implicit annealing schedule</em> — as <code>||W||<sub>F</sub></code> grows, the relative step <code>||ΔW||/||W||</code> shrinks even at fixed <code>lr</code>. MuonH's fixed norm eliminates this annealing.</p>
+
+<p>There's a deeper failure mode at scale, too. Hyperball's retraction multiplies the matrix by a single scalar <code>c = R / ||W_temp||<sub>F</sub></code>. This shrinks all singular values <em>by the same factor</em>. The dominant singular values were big to start, so proportional shrinkage barely affects them. The trailing singular values — which Muon was patiently growing one step at a time — get repeatedly pulled back down by the rescaling. Over many steps, the spectrum collapses into a few dominant modes. This is the "spectral squeeze." Recent benchmarks show MuonH's spectral entropy and participation ratio collapse over training while MuonW maintains both.</p>
+
+<h3>Where this leaves us</h3>
+
+<p>The frontier as of mid-2026: MuonW is the safer default for large-scale runs, MuonH is competitive at moderate scale but has the spectral squeeze problem to contend with. Active research questions include Spectral Sphere variants that constrain σ<sub>1</sub> rather than <code>||W||<sub>F</sub></code>, hybrid schemes that handle the output projection separately, and the deeper question of whether the implicit annealing from norm growth in MuonW is a feature or just a happy accident.</p>
+
+<p>The bigger lesson: <strong>weight magnitude has emerged as a third axis of optimizer design</strong>, orthogonal to "what direction to step" and "how aware of curvature." As networks become more carefully internally normalized, the optimizer has more room to manage scale directly, and MuonH is one promising point in that design space.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-coda">
+<h2><span class="num">Coda</span> <span>The through-line</span></h2>
+
+<p>Twelve chapters, twelve widgets, ten optimizers. The arc, compressed:</p>
+
+<p><strong>SGD</strong> took small noisy steps in the gradient's direction. <strong>Momentum</strong> gave the optimizer a memory and a velocity. <strong>Adam</strong> added per-parameter learning rates via the EMA of squared gradients, which we then saw was really computing a signal-to-noise ratio bounded in <code>[−1, +1]</code>. <strong>AdamW</strong> noticed that the obvious way to add weight decay to Adam silently broke it, and fixed it in one line. <strong>SignSGD</strong> and <strong>Lion</strong> showed that the per-parameter normalized step was the active ingredient all along — Adam's elaborate machinery was approximating something simpler. <strong>Muon</strong> jumped from per-parameter to per-matrix, orthogonalizing each weight matrix's update so every singular direction gets attention. <strong>Shampoo</strong> went one further and tracked actual curvature per-row and per-column. <strong>MuonH</strong> opened a third axis: control the weight magnitude directly, not just the update.</p>
+
+<p>The arc, abstracted: each optimizer either looked at the previous one and asked <em>what is it failing to use?</em>, or asked <em>what is it doing redundantly that we can throw away?</em> Both directions produced wins.</p>
+
+<p>Where this is going: the matrix-aware optimizers (Muon, Shampoo, MuonH) are still relatively new and rapidly evolving. The next axes that look promising — based on what's getting attention now — are <em>second-order without the cost</em> (cheap Hessian-vector products integrated into the update), <em>even better factorizations</em> of the implicit Hessian, and <em>scale-control as a first-class concept</em>. The story isn't finished, and a few of the chapters above might look quaint in three years. But the through-line will hold: every optimizer fixes a specific failure of the one before it, and noticing the failure clearly is the hard part.</p>
+
+</section>
+
+
+
+<footer class="post-footer">
+  Made with care for clear explanations.<br>
+  Twelve interactive widgets, one continuous story.
+</footer>
+
+</article>
+
+<script>
+// Global helpers used across multiple widgets
+function gauss() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+</script>
+
+<script>
+// === CH 1, WIDGET 1: SGD loss landscape explorer ===
+(function() {
+  const canvas = document.getElementById('opt-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const w1Min = -2, w1Max = 7.1;
+  const w1Range = w1Max - w1Min;
+  const sx = W / w1Range, sy = sx;
+  const w2Range = H / sy;
+  const w2Center = 1;
+  const w2Min = w2Center - w2Range / 2;
+  function toPx(w1, w2) { return [(w1 - w1Min) * sx, H - (w2 - w2Min) * sy]; }
+  function lossFn(w1, w2) { return 0.5 * ((w1 - 3) ** 2 + (w2 - 1) ** 2); }
+  function gradFn(w1, w2) { return [w1 - 3, w2 - 1]; }
+  const startPos = [-0.4, 3.6];
+  let pos = startPos.slice(), path = [pos.slice()], stepNum = 0, playing = false, lastT = 0;
+  const lrIn = document.getElementById('opt-lr');
+  const lrV = document.getElementById('opt-lr-val');
+  const nIn = document.getElementById('opt-noise');
+  const nV = document.getElementById('opt-noise-val');
+  const sBtn = document.getElementById('opt-step');
+  const pBtn = document.getElementById('opt-play');
+  const rBtn = document.getElementById('opt-reset');
+  const sCount = document.getElementById('opt-steps');
+  const lDisp = document.getElementById('opt-loss');
+  const dDisp = document.getElementById('opt-dist');
+  lrIn.addEventListener('input', () => { lrV.textContent = parseFloat(lrIn.value).toFixed(2); });
+  nIn.addEventListener('input', () => { nV.textContent = parseFloat(nIn.value).toFixed(2); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing;
+    pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    pos = startPos.slice(); path = [pos.slice()]; stepNum = 0;
+    draw(); updateStats();
+  });
+  function takeStep() {
+    const lr = parseFloat(lrIn.value), noise = parseFloat(nIn.value);
+    const [gx, gy] = gradFn(pos[0], pos[1]);
+    pos[0] -= lr * (gx + gauss() * noise);
+    pos[1] -= lr * (gy + gauss() * noise);
+    pos[0] = Math.max(w1Min - 0.5, Math.min(w1Max + 0.5, pos[0]));
+    pos[1] = Math.max(w2Min - 0.5, Math.min(w2Min + w2Range + 0.5, pos[1]));
+    path.push(pos.slice());
+    if (path.length > 400) path.shift();
+    stepNum++;
+    draw(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 80) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCount.textContent = stepNum;
+    lDisp.textContent = lossFn(pos[0], pos[1]).toFixed(2);
+    dDisp.textContent = Math.sqrt((pos[0]-3)**2 + (pos[1]-1)**2).toFixed(2);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const levels = [0.5, 2, 5, 9, 14];
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)';
+    for (const c of levels) {
+      const r = Math.sqrt(2 * c);
+      const [cx, cy] = toPx(3, 1);
+      ctx.beginPath(); ctx.ellipse(cx, cy, r * sx, r * sy, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (path.length > 1) {
+      ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const [px0, py0] = toPx(path[0][0], path[0][1]);
+      ctx.moveTo(px0, py0);
+      for (let i = 1; i < path.length; i++) {
+        const [px, py] = toPx(path[i][0], path[i][1]);
+        ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(29, 158, 117, 0.45)';
+      for (let i = 0; i < path.length; i++) {
+        const [px, py] = toPx(path[i][0], path[i][1]);
+        ctx.beginPath(); ctx.arc(px, py, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    const [mx, my] = toPx(3, 1);
+    ctx.fillStyle = '#D85A30';
+    ctx.beginPath(); ctx.arc(mx, my, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.fillText('minimum', mx + 8, my - 6);
+    const [sxp, syp] = toPx(startPos[0], startPos[1]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(sxp, syp, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.fillText('start', sxp + 7, syp + 4);
+    const [cpx, cpy] = toPx(pos[0], pos[1]);
+    ctx.fillStyle = '#1D9E75';
+    ctx.beginPath(); ctx.arc(cpx, cpy, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  draw(); updateStats();
+})();
+
+// === CH 1, WIDGET 2: Linear regression with SGD ===
+(function() {
+  const dCanv = document.getElementById('lin-data');
+  if (!dCanv) return;
+  function rngFn(s) { return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+  const rng = rngFn(7);
+  const N = 24, data = [], trueW = 2.0;
+  for (let i = 0; i < N; i++) {
+    const x = 0.4 + rng() * 4.6;
+    const u = rng() || 0.001, v = rng();
+    const noise = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * 0.7;
+    data.push([x, trueW * x + noise]);
+  }
+  const sxx = data.reduce((s, p) => s + p[0]*p[0], 0);
+  const sxy = data.reduce((s, p) => s + p[0]*p[1], 0);
+  const wOpt = sxy / sxx;
+  const dC = dCanv.getContext('2d');
+  const lC = document.getElementById('lin-loss').getContext('2d');
+  const DW = 540, DH = 220, LW = 540, LH = 130;
+  const dM = { left: 44, right: 18, top: 14, bottom: 26 };
+  const dxR = [0, 5.6], dyR = [-1, 13];
+  function dPx(x, y) {
+    return [
+      dM.left + (x - dxR[0]) / (dxR[1] - dxR[0]) * (DW - dM.left - dM.right),
+      DH - dM.bottom - (y - dyR[0]) / (dyR[1] - dyR[0]) * (DH - dM.top - dM.bottom)
+    ];
+  }
+  const lM = { left: 44, right: 18, top: 14, bottom: 26 };
+  const lwR = [-1, 5];
+  function lPx(w, l, lMax) {
+    return [
+      lM.left + (w - lwR[0]) / (lwR[1] - lwR[0]) * (LW - lM.left - lM.right),
+      LH - lM.bottom - l / lMax * (LH - lM.top - lM.bottom)
+    ];
+  }
+  function fullLoss(w) {
+    let s = 0;
+    for (const [x, y] of data) s += (w*x - y)**2;
+    return s / data.length;
+  }
+  const lossCurve = []; let lossMax = 0;
+  for (let i = 0; i <= 240; i++) {
+    const wt = lwR[0] + (lwR[1] - lwR[0]) * i / 240;
+    const l = fullLoss(wt);
+    lossCurve.push([wt, l]);
+    if (l > lossMax) lossMax = l;
+  }
+  lossMax *= 1.05;
+  const w0 = 0.2;
+  let w = w0, stepNum = 0, path = [w0], selected = [], playing = false, lastT = 0;
+  const lrIn = document.getElementById('lin-lr');
+  const lrV = document.getElementById('lin-lr-val');
+  const batchIn = document.getElementById('lin-batch');
+  const sBtn = document.getElementById('lin-step');
+  const pBtn = document.getElementById('lin-play');
+  const rBtn = document.getElementById('lin-reset');
+  const sCount = document.getElementById('lin-steps');
+  const wDisp = document.getElementById('lin-w');
+  const lDisp = document.getElementById('lin-l');
+  lrIn.addEventListener('input', () => { lrV.textContent = parseFloat(lrIn.value).toFixed(3); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing; pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    w = w0; path = [w0]; stepNum = 0; selected = [];
+    drawAll(); updateStats();
+  });
+  function takeStep() {
+    const lr = parseFloat(lrIn.value), bs = parseInt(batchIn.value);
+    const idx = [];
+    if (bs >= data.length) {
+      for (let i = 0; i < data.length; i++) idx.push(i);
+    } else {
+      const used = new Set();
+      while (idx.length < bs) {
+        const j = Math.floor(Math.random() * data.length);
+        if (!used.has(j)) { used.add(j); idx.push(j); }
+      }
+    }
+    let g = 0;
+    for (const i of idx) { const [x, y] = data[i]; g += 2 * x * (w * x - y); }
+    g /= idx.length;
+    w -= lr * g;
+    selected = bs >= data.length ? [] : idx;
+    path.push(w);
+    if (path.length > 400) path.shift();
+    stepNum++;
+    drawAll(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 160) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCount.textContent = stepNum;
+    wDisp.textContent = w.toFixed(2);
+    lDisp.textContent = fullLoss(w).toFixed(2);
+  }
+  function drawData() {
+    dC.clearRect(0, 0, DW, DH);
+    dC.strokeStyle = 'rgba(128, 128, 128, 0.35)'; dC.lineWidth = 0.5;
+    const [ox, oy] = dPx(0, 0);
+    const [xMx] = dPx(dxR[1], 0);
+    const yT = dPx(0, dyR[1])[1];
+    dC.beginPath();
+    dC.moveTo(ox, oy); dC.lineTo(xMx, oy);
+    dC.moveTo(ox, oy); dC.lineTo(ox, yT);
+    dC.stroke();
+    dC.fillStyle = '#888'; dC.font = '11px sans-serif';
+    dC.textAlign = 'right';
+    for (let yt = 0; yt <= 12; yt += 4) {
+      const [tx, ty] = dPx(0, yt);
+      dC.fillText(yt.toFixed(0), tx - 5, ty + 3);
+    }
+    dC.textAlign = 'center';
+    for (let xt = 0; xt <= 5; xt += 1) {
+      const [tx, ty] = dPx(xt, 0);
+      dC.fillText(xt.toFixed(0), tx, ty + 13);
+    }
+    dC.textAlign = 'left';
+    dC.fillText('x', xMx + 4, oy + 4); dC.fillText('y', ox - 8, yT - 2);
+    dC.save();
+    dC.beginPath();
+    dC.rect(dM.left, dM.top, DW - dM.left - dM.right, DH - dM.top - dM.bottom);
+    dC.clip();
+    dC.strokeStyle = '#1D9E75'; dC.lineWidth = 2;
+    const [lx0, ly0] = dPx(0, 0);
+    const [lx1, ly1] = dPx(dxR[1], w * dxR[1]);
+    dC.beginPath(); dC.moveTo(lx0, ly0); dC.lineTo(lx1, ly1); dC.stroke();
+    dC.restore();
+    if (selected.length > 0) {
+      dC.strokeStyle = '#D85A30'; dC.lineWidth = 1;
+      dC.setLineDash([3, 3]);
+      for (const i of selected) {
+        const [x, y] = data[i];
+        const [px, py] = dPx(x, y);
+        const [, pyP] = dPx(x, w * x);
+        dC.beginPath(); dC.moveTo(px, py); dC.lineTo(px, pyP); dC.stroke();
+      }
+      dC.setLineDash([]);
+    }
+    for (let i = 0; i < data.length; i++) {
+      const [x, y] = data[i];
+      const [px, py] = dPx(x, y);
+      const sel = selected.includes(i);
+      dC.fillStyle = sel ? '#D85A30' : 'rgba(128, 128, 128, 0.6)';
+      dC.beginPath(); dC.arc(px, py, sel ? 4.5 : 3, 0, Math.PI * 2); dC.fill();
+    }
+  }
+  function drawLoss() {
+    lC.clearRect(0, 0, LW, LH);
+    lC.strokeStyle = 'rgba(128, 128, 128, 0.35)'; lC.lineWidth = 0.5;
+    const [bx0, by0] = lPx(lwR[0], 0, lossMax);
+    const [bx1, by1] = lPx(lwR[1], 0, lossMax);
+    lC.beginPath(); lC.moveTo(bx0, by0); lC.lineTo(bx1, by1); lC.stroke();
+    lC.fillStyle = '#888'; lC.font = '11px sans-serif';
+    lC.textAlign = 'center';
+    for (let wt = -1; wt <= 5; wt += 1) {
+      const [tx, ty] = lPx(wt, 0, lossMax);
+      lC.fillText(wt.toFixed(0), tx, ty + 13);
+    }
+    lC.textAlign = 'left';
+    lC.fillText('w', bx1 + 4, by1 + 4); lC.fillText('loss', 8, lM.top + 8);
+    lC.strokeStyle = 'rgba(128, 128, 128, 0.7)'; lC.lineWidth = 1.5;
+    lC.beginPath();
+    for (let i = 0; i < lossCurve.length; i++) {
+      const [wt, l] = lossCurve[i];
+      const [px, py] = lPx(wt, l, lossMax);
+      if (i === 0) lC.moveTo(px, py); else lC.lineTo(px, py);
+    }
+    lC.stroke();
+    if (path.length > 1) {
+      lC.strokeStyle = 'rgba(29, 158, 117, 0.5)'; lC.lineWidth = 1.2;
+      lC.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const wt = path[i];
+        const [px, py] = lPx(wt, fullLoss(wt), lossMax);
+        if (i === 0) lC.moveTo(px, py); else lC.lineTo(px, py);
+      }
+      lC.stroke();
+    }
+    const [opx, opy] = lPx(wOpt, fullLoss(wOpt), lossMax);
+    lC.fillStyle = '#D85A30';
+    lC.beginPath(); lC.arc(opx, opy, 4, 0, Math.PI * 2); lC.fill();
+    const [cpx, cpy] = lPx(w, fullLoss(w), lossMax);
+    lC.fillStyle = '#1D9E75';
+    lC.beginPath(); lC.arc(cpx, cpy, 5.5, 0, Math.PI * 2); lC.fill();
+    lC.strokeStyle = 'rgba(255, 255, 255, 0.85)'; lC.lineWidth = 1.5; lC.stroke();
+  }
+  function drawAll() { drawData(); drawLoss(); }
+  drawAll(); updateStats();
+})();
+</script>
+<script>
+// === CH 2: SGD vs Momentum on anisotropic valley ===
+(function() {
+  const canvas = document.getElementById('mom-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const w1Min = -2, w1Max = 7.1;
+  const w1R = w1Max - w1Min;
+  const sx = W / w1R, sy = sx;
+  const w2R = H / sy;
+  const w2Min = 1 - w2R / 2;
+  function toPx(w1, w2) { return [(w1 - w1Min) * sx, H - (w2 - w2Min) * sy]; }
+  function gradFn(w1, w2) { return [w1 - 3, 50 * (w2 - 1)]; }
+  const start = [-0.4, 3.6];
+  let pS = start.slice(), pM = start.slice(), vM = [0, 0];
+  let pathS = [start.slice()], pathM = [start.slice()];
+  let stepN = 0, playing = false, lastT = 0;
+  const lrIn = document.getElementById('mom-lr');
+  const lrV = document.getElementById('mom-lr-val');
+  const bIn = document.getElementById('mom-beta');
+  const bV = document.getElementById('mom-beta-val');
+  const nIn = document.getElementById('mom-noise');
+  const nV = document.getElementById('mom-noise-val');
+  const sBtn = document.getElementById('mom-step');
+  const pBtn = document.getElementById('mom-play');
+  const rBtn = document.getElementById('mom-reset');
+  const sCt = document.getElementById('mom-steps');
+  const dS = document.getElementById('mom-d-sgd');
+  const dM = document.getElementById('mom-d-mom');
+  lrIn.addEventListener('input', () => { lrV.textContent = parseFloat(lrIn.value).toFixed(3); });
+  bIn.addEventListener('input', () => { bV.textContent = parseFloat(bIn.value).toFixed(2); });
+  nIn.addEventListener('input', () => { nV.textContent = parseFloat(nIn.value).toFixed(2); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing; pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    pS = start.slice(); pM = start.slice(); vM = [0, 0];
+    pathS = [start.slice()]; pathM = [start.slice()];
+    stepN = 0; draw(); updateStats();
+  });
+  function takeStep() {
+    const lr = parseFloat(lrIn.value);
+    const beta = parseFloat(bIn.value);
+    const noise = parseFloat(nIn.value);
+    const n1 = gauss() * noise, n2 = gauss() * noise * 6;
+    const [g1s, g2s] = gradFn(pS[0], pS[1]);
+    pS[0] -= lr * (g1s + n1); pS[1] -= lr * (g2s + n2);
+    pS[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pS[0]));
+    pS[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pS[1]));
+    pathS.push(pS.slice());
+    const [g1m, g2m] = gradFn(pM[0], pM[1]);
+    vM[0] = beta * vM[0] + (g1m + n1);
+    vM[1] = beta * vM[1] + (g2m + n2);
+    pM[0] -= lr * vM[0]; pM[1] -= lr * vM[1];
+    pM[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pM[0]));
+    pM[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pM[1]));
+    pathM.push(pM.slice());
+    if (pathS.length > 600) pathS.shift();
+    if (pathM.length > 600) pathM.shift();
+    stepN++;
+    draw(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 90) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCt.textContent = stepN;
+    dS.textContent = Math.sqrt((pS[0]-3)**2 + (pS[1]-1)**2).toFixed(2);
+    dM.textContent = Math.sqrt((pM[0]-3)**2 + (pM[1]-1)**2).toFixed(2);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const levels = [0.5, 2, 8, 25, 60, 120];
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'; ctx.lineWidth = 1;
+    const [cx, cy] = toPx(3, 1);
+    for (const c of levels) {
+      const a = Math.sqrt(2 * c), b = Math.sqrt(c / 25);
+      ctx.beginPath(); ctx.ellipse(cx, cy, a * sx, b * sy, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (pathS.length > 1) {
+      ctx.strokeStyle = 'rgba(216, 90, 48, 0.7)'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const [px0, py0] = toPx(pathS[0][0], pathS[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < pathS.length; i++) { const [px, py] = toPx(pathS[i][0], pathS[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    if (pathM.length > 1) {
+      ctx.strokeStyle = 'rgba(29, 158, 117, 0.85)'; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      const [px0, py0] = toPx(pathM[0][0], pathM[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < pathM.length; i++) { const [px, py] = toPx(pathM[i][0], pathM[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    const [mx, my] = toPx(3, 1);
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.fillText('minimum', mx + 7, my - 6);
+    const [stx, sty] = toPx(start[0], start[1]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(stx, sty, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#888';
+    ctx.fillText('start', stx + 7, sty + 4);
+    const [psx, psy] = toPx(pS[0], pS[1]);
+    ctx.fillStyle = '#D85A30';
+    ctx.beginPath(); ctx.arc(psx, psy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+    const [pmx, pmy] = toPx(pM[0], pM[1]);
+    ctx.fillStyle = '#1D9E75';
+    ctx.beginPath(); ctx.arc(pmx, pmy, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  draw(); updateStats();
+})();
+</script>
+<script>
+// === CH 3, WIDGET 1: AdaGrad vs RMSProp accumulator ===
+(function() {
+  const canvas = document.getElementById('acc-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 280, T = 3000;
+  const M = { left: 60, right: 20, top: 20, bottom: 32 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  function toPx(t, y, yMax) {
+    return [M.left + (t / T) * PW, H - M.bottom - (y / yMax) * PH];
+  }
+  function simulate(beta2) {
+    const ada = new Float32Array(T), rms = new Float32Array(T);
+    let G = 0, v = 0;
+    for (let t = 0; t < T; t++) {
+      G += 1; v = beta2 * v + (1 - beta2) * 1;
+      ada[t] = G; rms[t] = v;
+    }
+    return { ada, rms };
+  }
+  const b2In = document.getElementById('acc-b2');
+  const b2V = document.getElementById('acc-b2-val');
+  const adaOut = document.getElementById('acc-ada');
+  const rmsOut = document.getElementById('acc-rms');
+  b2In.addEventListener('input', () => { b2V.textContent = parseFloat(b2In.value).toFixed(4); draw(); });
+  function draw() {
+    const beta2 = parseFloat(b2In.value);
+    const { ada, rms } = simulate(beta2);
+    const yMax = ada[T-1] * 1.05;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
+    for (let i = 1; i <= 4; i++) {
+      const yVal = yMax * i / 4;
+      const [, py] = toPx(0, yVal, yMax);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)'; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(M.left, H - M.bottom); ctx.lineTo(W - M.right, H - M.bottom);
+    ctx.moveTo(M.left, H - M.bottom); ctx.lineTo(M.left, M.top);
+    ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) {
+      const yVal = yMax * i / 4;
+      const [, py] = toPx(0, yVal, yMax);
+      ctx.fillText(yVal.toFixed(0), M.left - 6, py + 3);
+    }
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 4; i++) {
+      const tVal = T * i / 4;
+      const [px] = toPx(tVal, 0, yMax);
+      ctx.fillText(tVal.toFixed(0), px, H - M.bottom + 14);
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = '#888';
+    ctx.fillText('accumulator value', M.left - 14, M.top - 6);
+    ctx.textAlign = 'center';
+    ctx.fillText('training step', M.left + PW / 2, H - 4);
+    ctx.strokeStyle = '#D85A30'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < T; i++) {
+      const [px, py] = toPx(i, ada[i], yMax);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < T; i++) {
+      const [px, py] = toPx(i, rms[i], yMax);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    const window = Math.round(1 / (1 - beta2));
+    ctx.fillStyle = '#7F77DD'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+    const [labX, labY] = toPx(T * 0.55, rms[Math.floor(T * 0.55)], yMax);
+    ctx.fillText('plateau at g² = 1', labX, labY - 8);
+    ctx.fillStyle = '#888';
+    ctx.fillText('effective window ≈ ' + window + ' steps', labX, labY + 16);
+    adaOut.textContent = ada[T-1].toFixed(0);
+    rmsOut.textContent = rms[T-1].toFixed(2);
+  }
+  draw();
+})();
+
+// === CH 3, WIDGET 2: Momentum vs Adam on anisotropic valley ===
+(function() {
+  const canvas = document.getElementById('adm-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const w1Min = -2, w1Max = 7.1;
+  const w1R = w1Max - w1Min;
+  const sx = W / w1R, sy = sx;
+  const w2R = H / sy;
+  const w2Min = 1 - w2R / 2;
+  function toPx(w1, w2) { return [(w1 - w1Min) * sx, H - (w2 - w2Min) * sy]; }
+  function gradFn(w1, w2) { return [w1 - 3, 50 * (w2 - 1)]; }
+  const start = [-0.4, 3.6];
+  let pM = start.slice(), vMom = [0, 0];
+  let pA = start.slice(), mA = [0, 0], vA = [0, 0], tA = 0;
+  let pathM = [start.slice()], pathA = [start.slice()];
+  let stepN = 0, playing = false, lastT = 0;
+  const lrIn = document.getElementById('adm-lr');
+  const lrV = document.getElementById('adm-lr-val');
+  const bIn = document.getElementById('adm-beta');
+  const bV = document.getElementById('adm-beta-val');
+  const nIn = document.getElementById('adm-noise');
+  const nV = document.getElementById('adm-noise-val');
+  const sBtn = document.getElementById('adm-step');
+  const pBtn = document.getElementById('adm-play');
+  const rBtn = document.getElementById('adm-reset');
+  const sCt = document.getElementById('adm-steps');
+  const dM = document.getElementById('adm-d-mom');
+  const dA = document.getElementById('adm-d-adm');
+  lrIn.addEventListener('input', () => { lrV.textContent = parseFloat(lrIn.value).toFixed(3); });
+  bIn.addEventListener('input', () => { bV.textContent = parseFloat(bIn.value).toFixed(2); });
+  nIn.addEventListener('input', () => { nV.textContent = parseFloat(nIn.value).toFixed(2); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing; pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    pM = start.slice(); vMom = [0, 0];
+    pA = start.slice(); mA = [0, 0]; vA = [0, 0]; tA = 0;
+    pathM = [start.slice()]; pathA = [start.slice()];
+    stepN = 0; draw(); updateStats();
+  });
+  function takeStep() {
+    const lr = parseFloat(lrIn.value);
+    const beta = parseFloat(bIn.value);
+    const noise = parseFloat(nIn.value);
+    const b1 = 0.9, b2 = 0.999, eps = 1e-8;
+    const n1 = gauss() * noise, n2 = gauss() * noise * 6;
+    const [g1m, g2m] = gradFn(pM[0], pM[1]);
+    vMom[0] = beta * vMom[0] + (g1m + n1);
+    vMom[1] = beta * vMom[1] + (g2m + n2);
+    pM[0] -= lr * vMom[0]; pM[1] -= lr * vMom[1];
+    pM[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pM[0]));
+    pM[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pM[1]));
+    pathM.push(pM.slice());
+    tA += 1;
+    const [g1a, g2a] = gradFn(pA[0], pA[1]);
+    const ng1 = g1a + n1, ng2 = g2a + n2;
+    mA[0] = b1 * mA[0] + (1 - b1) * ng1;
+    mA[1] = b1 * mA[1] + (1 - b1) * ng2;
+    vA[0] = b2 * vA[0] + (1 - b2) * ng1 * ng1;
+    vA[1] = b2 * vA[1] + (1 - b2) * ng2 * ng2;
+    const bc1 = 1 - Math.pow(b1, tA), bc2 = 1 - Math.pow(b2, tA);
+    const m1h = mA[0] / bc1, m2h = mA[1] / bc1;
+    const v1h = vA[0] / bc2, v2h = vA[1] / bc2;
+    pA[0] -= lr * m1h / (Math.sqrt(v1h) + eps);
+    pA[1] -= lr * m2h / (Math.sqrt(v2h) + eps);
+    pA[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pA[0]));
+    pA[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pA[1]));
+    pathA.push(pA.slice());
+    if (pathM.length > 600) pathM.shift();
+    if (pathA.length > 600) pathA.shift();
+    stepN++;
+    draw(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 90) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCt.textContent = stepN;
+    dM.textContent = Math.sqrt((pM[0]-3)**2 + (pM[1]-1)**2).toFixed(2);
+    dA.textContent = Math.sqrt((pA[0]-3)**2 + (pA[1]-1)**2).toFixed(2);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const levels = [0.5, 2, 8, 25, 60, 120];
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'; ctx.lineWidth = 1;
+    const [cx, cy] = toPx(3, 1);
+    for (const c of levels) {
+      const a = Math.sqrt(2 * c), b = Math.sqrt(c / 25);
+      ctx.beginPath(); ctx.ellipse(cx, cy, a * sx, b * sy, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (pathM.length > 1) {
+      ctx.strokeStyle = 'rgba(136, 136, 136, 0.7)'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const [px0, py0] = toPx(pathM[0][0], pathM[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < pathM.length; i++) { const [px, py] = toPx(pathM[i][0], pathM[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    if (pathA.length > 1) {
+      ctx.strokeStyle = 'rgba(127, 119, 221, 0.9)'; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      const [px0, py0] = toPx(pathA[0][0], pathA[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < pathA.length; i++) { const [px, py] = toPx(pathA[i][0], pathA[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    const [mx, my] = toPx(3, 1);
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.fillText('minimum', mx + 7, my - 6);
+    const [stx, sty] = toPx(start[0], start[1]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(stx, sty, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#888';
+    ctx.fillText('start', stx + 7, sty + 4);
+    const [pmx, pmy] = toPx(pM[0], pM[1]);
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(pmx, pmy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
+    const [pax, pay] = toPx(pA[0], pA[1]);
+    ctx.fillStyle = '#7F77DD';
+    ctx.beginPath(); ctx.arc(pax, pay, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  draw(); updateStats();
+})();
+</script>
+<script>
+// === CH 4: Adam update as SNR ===
+(function() {
+  const canvas = document.getElementById('snr-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 260;
+  const M = { left: 50, right: 24, top: 16, bottom: 30 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const T = 200, yMin = -1.1, yMax = 1.1;
+  function toPx(t, y) {
+    return [M.left + (t / T) * PW, M.top + (yMax - y) / (yMax - yMin) * PH];
+  }
+  function rngFn(s) { return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+  function gaussFrom(rng) {
+    let u = rng() || 0.001, v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function simulate(gradFn) {
+    const b1 = 0.9, b2 = 0.999, eps = 1e-8;
+    let m = 0, v = 0; const r = [];
+    for (let t = 1; t <= T; t++) {
+      const g = gradFn(t);
+      m = b1 * m + (1 - b1) * g;
+      v = b2 * v + (1 - b2) * g * g;
+      const mh = m / (1 - Math.pow(b1, t));
+      const vh = v / (1 - Math.pow(b2, t));
+      r.push(mh / (Math.sqrt(vh) + eps));
+    }
+    return r;
+  }
+  const consistent = simulate(() => 1);
+  const oscillating = simulate(t => (t % 2 === 1) ? 1 : -1);
+  const noisyRng = rngFn(42);
+  const noisy = simulate(() => 0.3 + gaussFrom(noisyRng));
+  function drawLine(data, color, width) {
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    ctx.beginPath();
+    for (let i = 0; i < data.length; i++) {
+      const [px, py] = toPx(i + 1, data[i]);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
+    for (const yt of [-1, -0.5, 0.5, 1]) {
+      const [, py] = toPx(0, yt);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+    ctx.setLineDash([4, 4]);
+    const [, p0] = toPx(0, 0);
+    ctx.beginPath(); ctx.moveTo(M.left, p0); ctx.lineTo(W - M.right, p0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, H - M.bottom); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (const yt of [-1, -0.5, 0, 0.5, 1]) {
+      const [, py] = toPx(0, yt);
+      ctx.fillText(yt.toFixed(1), M.left - 6, py + 3);
+    }
+    ctx.textAlign = 'center';
+    for (const xt of [0, 50, 100, 150, 200]) {
+      const [px] = toPx(xt, 0);
+      ctx.fillText(xt.toFixed(0), px, H - M.bottom + 14);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillText('m / sqrt(v)', M.left - 36, M.top - 4);
+    ctx.textAlign = 'center';
+    ctx.fillText('training step', M.left + PW / 2, H - 4);
+    drawLine(noisy, 'rgba(127, 119, 221, 0.85)', 1.5);
+    drawLine(oscillating, 'rgba(216, 90, 48, 0.85)', 1.5);
+    drawLine(consistent, 'rgba(29, 158, 117, 0.95)', 2);
+    document.getElementById('snr-c').textContent = consistent[T-1].toFixed(2);
+    const oLast = oscillating.slice(-20);
+    const oAmp = Math.max(...oLast.map(Math.abs));
+    document.getElementById('snr-o').textContent = '±' + oAmp.toFixed(2);
+    const nLast = noisy.slice(-30);
+    const nMean = nLast.reduce((s, x) => s + x, 0) / nLast.length;
+    document.getElementById('snr-n').textContent = nMean.toFixed(2);
+  }
+  draw();
+})();
+</script>
+<script>
+// === CH 5: AdamW vs Adam-L2 decoupled decay ===
+(function() {
+  const canvas = document.getElementById('dec-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 280;
+  const M = { left: 50, right: 24, top: 16, bottom: 32 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const T = 1500, lr = 0.001;
+  const vAIn = document.getElementById('dec-vA');
+  const vAV = document.getElementById('dec-vA-val');
+  const vBIn = document.getElementById('dec-vB');
+  const vBV = document.getElementById('dec-vB-val');
+  const wdIn = document.getElementById('dec-wd');
+  const wdV = document.getElementById('dec-wd-val');
+  const ratioOut = document.getElementById('dec-ratio');
+  vAIn.addEventListener('input', () => { vAV.textContent = parseFloat(vAIn.value).toFixed(1); draw(); });
+  vBIn.addEventListener('input', () => { vBV.textContent = parseFloat(vBIn.value).toFixed(3); draw(); });
+  wdIn.addEventListener('input', () => { wdV.textContent = parseFloat(wdIn.value).toFixed(3); draw(); });
+  function simulate() {
+    const vA = parseFloat(vAIn.value);
+    const vB = parseFloat(vBIn.value);
+    const wd = parseFloat(wdIn.value);
+    const eps = 1e-8;
+    let aL2_A = 1.0, aL2_B = 1.0, aW = 1.0;
+    const arrA = new Float32Array(T), arrB = new Float32Array(T), arrW = new Float32Array(T);
+    for (let t = 0; t < T; t++) {
+      aL2_A -= lr * (wd * aL2_A) / (Math.sqrt(vA) + eps);
+      aL2_B -= lr * (wd * aL2_B) / (Math.sqrt(vB) + eps);
+      aW = aW * (1 - lr * wd);
+      arrA[t] = aL2_A; arrB[t] = aL2_B; arrW[t] = aW;
+    }
+    return { arrA, arrB, arrW };
+  }
+  function toPx(t, y) {
+    return [M.left + (t / T) * PW, M.top + (1 - y) * PH];
+  }
+  function drawLine(arr, color, width) {
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    ctx.beginPath();
+    for (let i = 0; i < arr.length; i++) {
+      const [px, py] = toPx(i, Math.max(0, Math.min(1, arr[i])));
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  function draw() {
+    const { arrA, arrB, arrW } = simulate();
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
+    for (const yt of [0.25, 0.5, 0.75]) {
+      const [, py] = toPx(0, yt);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)'; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, H - M.bottom); ctx.lineTo(W - M.right, H - M.bottom);
+    ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (const yt of [0, 0.25, 0.5, 0.75, 1]) {
+      const [, py] = toPx(0, yt);
+      ctx.fillText(yt.toFixed(2), M.left - 6, py + 3);
+    }
+    ctx.textAlign = 'center';
+    for (const xt of [0, 500, 1000, 1500]) {
+      const [px] = toPx(xt, 0);
+      ctx.fillText(xt.toFixed(0), px, H - M.bottom + 14);
+    }
+    ctx.textAlign = 'left';
+    ctx.fillText('parameter value', M.left - 36, M.top - 4);
+    ctx.textAlign = 'center';
+    ctx.fillText('training step', M.left + PW / 2, H - 6);
+    drawLine(arrA, 'rgba(216, 90, 48, 0.9)', 2);
+    drawLine(arrB, 'rgba(232, 154, 133, 0.9)', 2);
+    drawLine(arrW, 'rgba(29, 158, 117, 0.95)', 2);
+    const ratio = arrA[T-1] / Math.max(arrB[T-1], 1e-6);
+    ratioOut.textContent = ratio > 999 ? '> 999' : ratio.toFixed(2);
+  }
+  draw();
+})();
+</script>
+<script>
+// === CH 6: SignSGD vs AdamW ===
+(function() {
+  const canvas = document.getElementById('sgn-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const w1Min = -2, w1Max = 7.1;
+  const w1R = w1Max - w1Min, sx = W / w1R, sy = sx;
+  const w2R = H / sy, w2Min = 1 - w2R / 2;
+  function toPx(w1, w2) { return [(w1 - w1Min) * sx, H - (w2 - w2Min) * sy]; }
+  function gradFn(w1, w2) { return [w1 - 3, 50 * (w2 - 1)]; }
+  function sgn(x) { return x > 0 ? 1 : (x < 0 ? -1 : 0); }
+  const start = [-0.4, 3.6];
+  let pS = start.slice();
+  let pA = start.slice(), mA = [0, 0], vA = [0, 0], tA = 0;
+  let pathS = [start.slice()], pathA = [start.slice()];
+  let stepN = 0, playing = false, lastT = 0;
+  const lrIn = document.getElementById('sgn-lr');
+  const lrV = document.getElementById('sgn-lr-val');
+  const nIn = document.getElementById('sgn-noise');
+  const nV = document.getElementById('sgn-noise-val');
+  const sBtn = document.getElementById('sgn-step');
+  const pBtn = document.getElementById('sgn-play');
+  const rBtn = document.getElementById('sgn-reset');
+  const sCt = document.getElementById('sgn-steps');
+  const dS = document.getElementById('sgn-d-s');
+  const dA = document.getElementById('sgn-d-a');
+  lrIn.addEventListener('input', () => { lrV.textContent = parseFloat(lrIn.value).toFixed(3); });
+  nIn.addEventListener('input', () => { nV.textContent = parseFloat(nIn.value).toFixed(2); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing; pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    pS = start.slice(); pA = start.slice(); mA = [0, 0]; vA = [0, 0]; tA = 0;
+    pathS = [start.slice()]; pathA = [start.slice()];
+    stepN = 0; draw(); updateStats();
+  });
+  function takeStep() {
+    const lr = parseFloat(lrIn.value);
+    const noise = parseFloat(nIn.value);
+    const b1 = 0.9, b2 = 0.999, eps = 1e-8;
+    const n1 = gauss() * noise, n2 = gauss() * noise * 6;
+    const [g1s, g2s] = gradFn(pS[0], pS[1]);
+    pS[0] -= lr * sgn(g1s + n1); pS[1] -= lr * sgn(g2s + n2);
+    pS[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pS[0]));
+    pS[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pS[1]));
+    pathS.push(pS.slice());
+    tA += 1;
+    const [g1a, g2a] = gradFn(pA[0], pA[1]);
+    const ng1 = g1a + n1, ng2 = g2a + n2;
+    mA[0] = b1 * mA[0] + (1 - b1) * ng1;
+    mA[1] = b1 * mA[1] + (1 - b1) * ng2;
+    vA[0] = b2 * vA[0] + (1 - b2) * ng1 * ng1;
+    vA[1] = b2 * vA[1] + (1 - b2) * ng2 * ng2;
+    const bc1 = 1 - Math.pow(b1, tA), bc2 = 1 - Math.pow(b2, tA);
+    pA[0] -= lr * (mA[0]/bc1) / (Math.sqrt(vA[0]/bc2) + eps);
+    pA[1] -= lr * (mA[1]/bc1) / (Math.sqrt(vA[1]/bc2) + eps);
+    pA[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pA[0]));
+    pA[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pA[1]));
+    pathA.push(pA.slice());
+    if (pathS.length > 600) pathS.shift();
+    if (pathA.length > 600) pathA.shift();
+    stepN++;
+    draw(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 90) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCt.textContent = stepN;
+    dS.textContent = Math.sqrt((pS[0]-3)**2 + (pS[1]-1)**2).toFixed(2);
+    dA.textContent = Math.sqrt((pA[0]-3)**2 + (pA[1]-1)**2).toFixed(2);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const levels = [0.5, 2, 8, 25, 60, 120];
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'; ctx.lineWidth = 1;
+    const [cx, cy] = toPx(3, 1);
+    for (const c of levels) {
+      const a = Math.sqrt(2 * c), b = Math.sqrt(c / 25);
+      ctx.beginPath(); ctx.ellipse(cx, cy, a * sx, b * sy, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    function drawPath(path, color, w) {
+      if (path.length < 2) return;
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      ctx.beginPath();
+      const [px0, py0] = toPx(path[0][0], path[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < path.length; i++) { const [px, py] = toPx(path[i][0], path[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    drawPath(pathS, 'rgba(200, 134, 44, 0.85)', 1.6);
+    drawPath(pathA, 'rgba(127, 119, 221, 0.9)', 1.8);
+    const [mx, my] = toPx(3, 1);
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.fillText('minimum', mx + 7, my - 6);
+    const [stx, sty] = toPx(start[0], start[1]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(stx, sty, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#888';
+    ctx.fillText('start', stx + 7, sty + 4);
+    function dotAt(p, color) {
+      const [px, py] = toPx(p[0], p[1]);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    dotAt(pS, '#C8862C'); dotAt(pA, '#7F77DD');
+  }
+  draw(); updateStats();
+})();
+
+// === CH 7: Lion vs AdamW ===
+(function() {
+  const canvas = document.getElementById('lio-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const w1Min = -2, w1Max = 7.1;
+  const w1R = w1Max - w1Min, sx = W / w1R, sy = sx;
+  const w2R = H / sy, w2Min = 1 - w2R / 2;
+  function toPx(w1, w2) { return [(w1 - w1Min) * sx, H - (w2 - w2Min) * sy]; }
+  function gradFn(w1, w2) { return [w1 - 3, 50 * (w2 - 1)]; }
+  function sgn(x) { return x > 0 ? 1 : (x < 0 ? -1 : 0); }
+  const start = [-0.4, 3.6];
+  let pL = start.slice(), mL = [0, 0];
+  let pA = start.slice(), mA = [0, 0], vA = [0, 0], tA = 0;
+  let pathL = [start.slice()], pathA = [start.slice()];
+  let stepN = 0, playing = false, lastT = 0;
+  const lrLIn = document.getElementById('lio-lrL');
+  const lrLV = document.getElementById('lio-lrL-val');
+  const lrAIn = document.getElementById('lio-lrA');
+  const lrAV = document.getElementById('lio-lrA-val');
+  const nIn = document.getElementById('lio-noise');
+  const nV = document.getElementById('lio-noise-val');
+  const sBtn = document.getElementById('lio-step');
+  const pBtn = document.getElementById('lio-play');
+  const rBtn = document.getElementById('lio-reset');
+  const sCt = document.getElementById('lio-steps');
+  const dL = document.getElementById('lio-d-l');
+  const dA = document.getElementById('lio-d-a');
+  lrLIn.addEventListener('input', () => { lrLV.textContent = parseFloat(lrLIn.value).toFixed(3); });
+  lrAIn.addEventListener('input', () => { lrAV.textContent = parseFloat(lrAIn.value).toFixed(3); });
+  nIn.addEventListener('input', () => { nV.textContent = parseFloat(nIn.value).toFixed(2); });
+  sBtn.addEventListener('click', () => { if (!playing) takeStep(); });
+  pBtn.addEventListener('click', () => {
+    playing = !playing; pBtn.textContent = playing ? 'Pause' : 'Auto-step';
+    if (playing) { lastT = performance.now(); requestAnimationFrame(loop); }
+  });
+  rBtn.addEventListener('click', () => {
+    playing = false; pBtn.textContent = 'Auto-step';
+    pL = start.slice(); mL = [0, 0];
+    pA = start.slice(); mA = [0, 0]; vA = [0, 0]; tA = 0;
+    pathL = [start.slice()]; pathA = [start.slice()];
+    stepN = 0; draw(); updateStats();
+  });
+  function takeStep() {
+    const lrL = parseFloat(lrLIn.value);
+    const lrA = parseFloat(lrAIn.value);
+    const noise = parseFloat(nIn.value);
+    const b1L = 0.9, b2L = 0.99;
+    const b1A = 0.9, b2A = 0.999, eps = 1e-8;
+    const n1 = gauss() * noise, n2 = gauss() * noise * 6;
+    const [g1l, g2l] = gradFn(pL[0], pL[1]);
+    const ng1L = g1l + n1, ng2L = g2l + n2;
+    const u1 = sgn(b1L * mL[0] + (1 - b1L) * ng1L);
+    const u2 = sgn(b1L * mL[1] + (1 - b1L) * ng2L);
+    pL[0] -= lrL * u1; pL[1] -= lrL * u2;
+    mL[0] = b2L * mL[0] + (1 - b2L) * ng1L;
+    mL[1] = b2L * mL[1] + (1 - b2L) * ng2L;
+    pL[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pL[0]));
+    pL[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pL[1]));
+    pathL.push(pL.slice());
+    tA += 1;
+    const [g1a, g2a] = gradFn(pA[0], pA[1]);
+    const ng1A = g1a + n1, ng2A = g2a + n2;
+    mA[0] = b1A * mA[0] + (1 - b1A) * ng1A;
+    mA[1] = b1A * mA[1] + (1 - b1A) * ng2A;
+    vA[0] = b2A * vA[0] + (1 - b2A) * ng1A * ng1A;
+    vA[1] = b2A * vA[1] + (1 - b2A) * ng2A * ng2A;
+    const bc1 = 1 - Math.pow(b1A, tA), bc2 = 1 - Math.pow(b2A, tA);
+    pA[0] -= lrA * (mA[0]/bc1) / (Math.sqrt(vA[0]/bc2) + eps);
+    pA[1] -= lrA * (mA[1]/bc1) / (Math.sqrt(vA[1]/bc2) + eps);
+    pA[0] = Math.max(w1Min - 1, Math.min(w1Max + 1, pA[0]));
+    pA[1] = Math.max(w2Min - 1, Math.min(w2Min + w2R + 1, pA[1]));
+    pathA.push(pA.slice());
+    if (pathL.length > 600) pathL.shift();
+    if (pathA.length > 600) pathA.shift();
+    stepN++;
+    draw(); updateStats();
+  }
+  function loop(t) {
+    if (!playing) return;
+    if (t - lastT > 90) { takeStep(); lastT = t; }
+    requestAnimationFrame(loop);
+  }
+  function updateStats() {
+    sCt.textContent = stepN;
+    dL.textContent = Math.sqrt((pL[0]-3)**2 + (pL[1]-1)**2).toFixed(2);
+    dA.textContent = Math.sqrt((pA[0]-3)**2 + (pA[1]-1)**2).toFixed(2);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const levels = [0.5, 2, 8, 25, 60, 120];
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'; ctx.lineWidth = 1;
+    const [cx, cy] = toPx(3, 1);
+    for (const c of levels) {
+      const a = Math.sqrt(2 * c), b = Math.sqrt(c / 25);
+      ctx.beginPath(); ctx.ellipse(cx, cy, a * sx, b * sy, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    function drawPath(path, color, w) {
+      if (path.length < 2) return;
+      ctx.strokeStyle = color; ctx.lineWidth = w;
+      ctx.beginPath();
+      const [px0, py0] = toPx(path[0][0], path[0][1]); ctx.moveTo(px0, py0);
+      for (let i = 1; i < path.length; i++) { const [px, py] = toPx(path[i][0], path[i][1]); ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    drawPath(pathL, 'rgba(43, 161, 123, 0.9)', 1.6);
+    drawPath(pathA, 'rgba(127, 119, 221, 0.9)', 1.8);
+    const [mx, my] = toPx(3, 1);
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif';
+    ctx.fillText('minimum', mx + 7, my - 6);
+    const [stx, sty] = toPx(start[0], start[1]);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(stx, sty, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#888';
+    ctx.fillText('start', stx + 7, sty + 4);
+    function dotAt(p, color) {
+      const [px, py] = toPx(p[0], p[1]);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    dotAt(pL, '#2BA17B'); dotAt(pA, '#7F77DD');
+  }
+  draw(); updateStats();
+})();
+</script>
+<script>
+// === CH 8: Per-parameter normalization bar chart (log scale) ===
+(function() {
+  const canvas = document.getElementById('par-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 320;
+  const M = { left: 56, right: 20, top: 24, bottom: 60 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const lr = 0.01;
+  const gradients = [0.001, 0.1, 1, 10, 100];
+  const labels = gradients.map(g => g.toString());
+  const optimizers = [
+    { name: 'SGD',      step: g => lr * Math.abs(g),       color: '#888' },
+    { name: 'Momentum', step: g => 10 * lr * Math.abs(g),  color: '#1D9E75' },
+    { name: 'AdamW',    step: g => lr,                     color: '#7F77DD' },
+    { name: 'Lion',     step: g => lr,                     color: '#2BA17B' }
+  ];
+  const yMin = -7, yMax = 1;
+  function logScale(x) { return Math.log10(Math.max(x, 1e-12)); }
+  function yPx(logVal) {
+    return M.top + (yMax - logVal) / (yMax - yMin) * PH;
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
+    for (let y = yMin; y <= yMax; y++) {
+      const py = yPx(y);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, H - M.bottom);
+    ctx.lineTo(W - M.right, H - M.bottom); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (let y = yMin; y <= yMax; y++) {
+      const py = yPx(y);
+      ctx.fillText('10^' + y, M.left - 6, py + 3);
+    }
+    ctx.textAlign = 'center'; ctx.fillStyle = '#666'; ctx.font = '11px sans-serif';
+    ctx.fillText('displacement (log scale)', M.left - 36, M.top - 8);
+    ctx.fillText('gradient magnitude', M.left + PW / 2, H - 10);
+    const groupCount = gradients.length;
+    const groupW = PW / groupCount;
+    const groupPad = 14;
+    const barW = (groupW - groupPad) / optimizers.length;
+    for (let gi = 0; gi < gradients.length; gi++) {
+      const groupX = M.left + gi * groupW + groupPad / 2;
+      for (let oi = 0; oi < optimizers.length; oi++) {
+        const x = groupX + oi * barW;
+        const step = optimizers[oi].step(gradients[gi]);
+        const logStep = logScale(step);
+        const yTop = yPx(logStep);
+        const yBottom = yPx(yMin);
+        ctx.fillStyle = optimizers[oi].color;
+        ctx.fillRect(x + 1, yTop, barW - 2, Math.max(0, yBottom - yTop));
+      }
+      const cx = groupX + (groupW - groupPad) / 2;
+      ctx.fillStyle = '#444'; ctx.textAlign = 'center'; ctx.font = '11px sans-serif';
+      ctx.fillText('|g| = ' + labels[gi], cx, H - M.bottom + 18);
+    }
+  }
+  draw();
+})();
+</script>
+<script>
+// === CH 9, WIDGET 1: Curvature bowls (gentle vs sharp) ===
+(function() {
+  const canvas = document.getElementById('crv-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 280;
+  const M = { left: 50, right: 20, top: 20, bottom: 40 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const xMin = -3, xMax = 3, yMin = 0, yMax = 5;
+  const Hgentle = 0.4, Hsharp = 3.0;
+  function toPx(x, y) {
+    return [
+      M.left + (x - xMin) / (xMax - xMin) * PW,
+      H - M.bottom - (y - yMin) / (yMax - yMin) * PH
+    ];
+  }
+  const stepIn = document.getElementById('crv-step');
+  const stepV = document.getElementById('crv-step-val');
+  stepIn.addEventListener('input', () => { stepV.textContent = parseFloat(stepIn.value).toFixed(2); draw(); });
+  const startX = 1.5;
+  function draw() {
+    const step = parseFloat(stepIn.value);
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
+    for (let y = 0; y <= 5; y++) {
+      const [, py] = toPx(0, y);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; ctx.lineWidth = 0.5;
+    const [, ax0] = toPx(0, 0);
+    ctx.beginPath();
+    ctx.moveTo(M.left, ax0); ctx.lineTo(W - M.right, ax0);
+    ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, H - M.bottom);
+    ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (const xt of [-3, -2, -1, 0, 1, 2, 3]) {
+      const [px] = toPx(xt, 0);
+      ctx.fillText(xt.toString(), px, H - M.bottom + 14);
+    }
+    ctx.fillText('parameter w', M.left + PW / 2, H - 4);
+    ctx.textAlign = 'right';
+    ctx.fillText('loss', M.left - 8, M.top + 8);
+    function drawBowl(Hval, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 200; i++) {
+        const x = xMin + (xMax - xMin) * i / 200;
+        const y = 0.5 * Hval * x * x;
+        const yC = Math.min(y, yMax);
+        const [px, py] = toPx(x, yC);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    drawBowl(Hgentle, '#1D9E75');
+    drawBowl(Hsharp, '#D85A30');
+    function startAndStep(Hval, color) {
+      const slope = Hval * startX;
+      const stepLen = step;
+      const newX = startX - stepLen * Math.sign(slope);
+      const [sx, sy] = toPx(startX, 0.5 * Hval * startX * startX);
+      const [nx, ny] = toPx(newX, 0.5 * Hval * newX * newX);
+      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(nx, ny); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(nx, ny, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    startAndStep(Hgentle, '#1D9E75');
+    startAndStep(Hsharp, '#D85A30');
+    const [stx, sty] = toPx(startX, 0.5 * Hgentle * startX * startX);
+    ctx.fillStyle = '#1D9E75'; ctx.beginPath(); ctx.arc(stx, sty, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#444'; ctx.textAlign = 'left';
+    ctx.fillText('same slope at start', stx + 12, sty - 4);
+  }
+  draw();
+})();
+
+// === CH 9, WIDGET 2: Newton step geometry ===
+(function() {
+  const canvas = document.getElementById('nwt-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 280;
+  const Mtop = { left: 50, right: 20, top: 12, bottom: 14 };
+  const Mbot = { left: 50, right: 20, top: 14, bottom: 26 };
+  const topH = 150, botH = 110;
+  const PWl = W - Mtop.left - Mtop.right;
+  const xMin = -3, xMax = 3;
+  function tPx(x, y, yMin, yMax) {
+    return [
+      Mtop.left + (x - xMin) / (xMax - xMin) * PWl,
+      Mtop.top + (yMax - y) / (yMax - yMin) * (topH - Mtop.top - Mtop.bottom)
+    ];
+  }
+  function bPx(x, y, yMin, yMax) {
+    return [
+      Mbot.left + (x - xMin) / (xMax - xMin) * PWl,
+      topH + Mbot.top + (yMax - y) / (yMax - yMin) * (botH - Mbot.top - Mbot.bottom)
+    ];
+  }
+  const posIn = document.getElementById('nwt-pos');
+  const posV = document.getElementById('nwt-pos-val');
+  const hIn = document.getElementById('nwt-h');
+  const hV = document.getElementById('nwt-h-val');
+  [posIn, hIn].forEach(el => el.addEventListener('input', () => {
+    posV.textContent = parseFloat(posIn.value).toFixed(2);
+    hV.textContent = parseFloat(hIn.value).toFixed(2);
+    draw();
+  }));
+  function draw() {
+    const w = parseFloat(posIn.value);
+    const Hval = parseFloat(hIn.value);
+    const Lval = 0.5 * Hval * w * w;
+    const newtonStep = -w;
+    const yLossMax = Math.max(0.5 * Hval * 9, 5);
+    const yGradMax = Math.max(Math.abs(Hval * 3), 3);
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.04)';
+    ctx.fillRect(0, topH - 4, W, 6);
+    function gridTop() {
+      ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
+      for (const x of [-2, -1, 0, 1, 2]) {
+        const [px] = tPx(x, 0, 0, yLossMax);
+        ctx.beginPath(); ctx.moveTo(px, Mtop.top); ctx.lineTo(px, topH - Mtop.bottom); ctx.stroke();
+      }
+    }
+    function gridBot() {
+      ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
+      const [, p0] = bPx(0, 0, -yGradMax, yGradMax);
+      ctx.beginPath(); ctx.moveTo(Mbot.left, p0); ctx.lineTo(W - Mbot.right, p0); ctx.stroke();
+      for (const x of [-2, -1, 0, 1, 2]) {
+        const [px] = bPx(x, 0, -yGradMax, yGradMax);
+        ctx.beginPath(); ctx.moveTo(px, topH + Mbot.top); ctx.lineTo(px, topH + botH - Mbot.bottom); ctx.stroke();
+      }
+    }
+    gridTop(); gridBot();
+    ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const x = xMin + (xMax - xMin) * i / 200;
+      const y = 0.5 * Hval * x * x;
+      const [px, py] = tPx(x, Math.min(y, yLossMax), 0, yLossMax);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#888'; ctx.textAlign = 'right';
+    ctx.fillText('loss', Mtop.left - 6, Mtop.top + 10);
+    ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 200; i++) {
+      const x = xMin + (xMax - xMin) * i / 200;
+      const y = Hval * x;
+      const [px, py] = bPx(x, y, -yGradMax, yGradMax);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.textAlign = 'right';
+    ctx.fillText('slope', Mbot.left - 6, topH + Mbot.top + 10);
+    ctx.textAlign = 'center';
+    for (const xt of [-2, -1, 0, 1, 2]) {
+      const [px] = bPx(xt, 0, -yGradMax, yGradMax);
+      ctx.fillText(xt.toString(), px, topH + botH - 8);
+    }
+    const [sx1, sy1] = tPx(w, Lval, 0, yLossMax);
+    ctx.fillStyle = '#1D9E75';
+    ctx.beginPath(); ctx.arc(sx1, sy1, 5.5, 0, Math.PI * 2); ctx.fill();
+    const [sx2, sy2] = bPx(w, Hval * w, -yGradMax, yGradMax);
+    ctx.fillStyle = '#7F77DD';
+    ctx.beginPath(); ctx.arc(sx2, sy2, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(200, 134, 44, 0.8)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    const [nx1, ny1] = tPx(0, 0, 0, yLossMax);
+    const [nx2, ny2] = bPx(0, 0, -yGradMax, yGradMax);
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(nx1, sy1); ctx.lineTo(nx1, ny1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx2, sy2); ctx.lineTo(nx2, sy2); ctx.lineTo(nx2, ny2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#C8862C';
+    ctx.beginPath(); ctx.arc(nx1, ny1, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(nx2, ny2, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#444'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('Newton: Δ = −g/H = ' + newtonStep.toFixed(2), nx1 + 6, ny1 - 6);
+  }
+  draw();
+})();
+
+// === CH 9, WIDGET 3: 2D Hessian anatomy ===
+(function() {
+  const canvas = document.getElementById('hes-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 320;
+  const M = { left: 40, right: 24, top: 16, bottom: 32 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const range = 3;
+  function toPx(x, y) {
+    return [
+      M.left + (x + range) / (2 * range) * PW,
+      M.top + (range - y) / (2 * range) * PH
+    ];
+  }
+  const xxIn = document.getElementById('hes-xx');
+  const xxV = document.getElementById('hes-xx-val');
+  const yyIn = document.getElementById('hes-yy');
+  const yyV = document.getElementById('hes-yy-val');
+  const xyIn = document.getElementById('hes-xy');
+  const xyV = document.getElementById('hes-xy-val');
+  const disp = document.getElementById('hes-disp');
+  [xxIn, yyIn, xyIn].forEach(el => el.addEventListener('input', () => {
+    xxV.textContent = parseFloat(xxIn.value).toFixed(1);
+    yyV.textContent = parseFloat(yyIn.value).toFixed(1);
+    xyV.textContent = parseFloat(xyIn.value).toFixed(2);
+    draw();
+  }));
+  function draw() {
+    const Hxx = parseFloat(xxIn.value);
+    const Hyy = parseFloat(yyIn.value);
+    const Hxy = parseFloat(xyIn.value);
+    disp.textContent = `H = [ ${Hxx.toFixed(1)}  ${Hxy.toFixed(2)} ;  ${Hxy.toFixed(2)}  ${Hyy.toFixed(1)} ]`;
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
+    for (const t of [-2, -1, 0, 1, 2]) {
+      const [px] = toPx(t, 0);
+      ctx.beginPath(); ctx.moveTo(px, M.top); ctx.lineTo(px, H - M.bottom); ctx.stroke();
+      const [, py] = toPx(0, t);
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)'; ctx.lineWidth = 0.5;
+    const [, p0y] = toPx(0, 0);
+    const [p0x] = toPx(0, 0);
+    ctx.beginPath();
+    ctx.moveTo(M.left, p0y); ctx.lineTo(W - M.right, p0y);
+    ctx.moveTo(p0x, M.top); ctx.lineTo(p0x, H - M.bottom);
+    ctx.stroke();
+    const levels = [0.5, 1.5, 3.5, 7.0];
+    ctx.lineWidth = 1.4;
+    for (let li = 0; li < levels.length; li++) {
+      const c = levels[li];
+      ctx.strokeStyle = `rgba(127, 119, 221, ${0.85 - li * 0.12})`;
+      ctx.beginPath();
+      let first = true;
+      for (let i = 0; i <= 360; i++) {
+        const theta = (i / 360) * Math.PI * 2;
+        const a = Hxx, b = Hxy, d = Hyy;
+        const denom = a * Math.cos(theta) ** 2 + 2 * b * Math.cos(theta) * Math.sin(theta) + d * Math.sin(theta) ** 2;
+        if (denom <= 0.001) continue;
+        const r = Math.sqrt(2 * c / denom);
+        const x = r * Math.cos(theta), y = r * Math.sin(theta);
+        if (Math.abs(x) > range + 0.5 || Math.abs(y) > range + 0.5) continue;
+        const [px, py] = toPx(x, y);
+        if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (const t of [-2, -1, 1, 2]) {
+      const [px, py] = toPx(t, 0);
+      ctx.fillText(t.toString(), px, py + 14);
+    }
+    ctx.textAlign = 'right';
+    for (const t of [-2, -1, 1, 2]) {
+      const [px, py] = toPx(0, t);
+      ctx.fillText(t.toString(), px - 5, py + 3);
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = '#666';
+    ctx.fillText('w₁', W - M.right + 4, p0y + 4);
+    ctx.fillText('w₂', p0x + 6, M.top + 8);
+  }
+  draw();
+})();
+
+// === CH 9, WIDGET 4: Double backprop step-through ===
+(function() {
+  const steps = document.querySelectorAll('#dbp-steps .dbp-step');
+  if (!steps.length) return;
+  const nextBtn = document.getElementById('dbp-next');
+  const resetBtn = document.getElementById('dbp-reset');
+  let cur = 0;
+  function update() {
+    steps.forEach((s, i) => s.classList.toggle('active', i === cur));
+    nextBtn.textContent = cur >= steps.length - 1 ? 'Done' : 'Next step';
+    nextBtn.disabled = cur >= steps.length - 1;
+  }
+  nextBtn.addEventListener('click', () => { if (cur < steps.length - 1) { cur++; update(); } });
+  resetBtn.addEventListener('click', () => { cur = 0; update(); });
+  update();
+})();
+</script>
+<script>
+// === CH 10: Muon singular value reshaping ===
+(function() {
+  const canvas = document.getElementById('muo-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 280;
+  const M = { left: 50, right: 20, top: 24, bottom: 36 };
+  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
+  const N = 12;
+  const skewIn = document.getElementById('muo-skew');
+  const skewV = document.getElementById('muo-skew-val');
+  const iterIn = document.getElementById('muo-iters');
+  const iterV = document.getElementById('muo-iters-val');
+  [skewIn, iterIn].forEach(el => el.addEventListener('input', () => {
+    skewV.textContent = parseFloat(skewIn.value).toFixed(2);
+    iterV.textContent = iterIn.value;
+    draw();
+  }));
+  function rawSpectrum(skew) {
+    const s = new Array(N);
+    for (let i = 0; i < N; i++) {
+      s[i] = Math.pow((N - i) / N, skew);
+    }
+    const max = s[0];
+    return s.map(x => x / max);
+  }
+  function nsIterate(s, iters) {
+    let cur = s.slice();
+    for (let k = 0; k < iters; k++) {
+      const max = Math.max(...cur);
+      cur = cur.map(x => x / Math.max(max, 1e-6));
+      cur = cur.map(x => 1.5 * x - 0.5 * x * x * x);
+    }
+    return cur;
+  }
+  function draw() {
+    const skew = parseFloat(skewIn.value);
+    const iters = parseInt(iterIn.value);
+    const raw = rawSpectrum(skew);
+    const orth = nsIterate(raw, iters);
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
+    for (const y of [0.25, 0.5, 0.75, 1.0]) {
+      const py = M.top + (1 - y) * PH;
+      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(M.left, M.top); ctx.lineTo(M.left, H - M.bottom);
+    ctx.lineTo(W - M.right, H - M.bottom); ctx.stroke();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    for (const yt of [0, 0.25, 0.5, 0.75, 1]) {
+      const py = M.top + (1 - yt) * PH;
+      ctx.fillText(yt.toFixed(2), M.left - 6, py + 3);
+    }
+    ctx.textAlign = 'center';
+    ctx.fillText('singular value', M.left + PW / 2, H - 8);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#666';
+    ctx.fillText('magnitude', M.left - 36, M.top - 6);
+    const groupW = PW / N, gap = 4;
+    const barW = (groupW - gap) / 2;
+    for (let i = 0; i < N; i++) {
+      const x0 = M.left + i * groupW + gap / 2;
+      const yA = M.top + (1 - raw[i]) * PH;
+      ctx.fillStyle = 'rgba(136, 136, 136, 0.75)';
+      ctx.fillRect(x0, yA, barW, M.top + PH - yA);
+      const yB = M.top + (1 - Math.max(0, Math.min(1.05, orth[i]))) * PH;
+      ctx.fillStyle = 'rgba(43, 161, 123, 0.85)';
+      ctx.fillRect(x0 + barW, yB, barW, M.top + PH - yB);
+    }
+  }
+  draw();
+})();
+
+// === CH 11: Shampoo 3-way comparison ===
+(function() {
+  const canvas = document.getElementById('sha-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 320;
+  const cellSize = 16, gridM = 6, gridN = 6;
+  const padX = 32, padY = 60;
+  const groupSpacing = 24;
+  const groupW = gridN * cellSize + groupSpacing;
+  const totalW = groupW * 3 - groupSpacing;
+  const xStart = (W - totalW) / 2;
+  const rsIn = document.getElementById('sha-rs');
+  const rsV = document.getElementById('sha-rs-val');
+  const csIn = document.getElementById('sha-cs');
+  const csV = document.getElementById('sha-cs-val');
+  [rsIn, csIn].forEach(el => el.addEventListener('input', () => {
+    rsV.textContent = parseFloat(rsIn.value).toFixed(2);
+    csV.textContent = parseFloat(csIn.value).toFixed(2);
+    draw();
+  }));
+  function makeGradient(rowSkew, colSkew) {
+    const G = [];
+    for (let i = 0; i < gridM; i++) {
+      const row = [];
+      const rowScale = Math.pow((i + 1) / gridM, rowSkew);
+      for (let j = 0; j < gridN; j++) {
+        const colScale = Math.pow((j + 1) / gridN, colSkew);
+        row.push(rowScale * colScale * (1 + 0.3 * Math.sin(i * 1.3 + j * 0.7)));
+      }
+      G.push(row);
+    }
+    let max = 0;
+    for (const r of G) for (const v of r) if (Math.abs(v) > max) max = Math.abs(v);
+    return G.map(r => r.map(v => v / max));
+  }
+  function adamWUpdate(G) {
+    return G.map(r => r.map(v => Math.sign(v) * Math.min(1, Math.abs(v) * 1.5)));
+  }
+  function muonUpdate(G) {
+    let max = 0;
+    for (const r of G) for (const v of r) if (Math.abs(v) > max) max = Math.abs(v);
+    return G.map(r => r.map(v => {
+      const norm = v / Math.max(max, 1e-6);
+      return Math.sign(norm) * Math.pow(Math.abs(norm), 0.3) * 0.95;
+    }));
+  }
+  function shampooUpdate(G) {
+    const Lscale = G.map(r => Math.sqrt(r.reduce((s, v) => s + v * v, 0) + 0.01));
+    const Rscale = [];
+    for (let j = 0; j < gridN; j++) {
+      let s = 0;
+      for (let i = 0; i < gridM; i++) s += G[i][j] * G[i][j];
+      Rscale.push(Math.sqrt(s + 0.01));
+    }
+    const Lmax = Math.max(...Lscale), Rmax = Math.max(...Rscale);
+    return G.map((r, i) => r.map((v, j) => {
+      const lFac = Math.pow(Lscale[i] / Lmax, -0.25);
+      const rFac = Math.pow(Rscale[j] / Rmax, -0.25);
+      return v * lFac * rFac;
+    }));
+  }
+  function drawMatrix(matrix, xOff, yOff, label, color) {
+    ctx.fillStyle = '#666'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(label, xOff + (gridN * cellSize) / 2, yOff - 8);
+    let maxV = 0;
+    for (const r of matrix) for (const v of r) if (Math.abs(v) > maxV) maxV = Math.abs(v);
+    for (let i = 0; i < gridM; i++) {
+      for (let j = 0; j < gridN; j++) {
+        const v = matrix[i][j];
+        const intensity = Math.min(1, Math.abs(v) / Math.max(maxV, 0.01));
+        const x = xOff + j * cellSize;
+        const y = yOff + i * cellSize;
+        const r = parseInt(color.substr(1, 2), 16);
+        const g = parseInt(color.substr(3, 2), 16);
+        const b = parseInt(color.substr(5, 2), 16);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.15 + 0.85 * intensity})`;
+        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+      }
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.35)'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(xOff, yOff, gridN * cellSize, gridM * cellSize);
+  }
+  function draw() {
+    const rs = parseFloat(rsIn.value);
+    const cs = parseFloat(csIn.value);
+    const G = makeGradient(rs, cs);
+    ctx.clearRect(0, 0, W, H);
+    drawMatrix(adamWUpdate(G),   xStart + 0 * groupW,            padY, 'AdamW',   '#7F77DD');
+    drawMatrix(muonUpdate(G),    xStart + 1 * groupW,            padY, 'Muon',    '#2BA17B');
+    drawMatrix(shampooUpdate(G), xStart + 2 * groupW,            padY, 'Shampoo', '#C8862C');
+    ctx.fillStyle = '#888'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('parameter update matrix (cell brightness = magnitude)', W / 2, padY + gridM * cellSize + 28);
+  }
+  draw();
+})();
+</script>
+<script>
+// === CH 12: MuonH / Hyperball retraction geometry ===
+(function() {
+  const canvas = document.getElementById('hyp-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 540, H = 380;
+  const cx = 270, cy = 190, R = 130;
+  const etaIn = document.getElementById('hyp-eta');
+  const etaV = document.getElementById('hyp-eta-val');
+  const gIn = document.getElementById('hyp-gamma');
+  const gV = document.getElementById('hyp-gamma-val');
+  const uOut = document.getElementById('hyp-u');
+  const dOut = document.getElementById('hyp-d');
+  [etaIn, gIn].forEach(el => el.addEventListener('input', () => {
+    etaV.textContent = parseFloat(etaIn.value).toFixed(2);
+    gV.textContent = parseFloat(gIn.value).toFixed(2);
+    draw();
+  }));
+  function draw() {
+    const eta = parseFloat(etaIn.value);
+    const gamma = parseFloat(gIn.value);
+    const sintheta = Math.sqrt(Math.max(0, 1 - gamma * gamma));
+    const Wt = [R, 0];
+    const Ut = [eta * R * gamma, eta * R * sintheta];
+    const Wsum = [Wt[0] + Ut[0], Wt[1] + Ut[1]];
+    const Wmag = Math.sqrt(Wsum[0]**2 + Wsum[1]**2);
+    const Wn = [R * Wsum[0] / Wmag, R * Wsum[1] / Wmag];
+    const dW = [Wn[0] - Wt[0], Wn[1] - Wt[1]];
+    const dM = Math.sqrt(dW[0]**2 + dW[1]**2);
+    function toScreen(p) { return [cx + p[0], cy - p[1]]; }
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.55)'; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.05)';
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#444';
+    ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText('O', cx - 5, cy + 4);
+    ctx.textAlign = 'left';
+    const [rlx, rly] = toScreen([R + 14, 0]);
+    ctx.fillText('|W| = R', rlx + 6, rly + 4);
+    ctx.strokeStyle = 'rgba(127, 119, 221, 0.5)'; ctx.setLineDash([2, 4]); ctx.lineWidth = 1;
+    const [orgX, orgY] = toScreen([0, 0]);
+    const [sumX, sumY] = toScreen(Wsum);
+    const farX = orgX + (sumX - orgX) * 2;
+    const farY = orgY + (sumY - orgY) * 2;
+    ctx.beginPath(); ctx.moveTo(orgX, orgY); ctx.lineTo(farX, farY); ctx.stroke();
+    ctx.setLineDash([]);
+    function drawArrow(p1, p2, color, lw, label, offset) {
+      const [x1, y1] = toScreen(p1);
+      const [x2, y2] = toScreen(p2);
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const ah = 9;
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+      ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+      ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      if (label) {
+        const mx = (x1 + x2) / 2 + (offset?.x || 0);
+        const my = (y1 + y2) / 2 + (offset?.y || 0);
+        ctx.fillStyle = color; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(label, mx, my);
+      }
+    }
+    drawArrow([0, 0], Wt, 'rgba(29, 158, 117, 0.4)', 1, null);
+    drawArrow(Wt, Wsum, '#C8862C', 2, 'U_t', { x: 14, y: -8 });
+    drawArrow(Wt, Wn, '#7F77DD', 2.5, 'ΔW', { x: -30, y: 6 });
+    function dot(p, color, label, off) {
+      const [px, py] = toScreen(p);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, py, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+      if (label) {
+        ctx.fillStyle = color; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText(label, px + (off?.x || 8), py + (off?.y || 4));
+      }
+    }
+    dot(Wsum, '#888', 'W_t + U_t', { x: 12, y: -8 });
+    dot(Wt, '#1D9E75', 'W_t', { x: 12, y: 16 });
+    dot(Wn, '#7F77DD', 'W_{t+1}', { x: 12, y: -8 });
+    uOut.textContent = eta.toFixed(2);
+    dOut.textContent = (dM / R).toFixed(3);
+  }
+  draw();
+})();
+</script>
+
+
+</body>
+</html>
