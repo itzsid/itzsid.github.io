@@ -629,7 +629,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
   <time datetime="2026-03">March 2026</time>
   <h1>The Multimodal Mind<br><span class="accent">Perceive → Imagine → Act</span></h1>
   <p class="byline">Siddharth Choudhary</p>
-  <p class="lede">The next frontier in AI is a single model that understands the physical world well enough to imagine its futures and act to shape them. Here is how I'd build one — the cognitive loop, the architecture, and the staged training recipe.</p>
+  <p class="lede">What would it take to build a single model that understands the physical world well enough to imagine its futures and act to shape them? Here is how I'd build one — the cognitive loop, the architecture, and the staged training recipe.</p>
 </header>
 
 <nav class="chapter-index" aria-label="Table of contents">
@@ -732,7 +732,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 </div>
 
-<p>Notice that the attention <em>operation</em> never changes — only which modality experts (and therefore which Q/K/V, output, FFN, and norm weights) are present and active. Drop video and audio and you have a vision-language understanding model. Add the action expert and the same backbone becomes an agent. <strong>One model, reconfigured by which experts are present and active.</strong></p>
+<p>Notice that the attention <em>operation</em> never changes — only which modality experts (and therefore which Q/K/V, output, FFN, and norm weights) are present and active. Drop video and audio and you have a vision-language understanding model. Add the action expert and the same backbone becomes an agent. <strong>One model, reconfigured by which experts are switched on.</strong></p>
 </section>
 
 <hr class="section-break">
@@ -842,7 +842,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains. Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
 
-<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds (exactly what the fidelity slider above shows). And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity, and corrected by physics engines for physical consistency.</p>
+<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds. And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity, and corrected by physics engines for physical consistency.</p>
 
 <p>Drag the fidelity slider to see how it gates the compounding rate.</p>
 
