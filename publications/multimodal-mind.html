@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Multimodal Mind: Perceive → Imagine → Act</title>
+<meta name="description" content="A natively multimodal foundation model organized around a Perceive → Imagine → Act loop — built on a Mixture-of-Transformers backbone and a staged pretraining curriculum, with interactive widgets.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --color-bg: #fdfcf8;
+  --color-bg-secondary: #f3efe7;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #4a4a4a;
+  --color-text-tertiary: #888;
+  --color-border-tertiary: #e5e0d6;
+  --color-accent: #b8761e;
+  --color-accent-soft: #d9a957;
+  --border-radius-md: 8px;
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  --font-sans: 'Newsreader', Georgia, serif;
+
+  /* Modality palette — used consistently across every widget */
+  --m-text: #4f86c6;
+  --m-image: #1d9e75;
+  --m-video: #7f77dd;
+  --m-audio: #d85a30;
+  --m-action: #b8761e;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 1.65;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+article {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem 6rem;
+}
+
+/* Header */
+header.post-header {
+  margin: 2rem auto 5rem;
+  max-width: 680px;
+  text-align: left;
+}
+header.post-header h1 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.25rem;
+  color: var(--color-text-primary);
+}
+header.post-header h1 .accent {
+  color: var(--color-accent);
+  font-style: italic;
+  font-weight: 400;
+}
+header.post-header time {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  display: block;
+}
+header.post-header .byline {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  margin: 0.4rem 0 0;
+}
+header.post-header .byline a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-soft);
+}
+header.post-header .lede {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 1.5rem 0 0;
+  font-weight: 350;
+  max-width: 620px;
+}
+
+/* Chapter index */
+.chapter-index {
+  max-width: 680px;
+  margin: 0 auto 6rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-border-tertiary);
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+.chapter-index .label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: 1.25rem;
+}
+.chapter-index ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: chapter;
+  column-count: 2;
+  column-gap: 2.5rem;
+}
+.chapter-index ol li {
+  counter-increment: chapter;
+  margin: 0 0 0.55rem;
+  break-inside: avoid;
+  position: relative;
+  padding-left: 2.2rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+.chapter-index ol li::before {
+  content: counter(chapter, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+.chapter-index a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.chapter-index a:hover { border-bottom-color: var(--color-accent); }
+
+/* Article sections */
+section.chapter {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 4rem 0 2rem;
+}
+section.chapter:first-of-type { padding-top: 0; }
+
+section.chapter h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 1.95rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin: 0 0 2rem;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 1.1rem;
+}
+section.chapter h2 .num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+section.chapter h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: -0.005em;
+  margin: 2.5rem 0 0.9rem;
+  color: var(--color-text-primary);
+}
+section.chapter h4 {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin: 2rem 0 0.6rem;
+}
+
+section.chapter p { margin: 0 0 1.1rem; }
+section.chapter p + p { margin-top: 0; }
+section.chapter strong { font-weight: 600; color: var(--color-text-primary); }
+section.chapter em { font-style: italic; }
+
+section.chapter a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-soft);
+  transition: border-color 0.15s;
+}
+section.chapter a:hover { border-bottom-color: var(--color-accent); }
+
+/* Code */
+section.chapter code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--color-bg-secondary);
+  padding: 0.1em 0.32em;
+  border-radius: 3px;
+  color: var(--color-text-primary);
+}
+section.chapter pre {
+  background: var(--color-bg-secondary);
+  padding: 1.1rem 1.3rem;
+  border-radius: var(--border-radius-md);
+  border-left: 2px solid var(--color-accent);
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+section.chapter pre code { background: none; padding: 0; font-size: inherit; }
+
+/* Callout */
+.callout {
+  margin: 2rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-secondary);
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+.callout strong { font-style: normal; }
+
+/* Tables */
+section.chapter table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.92rem;
+}
+section.chapter th, section.chapter td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+section.chapter th {
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  border-bottom: 2px solid var(--color-text-secondary);
+}
+section.chapter td code { font-size: 0.82em; }
+
+/* Lists */
+section.chapter ul, section.chapter ol { padding-left: 1.4rem; margin: 0 0 1.1rem; }
+section.chapter li { margin: 0.35rem 0; }
+
+/* Widget container — breaks out wider than text column */
+.widget-container { margin: 2.5rem -120px; max-width: none; }
+.widget-container.standard { margin: 2.5rem 0; }
+.widget-inner {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem 1.75rem;
+  margin: 0 auto;
+  max-width: 760px;
+}
+.widget-caption {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 auto 0.9rem;
+  max-width: 760px;
+  padding: 0 1.75rem;
+}
+.widget-caption .num { color: var(--color-accent); font-weight: 600; margin-right: 0.6rem; }
+
+/* Shared widget controls */
+.widget-inner input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-border-tertiary);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.widget-inner input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+.widget-inner input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: 2px solid var(--color-bg);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+.widget-inner button {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.55rem 1rem;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.widget-inner button:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.widget-inner button.active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+/* Section separator */
+hr.section-break {
+  border: none;
+  text-align: center;
+  margin: 3rem 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.5em;
+}
+hr.section-break::before { content: "* * *"; }
+
+/* Footer */
+footer.post-footer {
+  max-width: 680px;
+  margin: 6rem auto 0;
+  padding: 3rem 0 0;
+  border-top: 1px solid var(--color-border-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+footer.post-footer a { color: var(--color-accent); text-decoration: none; }
+
+/* ===== Widget: Perceive → Imagine → Act loop (W1) ===== */
+.loop-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
+.loop-svg-wrap { flex: 1 1 280px; display: flex; justify-content: center; }
+.loop-node { cursor: pointer; }
+.loop-node circle { transition: all 0.3s; }
+.loop-detail {
+  flex: 1 1 280px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 1.1rem 1.25rem;
+  min-height: 150px;
+}
+.loop-detail .tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.loop-detail h5 { margin: 0.3rem 0 0.6rem; font-size: 1.2rem; font-weight: 600; }
+.loop-detail p { margin: 0; font-size: 0.95rem; line-height: 1.55; color: var(--color-text-secondary); }
+.loop-btns { display: flex; gap: 8px; margin: 1rem 0 0; justify-content: center; width: 100%; }
+
+/* ===== Widget: MoT routing (W2) ===== */
+.mot-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 1.25rem; }
+.mot-chip {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border-tertiary);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.mot-stage {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  margin: 0.2rem 0;
+}
+.mot-tokens { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 34px; }
+.mot-token {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.mot-attn {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.7rem;
+  margin: 0.5rem auto;
+  max-width: 420px;
+  border: 1.5px dashed var(--color-text-tertiary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+}
+.mot-experts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 0.5rem; }
+.mot-expert {
+  flex: 1 1 110px;
+  max-width: 140px;
+  text-align: center;
+  border-radius: var(--border-radius-md);
+  border: 1.5px solid var(--color-border-tertiary);
+  padding: 0.6rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--color-bg);
+  color: var(--color-text-tertiary);
+  transition: all 0.2s;
+}
+.mot-expert .ec-sub { font-weight: 400; font-size: 0.62rem; margin-top: 2px; opacity: 0.8; }
+.mot-arrow { text-align: center; color: var(--color-text-tertiary); font-size: 1.1rem; line-height: 1; margin: 0.15rem 0; }
+
+/* ===== Widget: Staged curriculum (W3) ===== */
+.stage-tabs { display: flex; gap: 0; margin: 0 0 1.5rem; flex-wrap: wrap; }
+.stage-tab {
+  flex: 1 1 0;
+  min-width: 120px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0.7rem 0.5rem;
+  border: 1px solid var(--color-border-tertiary);
+  border-right: none;
+  background: var(--color-bg);
+  font-family: var(--font-mono);
+  transition: all 0.15s;
+}
+.stage-tab:last-child { border-right: 1px solid var(--color-border-tertiary); }
+.stage-tab .st-n { font-size: 0.62rem; letter-spacing: 0.1em; color: var(--color-text-tertiary); }
+.stage-tab .st-name { font-size: 0.74rem; font-weight: 600; margin-top: 2px; color: var(--color-text-secondary); line-height: 1.2; }
+.stage-tab.active { background: var(--color-accent); border-color: var(--color-accent); }
+.stage-tab.active .st-n, .stage-tab.active .st-name { color: #fff; }
+.stage-attn {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.6rem;
+  margin: 0 0 0.9rem;
+  border: 1.5px dashed var(--color-text-tertiary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+}
+.stage-experts { display: flex; flex-wrap: wrap; gap: 10px; }
+.stage-expert {
+  flex: 1 1 120px;
+  border-radius: var(--border-radius-md);
+  border: 1.5px solid var(--color-border-tertiary);
+  padding: 0.75rem 0.6rem;
+  position: relative;
+  transition: all 0.3s;
+  background: var(--color-bg);
+}
+.stage-expert .se-name { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; }
+.stage-expert .se-sub { font-size: 0.78rem; color: var(--color-text-secondary); margin-top: 3px; line-height: 1.3; }
+.stage-expert .se-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.55rem;
+  display: inline-block;
+}
+.stage-expert.s-train {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(184,118,30,0.12);
+  background: #fdf7ee;
+}
+.stage-expert.s-train .se-badge { color: var(--color-accent); }
+.stage-expert.s-frozen { opacity: 0.92; background: var(--color-bg-secondary); }
+.stage-expert.s-frozen .se-badge { color: #6c8aa0; }
+.stage-expert.s-none { border-style: dashed; opacity: 0.42; }
+.stage-expert.s-none .se-badge { color: var(--color-text-tertiary); }
+.stage-note {
+  margin: 1.2rem 0 0;
+  padding: 0.9rem 1.1rem;
+  background: var(--color-bg-secondary);
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-text-secondary);
+}
+.stage-legend { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin: 1.1rem 0 0; font-family: var(--font-mono); font-size: 0.68rem; color: var(--color-text-secondary); }
+.stage-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.stage-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* ===== Widget: Physics flywheel (W4) ===== */
+.fly-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
+.fly-svg-wrap { flex: 1 1 300px; display: flex; justify-content: center; }
+.fly-controls { flex: 1 1 240px; }
+.fly-stat { background: var(--color-bg-secondary); padding: 0.75rem 1rem; border-radius: var(--border-radius-md); margin-bottom: 0.7rem; }
+.fly-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
+.fly-stat .num { font-size: 22px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
+.fly-row { display: flex; align-items: center; gap: 12px; margin: 0 0 0.75rem; }
+.fly-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 110px; }
+.fly-row .val { font-size: 13px; font-weight: 500; min-width: 40px; text-align: right; font-family: var(--font-mono); }
+
+/* ===== Widget: LR schedule (W6) ===== */
+.lr-canvas-wrap { display: flex; justify-content: center; }
+canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); }
+.lr-row { display: flex; align-items: center; gap: 12px; margin: 1rem 0 0; }
+.lr-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 120px; }
+.lr-btns { display: flex; gap: 8px; margin-top: 0.8rem; }
+.lr-readout { margin-top: 1.1rem; background: var(--color-bg-secondary); border-radius: var(--border-radius-md); padding: 1rem 1.2rem; }
+.lr-readout .lr-tag { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; color: var(--color-accent); }
+.lr-readout .lr-subp { font-size: 1.02rem; font-weight: 600; margin: 0.2rem 0 0.6rem; }
+.lr-readout .lr-line { font-size: 0.92rem; color: var(--color-text-secondary); margin: 0.2rem 0; }
+.lr-readout .lr-line b { color: var(--color-text-primary); font-weight: 600; }
+
+/* ===== Widget: One-model router (W5) ===== */
+.rt-block { margin: 0 0 1rem; }
+.rt-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 0.5rem; }
+.rt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.rt-chip {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border-tertiary);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.rt-result {
+  margin-top: 1.3rem;
+  text-align: center;
+  padding: 1.2rem;
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-tertiary);
+}
+.rt-route { font-family: var(--font-mono); font-size: 0.9rem; color: var(--color-text-secondary); }
+.rt-route b { color: var(--color-text-primary); }
+.rt-task { font-size: 1.5rem; font-weight: 600; margin: 0.5rem 0 0.2rem; color: var(--color-accent); }
+.rt-task.unknown { color: var(--color-text-tertiary); font-size: 1.15rem; font-style: italic; }
+.rt-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent); background: rgba(184,118,30,0.10); border: 1px solid var(--color-accent-soft); border-radius: 999px; padding: 0.12rem 0.5rem; margin-right: 0.5rem; vertical-align: middle; }
+.rt-desc { font-size: 0.92rem; color: var(--color-text-secondary); margin: 0.4rem 0 0; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  body { font-size: 17px; }
+  article { padding: 2rem 1.25rem 4rem; }
+  .widget-container { margin: 2rem 0; }
+  .widget-inner { padding: 1.25rem 1rem; }
+  .widget-caption { padding: 0 1rem; }
+  header.post-header { margin-bottom: 3rem; }
+  header.post-header h1 { font-size: 2rem; }
+  .chapter-index ol { column-count: 1; }
+  section.chapter { padding: 3rem 0 1rem; }
+  section.chapter h2 { flex-direction: column; gap: 0.3rem; align-items: flex-start; }
+  .stage-tab { min-width: 0; }
+  .stage-tab .st-name { font-size: 0.62rem; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  section.chapter { animation: fade-in 0.6s ease; }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+</style>
+</head>
+<body>
+
+<article>
+
+<header class="post-header">
+  <time datetime="2026-03">March 2026</time>
+  <h1>The Multimodal Mind<br><span class="accent">Perceive → Imagine → Act</span></h1>
+  <p class="byline">Siddharth Choudhary</p>
+  <p class="lede">The next frontier in AI is a single model that understands the physical world well enough to imagine its futures and act to shape them. Here is how I'd build one — the cognitive loop, the architecture, and the staged training recipe.</p>
+</header>
+
+<nav class="chapter-index" aria-label="Table of contents">
+  <div class="label">Contents</div>
+  <ol>
+    <li><a href="#ch-thesis">The thesis</a></li>
+    <li><a href="#ch-loop">The cognitive loop</a></li>
+    <li><a href="#ch-mot">One architecture: Mixture of Transformers</a></li>
+    <li><a href="#ch-recipe">The pretraining recipe: a staged curriculum</a></li>
+    <li><a href="#ch-flywheel">Post-training &amp; the physics flywheel</a></li>
+    <li><a href="#ch-unify">One model, many problems</a></li>
+  </ol>
+</nav>
+
+<!-- ============ CH 1 ============ -->
+<section class="chapter" id="ch-thesis">
+<h2><span class="num">Ch. 01</span> <span>The thesis</span></h2>
+
+<p>The next frontier in AI is a single model that understands the physical world well enough to <em>imagine</em> its futures and <em>act</em> to shape them. The path runs through a natively multimodal foundation model — one that perceives, reasons, and generates across all modalities (image, video, text, speech, action) — organized around a three-stage cognitive loop: <strong>Perceive → Imagine → Act</strong>.</p>
+
+<p>Biological intelligence follows that loop without thinking about it: observe the world, mentally simulate what should happen, then intervene. Current AI breaks the loop into disconnected pipelines — a perception model here, a planner there, a controller bolted on the end, each trained by a different team on a different dataset. I propose building it as one model.</p>
+
+<div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all. Improvements to the shared backbone benefit every task at once.</div>
+
+<p>The rest of this page makes that claim concrete. We start with the loop, then the architecture that runs it (a Mixture of Transformers), then the part I want to expand on most: a <strong>staged pretraining recipe</strong> that grows the model one generative capability at a time, freezing what came before. We finish with the self-play flywheel and the unification of today's siloed problems.</p>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ CH 2 ============ -->
+<section class="chapter" id="ch-loop">
+<h2><span class="num">Ch. 02</span> <span>The cognitive loop</span></h2>
+
+<p>Three stages, run in a cycle. Each is inference in the <em>same</em> unified multimodal space — not three separate modules wired together.</p>
+
+<ol>
+<li><strong>Perceive.</strong> The model ingests the current state across all modalities — video, audio, proprioception, language — into a unified representation. Perception is inference, not a preprocessing step.</li>
+<li><strong>Imagine.</strong> Before acting, the model thinks in multimodal space. Not just text chain-of-thought, but a <em>mental video</em> of the planned trajectory: predicted proprioception, anticipated contact forces. This multimodal imagination <em>is</em> the world model.</li>
+<li><strong>Act.</strong> The model generates whatever output the task requires — motor commands, keyboard/mouse, speech — conditioned on the imagined plan, not on reactive perception alone. The action changes the world, new percepts arrive, and the loop repeats.</li>
+</ol>
+
+<p>Click a stage below to step through the loop, with the canonical example: a model deciding to pick up a glass.</p>
+
+<div class="widget-caption"><span class="num">Fig. 2.1</span>The Perceive → Imagine → Act loop. Click a node or step through it.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="loop-wrap">
+  <div class="loop-svg-wrap">
+    <svg id="loop-svg" width="280" height="280" viewBox="0 0 280 280" aria-label="Perceive Imagine Act loop">
+      <!-- arcs drawn by JS -->
+      <g id="loop-arcs"></g>
+      <g id="loop-nodes"></g>
+    </svg>
+  </div>
+  <div class="loop-detail" id="loop-detail">
+    <div class="tag" id="loop-tag">Stage</div>
+    <h5 id="loop-title">Perceive</h5>
+    <p id="loop-body"></p>
+  </div>
+</div>
+<div class="loop-btns">
+  <button id="loop-step">Next stage →</button>
+  <button id="loop-auto">Auto-run</button>
+</div>
+</div>
+</div>
+
+<p>The key idea hiding in the animation: <strong>Imagine and Act use the same generative machinery as Perceive</strong>. Imagining "the hand approaching, fingers closing, the weight shifting" is video + proprioception generation. Acting is action generation. They are not bolted-on heads — they are the same model generating in different output modalities. That is what the next chapter's architecture buys us.</p>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ CH 3 ============ -->
+<section class="chapter" id="ch-mot">
+<h2><span class="num">Ch. 03</span> <span>One architecture: Mixture of Transformers</span></h2>
+
+<p>If one model has to perceive <em>and</em> generate images, video, audio, and actions, a single dense network creates a problem: modalities interfere. The statistics of a video frame and a motor command have nothing in common, and forcing the same feed-forward weights to model both means each capability dilutes the other.</p>
+
+<p>The architecture I use is a <strong>Mixture of Transformers (MoT)</strong>. The trick is to split the network by <em>modality</em>:</p>
+
+<ul>
+<li><strong>Every weight is modality-specific.</strong> Each modality gets its own copy of the entire transformer block — the query/key/value and output projections, the feed-forward network, and the layernorms. Those weights <em>are</em> the experts. A token's modality deterministically selects which expert processes it; there is no learned router.</li>
+<li><strong>Only the attention <em>operation</em> is global.</strong> Each token's Q, K, and V are produced by its own modality's projections, but attention is then computed <em>causally</em> over the combined sequence — each token attends to every preceding token regardless of modality, so a later video token attends to earlier text and action tokens. The attention operation has no weights of its own; it is the wire that makes this <em>one</em> model, while every learnable parameter stays modality-specific.</li>
+</ul>
+
+<p>The payoff shows up in the next chapter: because every weight a token touches lives in its modality's expert, you can <strong>freeze an entire expert</strong> — its attention projections included — while training another, and global attention still lets the new expert read everything the frozen ones know.</p>
+
+<p>Toggle modalities below to see how a mixed-modality sequence flows through shared attention and out to its experts.</p>
+
+<div class="widget-caption"><span class="num">Fig. 3.1</span>MoT forward pass: shared attention, per-modality experts. Toggle the modalities present in the sequence.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="mot-chips" id="mot-chips"></div>
+<div class="mot-stage">Input sequence (tokens, interleaved)</div>
+<div class="mot-tokens" id="mot-tokens"></div>
+<div class="mot-stage" style="margin-top:0.6rem;">↓ &nbsp; per-modality Q / K / V projection &nbsp; ↓</div>
+<div class="mot-attn">Global Causal Self-Attention &nbsp;·&nbsp; each token attends to all preceding tokens (no weights of its own)</div>
+<div class="mot-stage">↓ &nbsp; per-modality output projection · FFN · norms &nbsp; ↓</div>
+<div class="mot-experts" id="mot-experts"></div>
+</div>
+</div>
+
+<p>Notice that the attention <em>operation</em> never changes — only which modality experts (and therefore which Q/K/V, output, FFN, and norm weights) are present and active. Drop video and audio and you have a vision-language understanding model. Add the action expert and the same backbone becomes an agent. <strong>One model, reconfigured by which experts are present and active.</strong></p>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ CH 4 ============ -->
+<section class="chapter" id="ch-recipe">
+<h2><span class="num">Ch. 04</span> <span>The pretraining recipe: a staged curriculum</span></h2>
+
+<p>The recipe mirrors how we train LLMs — next-token prediction at internet scale — but extends every stage into multimodal space, and crucially, it is <strong>staged</strong>. You do not learn to perceive, imagine, and act all at once. Generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
+
+<div class="math-display" style="font-family: var(--font-mono); text-align:center; margin:1.4rem 0; font-size:0.95rem;">MM understanding → image generation → video / audio generation → action generation</div>
+
+<p>Two rules govern the climb:</p>
+<ul>
+<li><strong>Add one expert per stage.</strong> Each new stage introduces a new MoT generation expert (Ch. 3) on top of everything learned so far.</li>
+<li><strong>Freeze everything earlier.</strong> When training a later generation component, the earlier components are frozen. Only the newest expert learns.</li>
+</ul>
+
+<p>There is a third reason the recipe is staged, and it may be the most practical one: <strong>data gets scarcer at every stage</strong>. The corpus of text, images, video, and audio for <em>understanding</em> is internet-scale. Paired data for high-quality image <em>generation</em> is smaller; video and audio generation smaller still; and action data — robot trajectories, labeled screen recordings, driving logs — is the scarcest of all. Each stage trains on roughly an order of magnitude less data than the one before. So we spend the abundant data first to build the strongest possible backbone, then climb into the data-poor regimes on top of it.</p>
+
+<p>Step through the four stages below. Watch which experts are <em>training</em>, which are <em>frozen</em>, and which haven't been added yet. The shared attention is along for the ride the whole time.</p>
+
+<div class="widget-caption"><span class="num">Fig. 4.1</span>The staged pretraining curriculum. Each stage trains one new expert and freezes the rest.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="stage-tabs" id="stage-tabs"></div>
+<div class="stage-attn">Global Causal Self-Attention &nbsp;·&nbsp; the weightless operation that lets each token attend to all preceding tokens, across every active expert</div>
+<div class="stage-experts" id="stage-experts"></div>
+<div class="stage-note" id="stage-note"></div>
+<div class="stage-legend">
+  <span><i style="background:#fdf7ee;border:1.5px solid var(--color-accent);"></i> training</span>
+  <span><i style="background:var(--color-bg-secondary);border:1.5px solid #6c8aa0;"></i> frozen</span>
+  <span><i style="border:1.5px dashed var(--color-text-tertiary);"></i> not yet added</span>
+</div>
+</div>
+</div>
+
+<h3>Why this order?</h3>
+<p>The sequence is not arbitrary — each arrow is a dependency:</p>
+<ul>
+<li><strong>Understanding before generation.</strong> You cannot imagine a coherent future until you can perceive the present. Stage 1 builds the perceptual prior that everything conditions on.</li>
+<li><strong>Image before video.</strong> A video is images over time. The video expert reuses the frozen image expert's spatial priors and only has to learn temporal dynamics — a much smaller lift than learning pixels and motion together.</li>
+<li><strong>Generation before action.</strong> Action is conditioned on <em>imagination</em> (Ch. 2). The model must be able to roll out a predicted video/proprioception trajectory before it can choose a motor command that achieves it. So the action expert comes last, reading from a frozen world model.</li>
+</ul>
+
+<h3>Why freeze?</h3>
+<p>Freezing earlier components does three things at once:</p>
+<ul>
+<li><strong>No catastrophic forgetting.</strong> Hard-won perception and image priors can't be eroded by the noisier gradients of a new, harder generative task. The capability you already paid for is locked in. This matters most precisely because of the data pyramid: if everything trained jointly, the tiny action dataset would be swamped by — and would perturb — the enormous understanding corpus. Freezing lets the data-poor expert learn from a strong backbone without putting the data-rich capabilities at risk.</li>
+<li><strong>Clean credit assignment.</strong> The newest expert is the only thing learning, so every gradient is attributable to it. Nothing else can drift to "explain away" its errors.</li>
+<li><strong>Cheaper training.</strong> A frozen expert is just a forward pass — no optimizer state, no backward pass through its weights. Each later stage is far cheaper than training the whole stack jointly.</li>
+</ul>
+
+<p>Because every weight — attention projections included — lives inside a modality expert, freezing an expert freezes its Q/K/V too. The global attention operation has no parameters of its own; it simply lets each newly added expert read and write through the frozen experts' representations.</p>
+
+<h3>The learning-rate schedule</h3>
+<p>All of this rides on a single learning-rate schedule with three phases: a short <strong>warm-up</strong> that ramps the LR to its peak, a long <strong>constant-LR</strong> (CLR) plateau that does the bulk of the work, and a <strong>ramp-down</strong> that anneals the LR toward zero. The staged curriculum maps directly onto it. The first <strong>50% of the CLR plateau is understanding only</strong> — the data-rich foundation — and the generation stages (image, then video/audio, then action) are layered into the second half. The ramp-down is reserved for <strong>high-quality data across every modality</strong>, polishing the whole stack as the LR decays to zero.</p>
+
+<p>Scrub through a full pretraining run below — or hit play. The shaded bands show which data is mixed in; the readout tracks the LR, the data, and which expert is learning at that point.</p>
+
+<div class="widget-caption"><span class="num">Fig. 4.2</span>The pretraining LR schedule, with the staged data mix laid over it.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="lr-canvas-wrap"><canvas id="lr-canvas" class="lr" width="660" height="300"></canvas></div>
+<div class="lr-row">
+  <label>Training progress</label>
+  <input type="range" id="lr-prog" min="0" max="1" step="0.005" value="0.3" style="flex:1;">
+  <span class="val" id="lr-prog-val" style="font-family:var(--font-mono);font-size:13px;min-width:42px;text-align:right;">30%</span>
+</div>
+<div class="lr-btns">
+  <button id="lr-play">Play run</button>
+  <button id="lr-reset">Reset</button>
+</div>
+<div class="lr-readout">
+  <div class="lr-tag" id="lr-phase">Constant LR</div>
+  <div class="lr-subp" id="lr-subphase"></div>
+  <div class="lr-line">LR: <b id="lr-val">100% of peak</b></div>
+  <div class="lr-line">Data: <b id="lr-data"></b></div>
+  <div class="lr-line">Training: <b id="lr-train"></b></div>
+</div>
+</div>
+</div>
+
+<div class="callout">The staged-and-frozen recipe turns one terrifying joint-training problem into four tractable ones. Each stage asks a single, well-posed question — <em>given everything I already know, how do I generate this one new modality?</em> — and answers it without disturbing the rest.</div>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ CH 5 ============ -->
+<section class="chapter" id="ch-flywheel">
+<h2><span class="num">Ch. 05</span> <span>Post-training &amp; the physics flywheel</span></h2>
+
+<p>Pretraining learns the prior over how the multimodal world works. Two stages turn that prior into a capable agent:</p>
+<ul>
+<li><strong>Post-training (SFT).</strong> Supervised fine-tuning on curated Perceive → Imagine → Act demonstrations, with explicit multimodal reasoning traces — the imagination made legible.</li>
+<li><strong>RL via self-play in simulation</strong> with automatic reward signals. This is where the model becomes <em>self-improving</em>.</li>
+</ul>
+
+<p>In simulation, the model runs its full loop and grades itself automatically on three questions:</p>
+<ul>
+<li><strong>Did what I imagined actually happen?</strong> — imagination accuracy.</li>
+<li><strong>Did I succeed?</strong> — task completion.</li>
+<li><strong>Does my prediction violate physics?</strong> — consistency, checked against engine constraints. Call it <em>RL from physics feedback</em> (RLPF).</li>
+</ul>
+
+<p>Trace one lap to see why it <em>compounds</em>. A better world model makes the model's imagination more accurate, so it can plan against a mental simulation it trusts — better plans. Better plans yield better actions, which succeed more often. Those successful rollouts ("this plan led to this outcome") are exactly the labeled examples you want, so they become richer training data — which trains an even better world model. Each lap raises the floor for the next.</p>
+
+<p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains. Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
+
+<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds (exactly what the fidelity slider above shows). And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity, and corrected by physics engines for physical consistency.</p>
+
+<p>Drag the fidelity slider to see how it gates the compounding rate.</p>
+
+<div class="widget-caption"><span class="num">Fig. 5.1</span>The self-play flywheel. Simulation fidelity gates how fast capability compounds.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="fly-wrap">
+  <div class="fly-svg-wrap">
+    <svg id="fly-svg" width="300" height="300" viewBox="0 0 300 300" aria-label="self-play flywheel"></svg>
+  </div>
+  <div class="fly-controls">
+    <div class="fly-stat"><div class="lbl">Self-play cycles</div><div class="num" id="fly-cycles">0</div></div>
+    <div class="fly-stat"><div class="lbl">Relative capability</div><div class="num" id="fly-cap">1.0×</div></div>
+    <div class="fly-row">
+      <label>Simulation fidelity</label>
+      <input type="range" id="fly-fid" min="0.1" max="1" step="0.05" value="0.6" style="flex:1;">
+      <span class="val" id="fly-fid-val">0.60</span>
+    </div>
+    <div class="loop-btns" style="justify-content:flex-start;">
+      <button id="fly-spin">Run flywheel</button>
+      <button id="fly-reset">Reset</button>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<p>Low fidelity and the flywheel slips: the model learns from a simulation that lies about physics, so capability barely compounds. High fidelity and each cycle multiplies the last. The whole strategy lives or dies on the quality of the imagined world.</p>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ CH 6 ============ -->
+<section class="chapter" id="ch-unify">
+<h2><span class="num">Ch. 06</span> <span>One model, many problems</span></h2>
+
+<p>Here is the payoff of building it as one model. Every major AI capability challenge is a different <em>route</em> through the same architecture — a particular choice of input modalities and output modality. Pick inputs and an output below to see which of today's siloed research problems you've just described. Familiar combinations name an established task; the rest are tagged <em>potential application</em> — routes the same model could serve, with no household name yet.</p>
+
+<div class="widget-caption"><span class="num">Fig. 6.1</span>Multimodal conditional generation. Choose inputs and an output; read off the task.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<div class="rt-block">
+  <div class="rt-label">Inputs (Perceive) — choose one or more</div>
+  <div class="rt-chips" id="rt-inputs"></div>
+</div>
+<div class="rt-block">
+  <div class="rt-label">Output (Act) — choose one</div>
+  <div class="rt-chips" id="rt-outputs"></div>
+</div>
+<div class="rt-result">
+  <div class="rt-route" id="rt-route"></div>
+  <div class="rt-task" id="rt-task"></div>
+  <div class="rt-desc" id="rt-desc"></div>
+</div>
+</div>
+</div>
+
+<p>Today each of these is a separate model, dataset, and research community. The Perceive → Imagine → Act framework unifies them as different routes through one architecture — and improvements to the shared backbone benefit every task simultaneously. That is the whole bet: <strong>build the multimodal mind once, and every capability comes along for the ride.</strong></p>
+</section>
+
+<footer class="post-footer">
+  Siddharth Choudhary · March 2026 · <a href="../index.html">home</a>
+</footer>
+
+</article>
+
+<script>
+/* ============================================================
+   W1 — Perceive → Imagine → Act loop
+   ============================================================ */
+(function () {
+  var stages = [
+    { tag: 'Stage 1', title: 'Perceive', color: 'var(--m-video)',
+      body: 'Video, audio, proprioception, and language stream in and are inferred into one unified representation. The model sees the glass, the table, its own hand position — all in the same space.' },
+    { tag: 'Stage 2', title: 'Imagine', color: 'var(--m-image)',
+      body: 'The model rolls out a mental video of the plan: the hand approaching, fingers closing, the predicted weight shift and contact forces. This multimodal imagination is the world model.' },
+    { tag: 'Stage 3', title: 'Act', color: 'var(--m-action)',
+      body: 'Conditioned on the imagined plan, the model emits motor commands that close the grasp. The world changes, fresh percepts arrive — and the loop returns to Perceive.' }
+  ];
+  var cx = 140, cy = 140, R = 86, nodeR = 40;
+  var pos = stages.map(function (_, i) {
+    var a = -Math.PI / 2 + i * (2 * Math.PI / 3);
+    return { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
+  });
+  var arcs = document.getElementById('loop-arcs');
+  var nodesG = document.getElementById('loop-nodes');
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var current = 0, timer = null;
+
+  // curved arrows between nodes
+  for (var i = 0; i < 3; i++) {
+    var a = pos[i], b = pos[(i + 1) % 3];
+    var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    // push control point outward from center
+    var dx = mx - cx, dy = my - cy, d = Math.hypot(dx, dy) || 1;
+    var cxp = mx + (dx / d) * 34, cyp = my + (dy / d) * 34;
+    // trim endpoints to node radius
+    function trim(from, to) {
+      var vx = to.x - from.x, vy = to.y - from.y, l = Math.hypot(vx, vy);
+      return { x: from.x + vx / l * (nodeR + 6), y: from.y + vy / l * (nodeR + 6) };
+    }
+    var p1 = trim(a, { x: cxp, y: cyp });
+    var p2 = trim(b, { x: cxp, y: cyp });
+    var path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', 'M' + p1.x + ',' + p1.y + ' Q' + cxp + ',' + cyp + ' ' + p2.x + ',' + p2.y);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'var(--color-border-tertiary)');
+    path.setAttribute('stroke-width', '2');
+    arcs.appendChild(path);
+    // arrowhead at p2
+    var ang = Math.atan2(p2.y - cyp, p2.x - cxp);
+    var ah = document.createElementNS(SVGNS, 'path');
+    var s = 7;
+    ah.setAttribute('d', 'M' + p2.x + ',' + p2.y +
+      ' L' + (p2.x - s * Math.cos(ang - 0.5)) + ',' + (p2.y - s * Math.sin(ang - 0.5)) +
+      ' L' + (p2.x - s * Math.cos(ang + 0.5)) + ',' + (p2.y - s * Math.sin(ang + 0.5)) + ' Z');
+    ah.setAttribute('fill', 'var(--color-text-tertiary)');
+    arcs.appendChild(ah);
+  }
+
+  var circles = [];
+  stages.forEach(function (st, i) {
+    var g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'loop-node');
+    var c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', pos[i].x); c.setAttribute('cy', pos[i].y); c.setAttribute('r', nodeR);
+    c.setAttribute('fill', 'var(--color-bg-secondary)');
+    c.setAttribute('stroke', 'var(--color-border-tertiary)');
+    c.setAttribute('stroke-width', '2');
+    var t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', pos[i].x); t.setAttribute('y', pos[i].y + 5);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-family', 'var(--font-mono)');
+    t.setAttribute('font-size', '13'); t.setAttribute('font-weight', '600');
+    t.setAttribute('fill', 'var(--color-text-secondary)');
+    t.textContent = st.title;
+    g.appendChild(c); g.appendChild(t);
+    g.addEventListener('click', function () { stop(); show(i); });
+    nodesG.appendChild(g);
+    circles.push({ c: c, t: t, color: st.color });
+  });
+
+  function show(i) {
+    current = i;
+    circles.forEach(function (o, j) {
+      if (j === i) {
+        o.c.setAttribute('fill', o.color);
+        o.c.setAttribute('stroke', o.color);
+        o.c.setAttribute('r', nodeR + 3);
+        o.t.setAttribute('fill', '#fff');
+      } else {
+        o.c.setAttribute('fill', 'var(--color-bg-secondary)');
+        o.c.setAttribute('stroke', 'var(--color-border-tertiary)');
+        o.c.setAttribute('r', nodeR);
+        o.t.setAttribute('fill', 'var(--color-text-secondary)');
+      }
+    });
+    var st = stages[i];
+    document.getElementById('loop-tag').textContent = st.tag;
+    document.getElementById('loop-tag').style.color = st.color;
+    document.getElementById('loop-title').textContent = st.title;
+    document.getElementById('loop-body').textContent = st.body;
+  }
+  function step() { show((current + 1) % 3); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; document.getElementById('loop-auto').classList.remove('active'); } }
+
+  document.getElementById('loop-step').addEventListener('click', function () { stop(); step(); });
+  document.getElementById('loop-auto').addEventListener('click', function () {
+    if (timer) { stop(); }
+    else { this.classList.add('active'); timer = setInterval(step, 2200); }
+  });
+  show(0);
+})();
+
+/* ============================================================
+   W2 — MoT routing
+   ============================================================ */
+(function () {
+  var mods = [
+    { key: 'text',  label: 'text',   color: 'var(--m-text)',   expert: 'Understanding', gen: false },
+    { key: 'image', label: 'image',  color: 'var(--m-image)',  expert: 'Image expert',  gen: true },
+    { key: 'video', label: 'video',  color: 'var(--m-video)',  expert: 'Video expert',  gen: true },
+    { key: 'audio', label: 'audio',  color: 'var(--m-audio)',  expert: 'Audio expert',  gen: true },
+    { key: 'action',label: 'action', color: 'var(--m-action)', expert: 'Action expert', gen: true }
+  ];
+  // understanding expert handles all *input* (perception); text always routes there.
+  var experts = [
+    { name: 'Understanding', sub: 'perception', mods: ['text'] },
+    { name: 'Image',  sub: '→ pixels',   mods: ['image'] },
+    { name: 'Video',  sub: '→ frames',   mods: ['video'] },
+    { name: 'Audio',  sub: '→ waveform', mods: ['audio'] },
+    { name: 'Action', sub: '→ control',  mods: ['action'] }
+  ];
+  var active = { text: true, image: true, video: false, audio: false, action: false };
+  var chipsEl = document.getElementById('mot-chips');
+  var tokensEl = document.getElementById('mot-tokens');
+  var expertsEl = document.getElementById('mot-experts');
+
+  function colorOf(key) { return mods.filter(function (m) { return m.key === key; })[0].color; }
+
+  mods.forEach(function (m) {
+    var chip = document.createElement('div');
+    chip.className = 'mot-chip';
+    chip.textContent = m.label;
+    chip.addEventListener('click', function () { active[m.key] = !active[m.key]; render(); });
+    chipsEl.appendChild(chip);
+    m._chip = chip;
+  });
+
+  // a representative interleaved token order
+  var order = ['text', 'image', 'video', 'audio', 'action', 'text', 'image', 'video'];
+
+  function render() {
+    mods.forEach(function (m) {
+      if (active[m.key]) {
+        m._chip.style.background = m.color;
+        m._chip.style.color = '#fff';
+        m._chip.style.borderColor = m.color;
+      } else {
+        m._chip.style.background = 'var(--color-bg)';
+        m._chip.style.color = 'var(--color-text-tertiary)';
+        m._chip.style.borderColor = 'var(--color-border-tertiary)';
+      }
+    });
+    tokensEl.innerHTML = '';
+    var any = false;
+    order.forEach(function (k, idx) {
+      if (!active[k]) return;
+      any = true;
+      var t = document.createElement('div');
+      t.className = 'mot-token';
+      t.style.background = colorOf(k);
+      t.textContent = k + '·' + (idx + 1);
+      tokensEl.appendChild(t);
+    });
+    if (!any) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'font-size:0.8rem;color:var(--color-text-tertiary);font-style:italic;';
+      empty.textContent = 'select at least one modality';
+      tokensEl.appendChild(empty);
+    }
+    expertsEl.innerHTML = '';
+    experts.forEach(function (e) {
+      var on = e.mods.some(function (k) { return active[k]; });
+      var col = colorOf(e.mods[0]);
+      var box = document.createElement('div');
+      box.className = 'mot-expert';
+      box.innerHTML = e.name + '<div class="ec-sub">' + e.sub + '</div>';
+      if (on) {
+        box.style.borderColor = col;
+        box.style.color = col;
+        box.style.background = '#fff';
+        box.style.boxShadow = '0 0 0 3px ' + 'rgba(0,0,0,0.02)';
+        box.style.opacity = '1';
+      } else {
+        box.style.opacity = '0.4';
+      }
+      expertsEl.appendChild(box);
+    });
+  }
+  render();
+})();
+
+/* ============================================================
+   W3 — Staged pretraining curriculum
+   ============================================================ */
+(function () {
+  var experts = [
+    { key: 'understand', name: 'Understanding', sub: 'text · image · video · audio → unified rep' },
+    { key: 'image',      name: 'Image gen',     sub: '→ pixels' },
+    { key: 'video',      name: 'Video gen',     sub: '→ frames over time' },
+    { key: 'audio',      name: 'Audio gen',     sub: '→ waveform' },
+    { key: 'action',     name: 'Action gen',    sub: '→ motor / control' }
+  ];
+  var stages = [
+    { n: 'Stage 1', name: 'MM Understanding',
+      states: { understand: 'train', image: 'none', video: 'none', audio: 'none', action: 'none' },
+      note: 'Next-token prediction across text, image, video, and audio builds a strong perceptual prior. Only the understanding expert learns — its Q/K/V, output projection, FFN, and norms. There is nothing to freeze yet. This is the foundation every later stage stands on.' },
+    { n: 'Stage 2', name: 'Image Generation',
+      states: { understand: 'frozen', image: 'train', video: 'none', audio: 'none', action: 'none' },
+      note: 'The image-generation expert is added and learns to synthesize pixels conditioned on the understood context. The understanding backbone and shared attention are frozen, so generation training cannot erode hard-won perception.' },
+    { n: 'Stage 3', name: 'Video / Audio Gen',
+      states: { understand: 'frozen', image: 'frozen', video: 'train', audio: 'train', action: 'none' },
+      note: 'Video and audio experts are added. Video extends the frozen image expert’s spatial priors into time; audio learns the sound stream. Understanding and the image expert stay frozen — the video expert reads their knowledge through global attention without disturbing it.' },
+    { n: 'Stage 4', name: 'Action Generation',
+      states: { understand: 'frozen', image: 'frozen', video: 'frozen', audio: 'frozen', action: 'train' },
+      note: 'Finally the action expert learns to turn the imagined rollout — predicted video, proprioception, contact forces — into motor commands, keyboard/mouse, or steering. Everything earlier is frozen; reading from a fixed world model, the model becomes an agent.' }
+  ];
+  var tabsEl = document.getElementById('stage-tabs');
+  var expertsEl = document.getElementById('stage-experts');
+  var noteEl = document.getElementById('stage-note');
+  var cur = 0;
+
+  stages.forEach(function (s, i) {
+    var t = document.createElement('div');
+    t.className = 'stage-tab';
+    t.innerHTML = '<div class="st-n">' + s.n + '</div><div class="st-name">' + s.name + '</div>';
+    t.addEventListener('click', function () { cur = i; render(); });
+    tabsEl.appendChild(t);
+    s._tab = t;
+  });
+
+  var badge = { train: 'Training ▲', frozen: '❄ Frozen', none: 'not yet added' };
+
+  function render() {
+    stages.forEach(function (s, i) { s._tab.classList.toggle('active', i === cur); });
+    var s = stages[cur];
+    expertsEl.innerHTML = '';
+    experts.forEach(function (e) {
+      var state = s.states[e.key];
+      var box = document.createElement('div');
+      box.className = 'stage-expert s-' + state;
+      box.innerHTML =
+        '<div class="se-name">' + e.name + '</div>' +
+        '<div class="se-sub">' + e.sub + '</div>' +
+        '<div class="se-badge">' + badge[state] + '</div>';
+      expertsEl.appendChild(box);
+    });
+    noteEl.textContent = s.note;
+  }
+  render();
+})();
+
+/* ============================================================
+   W4 — Physics flywheel
+   ============================================================ */
+(function () {
+  var svg = document.getElementById('fly-svg');
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var cx = 150, cy = 150, R = 92;
+  var stations = ['World Model', 'Planning', 'Action', 'Data'];
+  var ang0 = -Math.PI / 2;
+
+  // ring
+  var ring = document.createElementNS(SVGNS, 'circle');
+  ring.setAttribute('cx', cx); ring.setAttribute('cy', cy); ring.setAttribute('r', R);
+  ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', 'var(--color-border-tertiary)');
+  ring.setAttribute('stroke-width', '2'); ring.setAttribute('stroke-dasharray', '5 6');
+  svg.appendChild(ring);
+
+  // rotating arrow group
+  var spinG = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(spinG);
+  for (var k = 0; k < 4; k++) {
+    var a = ang0 + k * Math.PI / 2 + 0.35;
+    var x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+    var dot = document.createElementNS(SVGNS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', 5);
+    dot.setAttribute('fill', 'var(--color-accent)');
+    spinG.appendChild(dot);
+  }
+
+  // station labels
+  stations.forEach(function (s, i) {
+    var a = ang0 + i * Math.PI / 2;
+    var x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+    var c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 26);
+    c.setAttribute('fill', 'var(--color-bg-secondary)');
+    c.setAttribute('stroke', 'var(--color-accent-soft)'); c.setAttribute('stroke-width', '1.5');
+    svg.appendChild(c);
+    var t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y + 3); t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-family', 'var(--font-mono)'); t.setAttribute('font-size', '8.5');
+    t.setAttribute('font-weight', '600'); t.setAttribute('fill', 'var(--color-text-secondary)');
+    var words = s.split(' ');
+    if (words.length === 2) {
+      t.setAttribute('y', y - 2);
+      var l1 = document.createElementNS(SVGNS, 'tspan'); l1.setAttribute('x', x); l1.textContent = words[0];
+      var l2 = document.createElementNS(SVGNS, 'tspan'); l2.setAttribute('x', x); l2.setAttribute('dy', '10'); l2.textContent = words[1];
+      t.appendChild(l1); t.appendChild(l2);
+    } else { t.textContent = s; }
+    svg.appendChild(t);
+  });
+
+  // center label
+  var center = document.createElementNS(SVGNS, 'text');
+  center.setAttribute('x', cx); center.setAttribute('y', cy + 4); center.setAttribute('text-anchor', 'middle');
+  center.setAttribute('font-family', 'var(--font-mono)'); center.setAttribute('font-size', '10');
+  center.setAttribute('font-weight', '600'); center.setAttribute('fill', 'var(--color-accent)');
+  center.textContent = 'RLPF';
+  svg.appendChild(center);
+
+  var fid = 0.6, cycles = 0, cap = 1.0, angle = 0, raf = null;
+  var fidEl = document.getElementById('fly-fid');
+  var fidVal = document.getElementById('fly-fid-val');
+  var cyc = document.getElementById('fly-cycles');
+  var capEl = document.getElementById('fly-cap');
+  var lastTick = 0, acc = 0;
+
+  fidEl.addEventListener('input', function () { fid = parseFloat(this.value); fidVal.textContent = fid.toFixed(2); });
+
+  function frame() {
+    var speed = 0.6 + fid * 3.2;           // rotation speed scales with fidelity
+    angle += speed * 0.016;
+    spinG.setAttribute('transform', 'rotate(' + (angle * 57.3) + ' ' + cx + ' ' + cy + ')');
+    acc += 0.016 * (0.4 + fid * 1.6);
+    if (acc >= 1) {                         // complete a cycle
+      acc -= 1;
+      cycles++;
+      // gain compounds: high fidelity multiplies, low fidelity barely moves
+      var gain = 1 + 0.02 + Math.pow(fid, 2) * 0.20;
+      cap *= gain;
+      cyc.textContent = cycles;
+      capEl.textContent = cap.toFixed(1) + '×';
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  document.getElementById('fly-spin').addEventListener('click', function () {
+    if (raf) { cancelAnimationFrame(raf); raf = null; this.classList.remove('active'); this.textContent = 'Run flywheel'; }
+    else { this.classList.add('active'); this.textContent = 'Pause'; raf = requestAnimationFrame(frame); }
+  });
+  document.getElementById('fly-reset').addEventListener('click', function () {
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    cycles = 0; cap = 1.0; angle = 0; acc = 0;
+    spinG.setAttribute('transform', '');
+    cyc.textContent = '0'; capEl.textContent = '1.0×';
+    var b = document.getElementById('fly-spin'); b.classList.remove('active'); b.textContent = 'Run flywheel';
+  });
+})();
+
+/* ============================================================
+   W5 — One model, many problems router
+   ============================================================ */
+(function () {
+  var inputs = [
+    { key: 'text', label: 'text', color: 'var(--m-text)' },
+    { key: 'image', label: 'image', color: 'var(--m-image)' },
+    { key: 'video', label: 'video', color: 'var(--m-video)' },
+    { key: 'audio', label: 'audio', color: 'var(--m-audio)' },
+    { key: 'action', label: 'action', color: 'var(--m-action)' }
+  ];
+  var outputs = [
+    { key: 'text', label: 'text', color: 'var(--m-text)' },
+    { key: 'image', label: 'image', color: 'var(--m-image)' },
+    { key: 'video', label: 'video', color: 'var(--m-video)' },
+    { key: 'audio', label: 'audio', color: 'var(--m-audio)' },
+    { key: 'action', label: 'action', color: 'var(--m-action)' }
+  ];
+  // routes keyed by sorted-input-set + output
+  var routes = [
+    // → text  (understanding / "Perceive" read out as language)
+    { in: ['text'], out: 'text', task: 'Language modeling', desc: 'Chat and reasoning over text — the classic LLM.' },
+    { in: ['image'], out: 'text', task: 'Image understanding', desc: 'Caption an image or answer questions about it.' },
+    { in: ['image', 'text'], out: 'text', task: 'Visual question answering', desc: 'Answer a question about an image.' },
+    { in: ['video'], out: 'text', task: 'Video understanding', desc: 'Describe or reason over a clip.' },
+    { in: ['text', 'video'], out: 'text', task: 'Video question answering', desc: 'Answer a question about a clip.' },
+    { in: ['audio'], out: 'text', task: 'Speech & audio understanding', desc: 'Transcription (ASR) and reasoning over sound.' },
+    { in: ['audio', 'text'], out: 'text', task: 'Spoken question answering', desc: 'Answer a spoken question, or follow a written prompt about audio.' },
+    { in: ['audio', 'video'], out: 'text', task: 'Audiovisual understanding', desc: 'Reason over picture and sound together.' },
+    { in: ['image', 'video'], out: 'text', task: 'Visual grounding', desc: 'Relate a reference image to a clip — find it, track it, describe it.' },
+    { in: ['action', 'video'], out: 'text', task: 'Action captioning', desc: 'Describe what an agent did and why, from frames and the actions taken.' },
+    { in: ['audio', 'image', 'text'], out: 'text', task: 'Multimodal assistant', desc: 'Answer questions grounded in image, audio, and text at once.' },
+    // → image
+    { in: ['text'], out: 'image', task: 'Text-to-image generation', desc: 'Synthesize an image from a prompt.' },
+    { in: ['image'], out: 'image', task: 'Image-to-image', desc: 'Restyle, upscale, or segment an existing image.' },
+    { in: ['image', 'text'], out: 'image', task: 'Instructed image editing', desc: 'Edit or inpaint an image from a text instruction.' },
+    { in: ['video'], out: 'image', task: 'Frame synthesis', desc: 'Pull or synthesize a representative still from a clip.' },
+    { in: ['audio'], out: 'image', task: 'Audio-to-image', desc: 'Visualize sound — e.g. a scene matching what is heard.' },
+    { in: ['audio', 'text'], out: 'image', task: 'Album / cover art', desc: 'Generate an image from music plus a prompt.' },
+    // → video
+    { in: ['text'], out: 'video', task: 'Text-to-video generation', desc: 'Generate a clip from a prompt.' },
+    { in: ['image'], out: 'video', task: 'Image animation', desc: 'Bring a single still image to life.' },
+    { in: ['image', 'text'], out: 'video', task: 'Controllable video generation', desc: 'A text prompt plus a starting image conditions the generated video.' },
+    { in: ['video'], out: 'video', task: 'Video prediction', desc: 'Continue a clip / predict the next frames.' },
+    { in: ['text', 'video'], out: 'video', task: 'Video editing', desc: 'Re-edit an existing clip from an instruction.' },
+    { in: ['action', 'video'], out: 'video', task: 'World simulation', desc: 'Current frames plus an action → the next frames. This is the learned world model.' },
+    { in: ['audio', 'image'], out: 'video', task: 'Audio-driven avatar', desc: 'Animate a portrait to speech — talking-head generation.' },
+    { in: ['audio', 'text'], out: 'video', task: 'Music video generation', desc: 'Generate a clip synced to audio and a prompt.' },
+    // → audio
+    { in: ['text'], out: 'audio', task: 'Text-to-speech / audio generation', desc: 'Speak text, or generate music and sound.' },
+    { in: ['audio'], out: 'audio', task: 'Speech enhancement / voice conversion', desc: 'Clean up or transform an audio stream.' },
+    { in: ['audio', 'text'], out: 'audio', task: 'Voice cloning / instructed TTS', desc: 'Speak text in a reference voice, or edit audio by instruction.' },
+    { in: ['video'], out: 'audio', task: 'Video-to-audio', desc: 'Foley, sound effects, or lip-synced speech for a clip.' },
+    { in: ['text', 'video'], out: 'audio', task: 'Soundtrack & dubbing', desc: 'Score or dub a clip from a script.' },
+    { in: ['audio', 'video'], out: 'audio', task: 'Audiovisual speech enhancement', desc: 'Use the video of a speaker to isolate and clean their voice.' },
+    { in: ['image'], out: 'audio', task: 'Image-to-audio', desc: 'Generate the ambience or sound a scene would make.' },
+    // → action  (the "Act" stage)
+    { in: ['text'], out: 'action', task: 'Tool use', desc: 'Call tools or APIs to accomplish a text goal.' },
+    { in: ['image'], out: 'action', task: 'Reactive control', desc: 'Map a single observation to an action — a one-shot, reactive policy.' },
+    { in: ['image', 'text'], out: 'action', task: 'GUI / tool use', desc: 'From a screenshot and a goal, click and type to operate software.' },
+    { in: ['video'], out: 'action', task: 'Computer use · game playing · driving', desc: 'Watch a screen or the road and emit keyboard/mouse or steering. One signature, many embodiments.' },
+    { in: ['text', 'video'], out: 'action', task: 'Robotics', desc: 'Camera feed plus an instruction → motor commands (instruction-following manipulation or driving to a destination).' },
+    { in: ['audio'], out: 'action', task: 'Voice-commanded action', desc: 'Act on a spoken command.' },
+    { in: ['audio', 'video'], out: 'action', task: 'Audiovisual agent', desc: 'Act on what it both sees and hears.' },
+    { in: ['action', 'video'], out: 'action', task: 'Imitation / replay', desc: 'Continue a demonstrated action sequence from frames and past actions.' },
+    { in: ['audio', 'text', 'video'], out: 'action', task: 'Embodied multimodal agent', desc: 'See, hear, and follow instructions to act in the world.' }
+  ];
+  var selIn = { image: true, text: true };
+  var selOut = 'video';
+  var inEl = document.getElementById('rt-inputs');
+  var outEl = document.getElementById('rt-outputs');
+
+  inputs.forEach(function (m) {
+    var c = document.createElement('div'); c.className = 'rt-chip'; c.textContent = m.label;
+    c.addEventListener('click', function () { selIn[m.key] = !selIn[m.key]; render(); });
+    inEl.appendChild(c); m._el = c;
+  });
+  outputs.forEach(function (m) {
+    var c = document.createElement('div'); c.className = 'rt-chip'; c.textContent = m.label;
+    c.addEventListener('click', function () { selOut = m.key; render(); });
+    outEl.appendChild(c); m._el = c;
+  });
+
+  function key(arr) { return arr.slice().sort().join('+'); }
+
+  // For any combination without a curated name, synthesize a plausible
+  // "potential application" so the matrix has no holes.
+  function synth(ins, out) {
+    var has = {};
+    ins.forEach(function (k) { has[k] = true; });
+    var phrase = ins.join(' + ');
+    var name;
+    if (out === 'text') {
+      if (has.action) name = 'Agent activity reports';
+      else if (has.video && has.audio) name = 'Media intelligence';
+      else if (has.video) name = 'Video analytics';
+      else if (has.audio) name = 'Audio analytics';
+      else if (has.image) name = 'Visual analytics';
+      else name = 'Text reasoning';
+      return { task: name, desc: 'Read ' + phrase + ' and produce language — descriptions, answers, or structured reports.', potential: true };
+    }
+    if (out === 'image') {
+      if (has.action) name = 'Outcome visualization';
+      else if (has.video) name = 'Keyframe & still design';
+      else if (has.audio) name = 'Sound-inspired imagery';
+      else name = 'Conditional image synthesis';
+      return { task: name, desc: 'Generate an image conditioned on ' + phrase + '.', potential: true };
+    }
+    if (out === 'video') {
+      if (has.action) name = 'Interactive world rollout';
+      else if (has.audio && has.image) name = 'Talking-portrait video';
+      else if (has.audio) name = 'Audio-driven video';
+      else name = 'Conditional video synthesis';
+      return { task: name, desc: 'Generate video conditioned on ' + phrase + '.', potential: true };
+    }
+    if (out === 'audio') {
+      if (has.video) name = 'Video-aware foley';
+      else if (has.action) name = 'Interaction sound design';
+      else if (has.image) name = 'Scene sonification';
+      else name = 'Conditional audio synthesis';
+      return { task: name, desc: 'Generate audio conditioned on ' + phrase + '.', potential: true };
+    }
+    // out === 'action'
+    if (has.video && has.audio && has.text) name = 'Embodied multimodal agent';
+    else if (has.video) name = 'Embodied control';
+    else if (has.audio) name = 'Voice-driven control';
+    else if (has.image) name = 'Observation-conditioned policy';
+    else if (has.action) name = 'Action planning';
+    else name = 'Goal-driven agent';
+    return { task: name, desc: 'Emit actions conditioned on ' + phrase + '.', potential: true };
+  }
+
+  function render() {
+    inputs.forEach(function (m) {
+      var on = selIn[m.key];
+      m._el.style.background = on ? m.color : 'var(--color-bg)';
+      m._el.style.color = on ? '#fff' : 'var(--color-text-tertiary)';
+      m._el.style.borderColor = on ? m.color : 'var(--color-border-tertiary)';
+    });
+    outputs.forEach(function (m) {
+      var on = selOut === m.key;
+      m._el.style.background = on ? m.color : 'var(--color-bg)';
+      m._el.style.color = on ? '#fff' : 'var(--color-text-tertiary)';
+      m._el.style.borderColor = on ? m.color : 'var(--color-border-tertiary)';
+    });
+    var chosen = inputs.filter(function (m) { return selIn[m.key]; }).map(function (m) { return m.key; });
+    var outLabel = outputs.filter(function (m) { return m.key === selOut; })[0].label;
+    var routeEl = document.getElementById('rt-route');
+    var taskEl = document.getElementById('rt-task');
+    var descEl = document.getElementById('rt-desc');
+    if (!chosen.length) {
+      routeEl.innerHTML = '';
+      taskEl.className = 'rt-task unknown'; taskEl.textContent = 'select at least one input';
+      descEl.textContent = '';
+      return;
+    }
+    routeEl.innerHTML = '<b>' + chosen.join(' + ') + '</b> → ' + outLabel;
+    var match = routes.filter(function (r) { return key(r.in) === key(chosen) && r.out === selOut; })[0];
+    var r = match || synth(chosen, selOut);
+    taskEl.className = 'rt-task';
+    taskEl.textContent = r.task;
+    if (r.potential) {
+      descEl.innerHTML = '<span class="rt-badge">potential application</span>' + r.desc;
+    } else {
+      descEl.textContent = r.desc;
+    }
+  }
+  render();
+})();
+
+/* ============================================================
+   W6 — Pretraining LR schedule
+   ============================================================ */
+(function () {
+  var cv = document.getElementById('lr-canvas');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  var W = 660, H = 300;                       // logical drawing units
+  var DPR = window.devicePixelRatio || 1;     // sharpen on retina / high-DPI
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.scale(DPR, DPR);
+  var x0 = 46, x1 = W - 18, y0 = H - 42, y1 = 36;
+
+  // phase boundaries (fraction of total training)
+  var warmEnd = 0.08, und = 0.44, imgEnd = 0.56, vaEnd = 0.68, clrEnd = 0.80;
+  var YMAX = 1.14;
+
+  function X(p) { return x0 + (x1 - x0) * p; }
+  function Yv(v) { return y0 + (y1 - y0) * (v / YMAX); }
+  function lrAt(p) {
+    if (p <= warmEnd) return p / warmEnd;
+    if (p <= clrEnd) return 1;
+    var t = (p - clrEnd) / (1 - clrEnd);
+    return 0.05 + 0.95 * 0.5 * (1 + Math.cos(Math.PI * t));
+  }
+
+  var bands = [
+    { a: 0,      b: und,    col: 'rgba(79,134,198,0.10)' },
+    { a: und,    b: imgEnd, col: 'rgba(29,158,117,0.13)' },
+    { a: imgEnd, b: vaEnd,  col: 'rgba(127,119,221,0.14)' },
+    { a: vaEnd,  b: clrEnd, col: 'rgba(184,118,30,0.14)' },
+    { a: clrEnd, b: 1,      col: 'rgba(150,140,92,0.18)' }
+  ];
+
+  function draw(p) {
+    ctx.clearRect(0, 0, W, H);
+    // shaded data bands
+    bands.forEach(function (bd) {
+      ctx.fillStyle = bd.col;
+      ctx.fillRect(X(bd.a), y1, X(bd.b) - X(bd.a), y0 - y1);
+    });
+    // band dividers (within CLR)
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1;
+    [und, imgEnd, vaEnd].forEach(function (d) {
+      ctx.beginPath(); ctx.moveTo(X(d), y1); ctx.lineTo(X(d), y0); ctx.stroke();
+    });
+    // phase boundaries (warm-up / CLR / ramp-down) dashed
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(0,0,0,0.20)';
+    [warmEnd, clrEnd].forEach(function (d) {
+      ctx.beginPath(); ctx.moveTo(X(d), y1); ctx.lineTo(X(d), y0); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // peak guide line
+    ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(184,118,30,0.30)';
+    ctx.beginPath(); ctx.moveTo(x0, Yv(1)); ctx.lineTo(x1, Yv(1)); ctx.stroke();
+    ctx.setLineDash([]);
+    // axes
+    ctx.strokeStyle = '#cfcabf'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+    // y labels
+    ctx.fillStyle = '#888'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText('peak', x0 - 6, Yv(1) + 3);
+    ctx.fillText('0', x0 - 6, y0 + 3);
+    ctx.save();
+    ctx.translate(13, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.fillText('learning rate', 0, 0);
+    ctx.restore();
+    // phase labels (top)
+    ctx.font = '9px monospace'; ctx.fillStyle = '#9a9486';
+    ctx.textAlign = 'left'; ctx.fillText('WARM-UP', x0 + 3, 16);
+    ctx.textAlign = 'center';
+    ctx.fillText('CONSTANT LR', X((warmEnd + clrEnd) / 2), 16);
+    ctx.fillText('RAMP-DOWN', X((clrEnd + 1) / 2), 16);
+    // band labels (bottom of plot)
+    ctx.font = '8.5px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(60,100,150,0.95)'; ctx.fillText('understanding', X(und / 2), y0 - 9);
+    ctx.fillStyle = 'rgba(22,120,88,1)';    ctx.fillText('+image', X((und + imgEnd) / 2), y0 - 9);
+    ctx.fillStyle = 'rgba(110,100,200,1)';  ctx.fillText('+vid/aud', X((imgEnd + vaEnd) / 2), y0 - 9);
+    ctx.fillStyle = 'rgba(160,100,20,1)';   ctx.fillText('+action', X((vaEnd + clrEnd) / 2), y0 - 9);
+    ctx.fillStyle = 'rgba(120,110,70,1)';   ctx.fillText('HQ all-mod', X((clrEnd + 1) / 2), y0 - 9);
+    // the 50% marker note
+    ctx.fillStyle = '#9a9486'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('50% of CLR', X(und), y0 + 14);
+    // LR curve
+    ctx.strokeStyle = '#b8761e'; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (var i = 0; i <= 240; i++) {
+      var pp = i / 240, xx = X(pp), yy = Yv(lrAt(pp));
+      if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+    // x end labels
+    ctx.fillStyle = '#888'; ctx.font = '10px monospace';
+    ctx.textAlign = 'left'; ctx.fillText('0%', x0, y0 + 28);
+    ctx.textAlign = 'right'; ctx.fillText('100%', x1, y0 + 28);
+    // playhead
+    var px = X(p);
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px, y1); ctx.lineTo(px, y0); ctx.stroke();
+    var py = Yv(lrAt(p));
+    ctx.fillStyle = '#b8761e'; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  function info(p) {
+    if (p < warmEnd) return { ph: 'Warm-up', sub: 'LR ramping up to its peak', data: 'Understanding — text · image · video · audio', tr: 'Understanding expert' };
+    if (p < und)     return { ph: 'Constant LR', sub: 'First 50% of CLR — understanding only', data: 'Understanding — text · image · video · audio', tr: 'Understanding expert' };
+    if (p < imgEnd)  return { ph: 'Constant LR', sub: 'Image generation introduced', data: '+ text→image generation pairs', tr: 'Image expert · understanding frozen' };
+    if (p < vaEnd)   return { ph: 'Constant LR', sub: 'Video & audio generation', data: '+ video / audio generation', tr: 'Video · Audio experts · earlier frozen' };
+    if (p < clrEnd)  return { ph: 'Constant LR', sub: 'Action generation', data: '+ action / trajectory data', tr: 'Action expert · earlier frozen' };
+    return { ph: 'Ramp-down', sub: 'LR annealing toward zero', data: 'High-quality data across all modalities', tr: 'Polishing the full stack' };
+  }
+
+  var slider = document.getElementById('lr-prog');
+  var valEl = document.getElementById('lr-prog-val');
+  var phaseEl = document.getElementById('lr-phase');
+  var subEl = document.getElementById('lr-subphase');
+  var lrValEl = document.getElementById('lr-val');
+  var dataEl = document.getElementById('lr-data');
+  var trainEl = document.getElementById('lr-train');
+  var playBtn = document.getElementById('lr-play');
+  var resetBtn = document.getElementById('lr-reset');
+  var raf = null, playing = false;
+
+  function setP(p) {
+    p = Math.max(0, Math.min(1, p));
+    slider.value = p;
+    valEl.textContent = Math.round(p * 100) + '%';
+    draw(p);
+    var d = info(p);
+    phaseEl.textContent = d.ph;
+    subEl.textContent = d.sub;
+    lrValEl.textContent = Math.round(lrAt(p) * 100) + '% of peak';
+    dataEl.textContent = d.data;
+    trainEl.textContent = d.tr;
+  }
+  function stopPlay() {
+    playing = false;
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    playBtn.classList.remove('active'); playBtn.textContent = 'Play run';
+  }
+  function step() {
+    if (!playing) return;
+    var p = parseFloat(slider.value) + 0.0022;
+    if (p >= 1) { setP(1); stopPlay(); return; }
+    setP(p); raf = requestAnimationFrame(step);
+  }
+  slider.addEventListener('input', function () { stopPlay(); setP(parseFloat(this.value)); });
+  playBtn.addEventListener('click', function () {
+    if (playing) { stopPlay(); }
+    else {
+      playing = true; playBtn.classList.add('active'); playBtn.textContent = 'Pause';
+      if (parseFloat(slider.value) >= 0.999) setP(0);
+      raf = requestAnimationFrame(step);
+    }
+  });
+  resetBtn.addEventListener('click', function () { stopPlay(); setP(0); });
+
+  setP(0.3);
+})();
+</script>
+
+</body>
+</html>
