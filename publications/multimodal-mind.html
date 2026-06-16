@@ -4,11 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Multimodal Mind: Perceive → Imagine → Act</title>
-<meta name="description" content="A natively multimodal foundation model organized around a Perceive → Imagine → Act loop — built on a Mixture-of-Transformers backbone and a staged pretraining curriculum, with interactive widgets.">
+<meta name="description" content="A natively multimodal foundation model organized around a Perceive → Imagine → Act loop — built on a mixture-of-transformers backbone and a staged pretraining curriculum, with interactive widgets.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (window.renderMathInElement) renderMathInElement(document.body, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ],
+      throwOnError: false
+    });
+  });
+</script>
 
 <style>
 :root {
@@ -159,6 +174,46 @@ header.post-header .lede {
 }
 .chapter-index a:hover { border-bottom-color: var(--color-accent); }
 
+/* Sticky left-margin contents rail */
+.toc-rail {
+  position: fixed;
+  top: 50%;
+  left: 2rem;
+  transform: translateY(-50%);
+  width: 200px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+.toc-rail.visible { opacity: 1; visibility: visible; }
+.toc-rail .toc-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 0 0.85rem 0.95rem;
+}
+.toc-rail ol { list-style: none; margin: 0; padding: 0; }
+.toc-rail a {
+  display: block;
+  padding: 0.42rem 0 0.42rem 0.95rem;
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  border-left: 2px solid var(--color-border-tertiary);
+  transition: color 0.18s, border-color 0.18s;
+}
+.toc-rail a:hover { color: var(--color-text-secondary); border-color: var(--color-accent-soft); }
+.toc-rail a.active { color: var(--color-accent); border-color: var(--color-accent); font-weight: 600; }
+@media (max-width: 1199px) { .toc-rail { display: none; } }
+@media (prefers-reduced-motion: reduce) { .toc-rail { transition: none; } }
+
 /* Article sections */
 section.chapter {
   max-width: 680px;
@@ -253,6 +308,81 @@ section.chapter pre code { background: none; padding: 0; font-size: inherit; }
   line-height: 1.55;
 }
 .callout strong { font-style: normal; }
+
+/* Equations (KaTeX) */
+.eqn { margin: 1.7rem 0; overflow-x: auto; overflow-y: hidden; }
+.eqn .katex-display { margin: 0; }
+.katex { font-size: 1.05em; }
+@media (max-width: 900px) { .katex { font-size: 0.92em; } }
+
+/* Optional deep-dive disclosures */
+html { interpolate-size: allow-keywords; }
+.deep-dives { margin: 2.6rem 0 1rem; }
+.deep-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: 0.5rem;
+}
+.deep { border-top: 1px solid var(--color-border-tertiary); }
+.deep:last-of-type { border-bottom: 1px solid var(--color-border-tertiary); }
+.deep > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.05rem 0.15rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.deep > summary::-webkit-details-marker { display: none; }
+.deep > summary::marker { content: ""; }
+.deep > summary:focus-visible { outline: 2px solid var(--color-accent-soft); outline-offset: 3px; border-radius: 3px; }
+.deep-n {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  flex: none;
+}
+.deep-q {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.18rem;
+  letter-spacing: -0.005em;
+  color: var(--color-text-primary);
+  transition: color 0.18s;
+}
+.deep > summary:hover .deep-q,
+.deep[open] > summary .deep-q { color: var(--color-accent); }
+.deep-toggle { position: relative; width: 16px; height: 16px; margin-left: auto; flex: none; }
+.deep-toggle::before, .deep-toggle::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  background: var(--color-accent);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.deep-toggle::before { width: 13px; height: 1.6px; transform: translate(-50%, -50%); }
+.deep-toggle::after  { width: 1.6px; height: 13px; transform: translate(-50%, -50%); }
+.deep[open] .deep-toggle::after { opacity: 0; transform: translate(-50%, -50%) rotate(90deg); }
+.deep-body { padding: 0 0.15rem 1.4rem; }
+.deep-body > *:first-child { margin-top: 0; }
+.deep-body .widget-container { margin-left: 0; margin-right: 0; }
+.deep::details-content {
+  overflow: hidden;
+  block-size: 0;
+  opacity: 0;
+  transition: block-size 0.4s ease, opacity 0.3s ease, content-visibility 0.4s allow-discrete;
+}
+.deep[open]::details-content { block-size: auto; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .deep::details-content { transition: none; }
+  .deep-toggle::before, .deep-toggle::after { transition: none; }
+}
 
 /* Tables */
 section.chapter table {
@@ -425,6 +555,24 @@ section.references ol li::before {
 section.references .r-title { font-style: italic; }
 section.references .r-venue { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.02em; }
 section.references li a { border-bottom: 1px solid var(--color-accent-soft); }
+
+/* Cite-this block */
+.cite-h { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.cite-copy {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.34rem 0.75rem;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cite-copy:hover, .cite-copy.copied { border-color: var(--color-accent); color: var(--color-accent); }
 
 /* ===== Widget: Perceive → Imagine → Act loop (W1) ===== */
 .loop-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
@@ -677,15 +825,28 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
   <time datetime="2026-03">March 2026</time>
   <h1>The Multimodal Mind<br><span class="accent">Perceive → Imagine → Act</span></h1>
   <p class="byline">Siddharth Choudhary</p>
-  <p class="lede">What would it take to build a single model that understands the physical world well enough to imagine its futures and act to shape them? Here is how I'd build one — the cognitive loop, the architecture, and the staged training recipe.</p>
+  <p class="lede">One natively multimodal model that perceives the world, imagines its futures, and acts to shape them — running a single loop: Perceive → Imagine → Act.</p>
 </header>
 
 <nav class="chapter-index" aria-label="Table of contents">
   <div class="label">Contents</div>
   <ol>
     <li><a href="#ch-thesis">The thesis</a></li>
-    <li><a href="#ch-loop">The cognitive loop</a></li>
-    <li><a href="#ch-mot">One architecture: Mixture of Transformers</a></li>
+    <li><a href="#ch-loop">Cognitive loop: perceive → imagine → act</a></li>
+    <li><a href="#ch-mot">One architecture: mixture of transformers</a></li>
+    <li><a href="#ch-recipe">The pretraining recipe: a staged curriculum</a></li>
+    <li><a href="#ch-flywheel">Post-training &amp; the physics flywheel</a></li>
+    <li><a href="#ch-unify">One model, many problems</a></li>
+    <li><a href="#ch-refs">Related work</a></li>
+  </ol>
+</nav>
+
+<nav class="toc-rail" aria-label="Contents">
+  <div class="toc-rail-label">Contents</div>
+  <ol>
+    <li><a href="#ch-thesis">The thesis</a></li>
+    <li><a href="#ch-loop">Cognitive loop: perceive → imagine → act</a></li>
+    <li><a href="#ch-mot">One architecture: mixture of transformers</a></li>
     <li><a href="#ch-recipe">The pretraining recipe: a staged curriculum</a></li>
     <li><a href="#ch-flywheel">Post-training &amp; the physics flywheel</a></li>
     <li><a href="#ch-unify">One model, many problems</a></li>
@@ -695,28 +856,28 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <!-- ============ CH 1 ============ -->
 <section class="chapter" id="ch-thesis">
-<h2><span class="num">Ch. 01</span> <span>The thesis</span></h2>
+<h2><span class="num">Sec. 01</span> <span>The thesis</span></h2>
 
-<p>The next frontier in AI is a single model that understands the physical world well enough to <em>imagine</em> its futures and <em>act</em> to shape them. The path runs through a natively multimodal foundation model — one that perceives, reasons, and generates across all modalities (image, video, text, speech, action) — organized around a three-stage cognitive loop: <strong>Perceive → Imagine → Act</strong>.</p>
+<p>The next frontier in AI is a single model that understands the physical world well enough to <em>imagine</em> its futures and <em>act</em> to shape them. The path runs through a natively multimodal foundation model — one that perceives, reasons, and generates across all modalities (image, video, text, speech, action) — organized around a three-stage cognitive loop: Perceive → Imagine → Act.</p>
 
 <p>Biological intelligence follows that loop without thinking about it: observe the world, mentally simulate what should happen, then intervene. Current AI breaks the loop into disconnected pipelines — a perception model here, a planner there, a controller bolted on the end, each trained by a different team on a different dataset. I propose building it as one model.</p>
 
-<div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all.<sup class="ref"><a href="#ref-8">[8]</a></sup> Improvements to the shared backbone benefit every task at once.</div>
+<div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all.<sup class="ref"><a href="#ref-19">[19]</a></sup> Improvements to the shared backbone benefit every task at once.</div>
 
-<p>The rest of this page makes that claim concrete: the loop, the architecture that runs it (a Mixture of Transformers), the <strong>staged pretraining recipe</strong> I want to dwell on most — growing the model one generative capability at a time, freezing what came before — and finally the self-play flywheel and the unification of today's siloed problems.</p>
+<p>The rest of this page makes that concrete: the cognitive loop, the mixture-of-transformers architecture that runs it, the staged pretraining recipe, the self-play flywheel, and the unification of today's siloed problems.</p>
 </section>
 
 <hr class="section-break">
 
 <!-- ============ CH 2 ============ -->
 <section class="chapter" id="ch-loop">
-<h2><span class="num">Ch. 02</span> <span>The cognitive loop</span></h2>
+<h2><span class="num">Sec. 02</span> <span>Cognitive loop: perceive → imagine → act</span></h2>
 
 <p>Three stages, run in a cycle. Each is inference in the <em>same</em> unified multimodal space — not three separate modules wired together.</p>
 
 <ol>
 <li><strong>Perceive.</strong> The model ingests the current state across all modalities — video, audio, proprioception, language — into a unified representation. Perception is inference, not a preprocessing step.</li>
-<li><strong>Imagine.</strong> Before acting, the model thinks in multimodal space. Not just text chain-of-thought, but a <em>mental video</em> of the planned trajectory: predicted proprioception, anticipated contact forces. This multimodal imagination <em>is</em> the world model.<sup class="ref"><a href="#ref-4">[4]</a><a href="#ref-5">[5]</a></sup></li>
+<li><strong>Imagine.</strong> Before acting, the model thinks in multimodal space. Not just text chain-of-thought, but a <em>mental video</em> of the planned trajectory: predicted proprioception, anticipated contact forces. This multimodal imagination <em>is</em> the world model.<sup class="ref"><a href="#ref-11">[11]</a><a href="#ref-12">[12]</a></sup></li>
 <li><strong>Act.</strong> The model generates whatever output the task requires — motor commands, keyboard/mouse, speech — conditioned on the imagined plan, not on reactive perception alone. The action changes the world, new percepts arrive, and the loop repeats.</li>
 </ol>
 
@@ -746,25 +907,37 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 </div>
 
-<p>The key idea hiding in the animation: <strong>Imagine and Act use the same generative machinery as Perceive</strong>. Imagining "the hand approaching, fingers closing, the weight shifting" is video + proprioception generation. Acting is action generation. They are not bolted-on heads — they are the same model generating in different output modalities. That is what the next chapter's architecture buys us.</p>
+<p>The key idea hiding in the animation: <strong>Imagine and Act use the same generative machinery as Perceive</strong>. Imagining "the hand approaching, fingers closing, the weight shifting" is video + proprioception generation. Acting is action generation. They are not bolted-on heads — they are the same model generating in different output modalities. That is what the next section's architecture buys us.</p>
 </section>
 
 <hr class="section-break">
 
 <!-- ============ CH 3 ============ -->
 <section class="chapter" id="ch-mot">
-<h2><span class="num">Ch. 03</span> <span>One architecture: Mixture of Transformers</span></h2>
+<h2><span class="num">Sec. 03</span> <span>One architecture: mixture of transformers</span></h2>
 
 <p>If one model has to perceive <em>and</em> generate images, video, audio, and actions, a single dense network creates a problem: modalities interfere. The statistics of a video frame and a motor command have nothing in common, and forcing the same feed-forward weights to model both means each capability dilutes the other.</p>
 
-<p>The architecture I use is a <strong>Mixture of Transformers (MoT)</strong>.<sup class="ref"><a href="#ref-1">[1]</a></sup> The trick is to split the network by <em>modality</em>:</p>
+<p>The architecture I use is a <strong>mixture of transformers (MoT)</strong>.<sup class="ref"><a href="#ref-1">[1]</a></sup> The trick is to split the network by <em>modality</em>:</p>
 
 <ul>
-<li><strong>Every weight is modality-specific.</strong> Each modality gets its own copy of the entire transformer block — the query/key/value and output projections, the feed-forward network, and the layernorms. Those weights <em>are</em> the experts. A token's modality deterministically selects which expert processes it; there is no learned router.</li>
+<li><strong>Every weight is modality-specific.</strong> Each modality gets its own copy of the entire transformer block — the query/key/value and output projections, the feed-forward network, and the RMSNorm layers. Those weights <em>are</em> the experts. A token's modality deterministically selects which expert processes it; there is no learned router.</li>
 <li><strong>Only the attention <em>operation</em> is global.</strong> Each token's Q, K, and V are produced by its own modality's projections, but attention then runs over the combined sequence — every token reads all prior context regardless of modality, so a later video token attends to earlier text and action tokens. The pattern tracks the objective: autoregressive tokens attend <em>causally</em> to the past, while a block of tokens being generated by diffusion attends <em>bidirectionally</em> within itself, conditioned on that causal context.<sup class="ref"><a href="#ref-2">[2]</a><a href="#ref-3">[3]</a></sup> The operation has no weights of its own; it is the wire that makes this <em>one</em> model, while every learnable parameter stays modality-specific.</li>
 </ul>
 
-<p>The payoff shows up in the next chapter: because every weight a token touches lives in its modality's expert, you can <strong>freeze an entire expert</strong> — its attention projections included — while training another, and global attention still lets the new expert read everything the frozen ones know.</p>
+<p>Concretely, for token <em>i</em> with modality <em>m<sub>i</sub></em>, every projection carries the modality subscript while attention mixes across the whole sequence:</p>
+
+<div class="eqn">\[
+\begin{aligned}
+q_i &= W^{Q}_{m_i}x_i, \qquad k_i = W^{K}_{m_i}x_i, \qquad v_i = W^{V}_{m_i}x_i \\[4pt]
+\alpha_{ij} &= \operatorname{softmax}_j\!\big(q_i^{\top}k_j/\sqrt{d}\big) \\[4pt]
+y_i &= \mathrm{FFN}_{m_i}\!\Big(\textstyle\sum_{j}\alpha_{ij}\,v_j\Big)
+\end{aligned}
+\]</div>
+
+<p>Every learnable matrix carries the subscript <em>m<sub>i</sub></em>. The attention coefficients <em>α<sub>ij</sub></em> are activations, not parameters — computed at runtime — and the mixing they perform runs globally across modalities, which is exactly what lets one modality's tokens read another's.</p>
+
+<p>The payoff shows up in the next section: because every weight a token touches lives in its modality's expert, you can <strong>freeze an entire expert</strong> — its attention projections included — while training another, and global attention still lets the new expert read everything the frozen ones know.</p>
 
 <p>Toggle modalities below to see how a mixed-modality sequence flows through shared attention and out to its experts.</p>
 
@@ -775,7 +948,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <div class="mot-stage">Input sequence (tokens, interleaved)</div>
 <div class="mot-tokens" id="mot-tokens"></div>
 <div class="mot-stage" style="margin-top:0.6rem;">↓ &nbsp; per-modality Q / K / V projection &nbsp; ↓</div>
-<div class="mot-attn">Global Self-Attention &nbsp;·&nbsp; causal for autoregressive tokens, bidirectional within a diffused block &nbsp;·&nbsp; no weights of its own</div>
+<div class="mot-attn">Global Self-Attention &nbsp;·&nbsp; causal for autoregressive tokens, bidirectional within a diffusion block &nbsp;·&nbsp; no weights of its own</div>
 <div class="mot-stage">↓ &nbsp; per-modality output projection · FFN · norms &nbsp; ↓</div>
 <div class="mot-experts" id="mot-experts"></div>
 </div>
@@ -788,19 +961,33 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <!-- ============ CH 4 ============ -->
 <section class="chapter" id="ch-recipe">
-<h2><span class="num">Ch. 04</span> <span>The pretraining recipe: a staged curriculum</span></h2>
+<h2><span class="num">Sec. 04</span> <span>The pretraining recipe: a staged curriculum</span></h2>
 
-<p>The recipe mirrors how we train LLMs — large-scale self-supervised prediction — but extends it into multimodal space, and crucially, it is <strong>staged</strong>.<sup class="ref"><a href="#ref-8">[8]</a></sup> Understanding is autoregressive next-token prediction; generation uses the objective each modality calls for — diffusion for continuous signals like image, video, and audio<sup class="ref"><a href="#ref-2">[2]</a></sup> — so the same backbone is autoregressive where it perceives and diffusion where it generates. You do not learn to perceive, imagine, and act all at once: generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
+<p>The recipe mirrors how we train LLMs, but extends it into multimodal space.<sup class="ref"><a href="#ref-19">[19]</a></sup> Understanding is autoregressive next-token prediction; generation uses the objective each modality calls for — diffusion for continuous signals like image, video, and audio<sup class="ref"><a href="#ref-2">[2]</a></sup> — so the same backbone is autoregressive where it perceives and diffusion where it generates. Summed over the understanding token positions <em>𝒰</em> and the generation positions <em>𝒢</em>, one pretraining loss carries both objectives:</p>
+
+<div class="eqn">\[
+\mathcal{L} \;=\;
+\underbrace{-\sum_{i\in\mathcal{U}}\log p_\theta\big(x_i \mid x_{&lt;i}\big)}_{\text{autoregressive — understand}}
+\;+\;
+\underbrace{\sum_{i\in\mathcal{G}}\mathbb{E}_{t,\epsilon}\big\|\,\epsilon - \epsilon_\theta\big(x_i^{(t)},\,t \mid c_i\big)\big\|^2}_{\text{diffusion — generate}}
+\]</div>
+
+<p>where <em>c<sub>i</sub></em> is the multimodal context attended to by token <em>i</em>. You do not learn to perceive, imagine, and act all at once: generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
 
 <div class="math-display" style="font-family: var(--font-mono); text-align:center; margin:1.4rem 0; font-size:0.95rem;">MM understanding → image generation → video / audio generation → action generation</div>
 
 <p>Two rules govern the climb:</p>
 <ul>
-<li><strong>Add one expert per stage.</strong> Each new stage introduces a new MoT generation expert (Ch. 3) on top of everything learned so far.</li>
+<li><strong>Add one expert per stage.</strong> Each new stage introduces a new MoT generation expert (Sec. 3) on top of everything learned so far.</li>
 <li><strong>Freeze everything earlier.</strong> When training a later generation component, the earlier components are frozen. Only the newest expert learns.</li>
 </ul>
 
-<p>There is a third reason the recipe is staged, and it may be the most practical one: <strong>data gets scarcer at every stage</strong>. The corpus of text, images, video, and audio for <em>understanding</em> is internet-scale. Paired data for high-quality image <em>generation</em> is smaller; video and audio generation smaller still; and action data — robot trajectories, labeled screen recordings, driving logs — is the scarcest of all. Each stage trains on roughly an order of magnitude less data than the one before. So we spend the abundant data first to build the strongest possible backbone, then climb into the data-poor regimes on top of it.</p>
+<p>Formally, at stage <em>s</em> only the new expert's parameters <em>θ<sub>s</sub></em> are trained, with every earlier expert held fixed:</p>
+
+<div class="eqn">\[
+\theta_s^{\star} = \arg\min_{\theta_s}\ \mathcal{L}_s\big(\theta_s \,;\, \theta_1^{\star},\dots,\theta_{s-1}^{\star}\big),
+\qquad \nabla_{\theta_{&lt;s}}\,\mathcal{L}_s = 0
+\]</div>
 
 <p>Step through the four stages below. Watch which experts are <em>training</em>, which are <em>frozen</em>, and which haven't been added yet. The shared attention is along for the ride the whole time.</p>
 
@@ -808,7 +995,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <div class="widget-container">
 <div class="widget-inner">
 <div class="stage-tabs" id="stage-tabs"></div>
-<div class="stage-attn">Global Self-Attention &nbsp;·&nbsp; the weightless operation linking every active expert — causal for autoregressive tokens, bidirectional within a diffused block</div>
+<div class="stage-attn">Global Self-Attention &nbsp;·&nbsp; the weightless operation linking every active expert — causal for autoregressive tokens, bidirectional within a diffusion block</div>
 <div class="stage-experts" id="stage-experts"></div>
 <div class="stage-note" id="stage-note"></div>
 <div class="stage-legend">
@@ -819,25 +1006,44 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 </div>
 
-<h3>Why this order?</h3>
+<div class="deep-dives">
+<div class="deep-label">Going deeper · optional</div>
+
+<details class="deep">
+<summary><span class="deep-n">01</span><span class="deep-q">Why this order?</span><span class="deep-toggle" aria-hidden="true"></span></summary>
+<div class="deep-body">
 <p>The sequence is not arbitrary — each arrow is a dependency:</p>
 <ul>
 <li><strong>Understanding before generation.</strong> You cannot imagine a coherent future until you can perceive the present. Stage 1 builds the perceptual prior that everything conditions on.</li>
 <li><strong>Image before video.</strong> A video is images over time. The video expert reuses the frozen image expert's spatial priors and only has to learn temporal dynamics — a much smaller lift than learning pixels and motion together.</li>
-<li><strong>Generation before action.</strong> Action is conditioned on <em>imagination</em> (Ch. 2). The model must be able to roll out a predicted video/proprioception trajectory before it can choose a motor command that achieves it. So the action expert comes last, reading from a frozen world model.<sup class="ref"><a href="#ref-9">[9]</a></sup></li>
+<li><strong>Generation before action.</strong> Action is conditioned on <em>imagination</em> (Sec. 2). The model must be able to roll out a predicted video/proprioception trajectory before it can choose a motor command that achieves it. So the action expert comes last, reading from a frozen world model.<sup class="ref"><a href="#ref-23">[23]</a></sup></li>
 </ul>
+</div>
+</details>
 
-<h3>Why freeze?</h3>
+<details class="deep">
+<summary><span class="deep-n">02</span><span class="deep-q">The data pyramid</span><span class="deep-toggle" aria-hidden="true"></span></summary>
+<div class="deep-body">
+<p>Staging is also the only practical option, because <strong>data gets scarcer at every stage</strong>. The corpus of text, images, video, and audio for <em>understanding</em> is internet-scale. Paired data for high-quality image <em>generation</em> is smaller; video and audio generation smaller still; and action data — robot trajectories, labeled screen recordings, driving logs — is the scarcest of all. Each stage trains on roughly an order of magnitude less data than the one before. So we spend the abundant data first to build the strongest possible backbone, then climb into the data-poor regimes on top of it.</p>
+</div>
+</details>
+
+<details class="deep">
+<summary><span class="deep-n">03</span><span class="deep-q">Why freeze?</span><span class="deep-toggle" aria-hidden="true"></span></summary>
+<div class="deep-body">
 <p>Freezing earlier components does three things at once:</p>
 <ul>
 <li><strong>No catastrophic forgetting.</strong> Hard-won perception and image priors can't be eroded by the noisier gradients of a new, harder generative task. This matters most because of the data pyramid: if everything trained jointly, the tiny action dataset would be swamped by — and would perturb — the enormous understanding corpus. Freezing lets the data-poor expert learn from a strong backbone without risking the data-rich capabilities.</li>
 <li><strong>Clean credit assignment.</strong> The newest expert is the only thing learning, so every gradient is attributable to it. Nothing else can drift to "explain away" its errors.</li>
 <li><strong>Cheaper training.</strong> A frozen expert is just a forward pass — no optimizer state, no backward pass through its weights. Each later stage is far cheaper than training the whole stack jointly.</li>
 </ul>
-
 <p>Because every weight — attention projections included — lives inside a modality expert, freezing an expert freezes its Q/K/V too. The global attention operation has no parameters of its own; it simply lets each newly added expert read and write through the frozen experts' representations.</p>
+</div>
+</details>
 
-<h3>The learning-rate schedule</h3>
+<details class="deep">
+<summary><span class="deep-n">04</span><span class="deep-q">The learning-rate schedule</span><span class="deep-toggle" aria-hidden="true"></span></summary>
+<div class="deep-body">
 <p>All of this rides on a single learning-rate schedule with three phases: a short <strong>warm-up</strong> that ramps the LR to its peak, a long <strong>constant-LR</strong> (CLR) plateau that does the bulk of the work, and a <strong>ramp-down</strong> that anneals the LR toward zero. The staged curriculum maps directly onto it. The first <strong>50% of the CLR plateau is understanding only</strong> — the data-rich foundation — and the generation stages (image, then video/audio, then action) are layered into the second half. The ramp-down is reserved for <strong>high-quality data across every modality</strong>, polishing the whole stack as the LR decays to zero.</p>
 
 <p>Scrub through a full pretraining run below — or hit play. The shaded bands show which data is mixed in; the readout tracks the LR, the data, and which expert is learning at that point.</p>
@@ -864,6 +1070,9 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 </div>
 </div>
+</div>
+</details>
+</div>
 
 <div class="callout">The staged-and-frozen recipe turns one terrifying joint-training problem into four tractable ones. Each stage asks a single, well-posed question — <em>given everything I already know, how do I generate this one new modality?</em> — and answers it without disturbing the rest.</div>
 </section>
@@ -872,7 +1081,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <!-- ============ CH 5 ============ -->
 <section class="chapter" id="ch-flywheel">
-<h2><span class="num">Ch. 05</span> <span>Post-training &amp; the physics flywheel</span></h2>
+<h2><span class="num">Sec. 05</span> <span>Post-training &amp; the physics flywheel</span></h2>
 
 <p>Pretraining learns the prior over how the multimodal world works. Two stages turn that prior into a capable agent:</p>
 <ul>
@@ -887,11 +1096,28 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <li><strong>Does my prediction violate physics?</strong> — consistency, checked against engine constraints. Call it <em>RL from physics feedback</em> (RLPF).</li>
 </ul>
 
+<p>Self-play maximizes expected return under a composite reward that folds these together:</p>
+
+<div class="eqn">\[
+\max_{\theta}\ \mathbb{E}_{\tau\sim\pi_\theta}\!\Big[\textstyle\sum_t R_t\Big],
+\qquad R = \alpha\,R_{\text{task}} + \beta\,R_{\text{imag}} + \gamma\,R_{\text{phys}}
+\]</div>
+
+<p>with <em>R</em><sub>imag</sub> the imagination accuracy and <em>R</em><sub>phys</sub> the physics-consistency term (RLPF).</p>
+
 <p>Trace one lap to see why it <em>compounds</em>. A better world model makes the model's imagination more accurate, so it can plan against a mental simulation it trusts — better plans. Better plans yield better actions, which succeed more often. Those successful rollouts ("this plan led to this outcome") are exactly the labeled examples you want, so they become richer training data — which trains an even better world model. Each lap raises the floor for the next.</p>
 
-<p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains.<sup class="ref"><a href="#ref-10">[10]</a></sup> Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
+<div class="deep-dives">
+<div class="deep-label">Going deeper · optional</div>
+<details class="deep">
+<summary><span class="deep-q">Why physics, not just text rewards?</span><span class="deep-toggle" aria-hidden="true"></span></summary>
+<div class="deep-body">
+<p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains.<sup class="ref"><a href="#ref-29">[29]</a></sup> Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
+</div>
+</details>
+</div>
 
-<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds. And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity,<sup class="ref"><a href="#ref-6">[6]</a></sup> and corrected by physics engines for physical consistency.<sup class="ref"><a href="#ref-7">[7]</a></sup></p>
+<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds. And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity,<sup class="ref"><a href="#ref-13">[13]</a></sup> and corrected by physics engines for physical consistency.<sup class="ref"><a href="#ref-20">[20]</a></sup></p>
 
 <p>Drag the fidelity slider to see how it gates the compounding rate.</p>
 
@@ -926,9 +1152,15 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <!-- ============ CH 6 ============ -->
 <section class="chapter" id="ch-unify">
-<h2><span class="num">Ch. 06</span> <span>One model, many problems</span></h2>
+<h2><span class="num">Sec. 06</span> <span>One model, many problems</span></h2>
 
 <p>Here is the payoff of building it as one model. Every major AI capability challenge is a different <em>route</em> through the same architecture — a particular choice of input modalities and output modality. Pick inputs and an output below to see which of today's siloed research problems you've just described. Familiar combinations name an established task; the rest are tagged <em>potential application</em> — routes the same model could serve, with no household name yet.</p>
+
+<p>Each is the same conditional distribution — choose which modality streams are given and which are generated:</p>
+
+<div class="eqn">\[
+y \sim p_\theta\big(y \mid x_1, x_2, \dots, x_k\big)
+\]</div>
 
 <div class="widget-caption"><span class="num">Fig. 6.1</span>Multimodal conditional generation. Choose inputs and an output; read off the task.</div>
 <div class="widget-container">
@@ -958,33 +1190,73 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <section class="chapter references" id="ch-refs">
 <h2><span class="num">Refs</span> <span>Related work</span></h2>
 
-<p>This essay synthesizes several lines of work. The architecture draws on sparse, modality-decoupled transformers and unified autoregressive-plus-diffusion models; the cognitive loop and physics flywheel build on the world-models tradition; and the physical-AI framing tracks a recent wave of world foundation models. Some of it — most directly NVIDIA's Cosmos 3<sup class="ref"><a href="#ref-8">[8]</a></sup> — appeared after this page and arrived at strikingly similar conclusions: a two-tower Mixture-of-Transformers that unifies understanding, world generation, and action for physical AI.</p>
+<p>This essay synthesizes several lines of work. The architecture draws on sparse, modality-decoupled transformers and unified autoregressive-plus-diffusion models; the cognitive loop and physics flywheel build on the world-models tradition; and the physical-AI framing tracks a recent wave of world foundation models. Some of it — most directly NVIDIA's Cosmos 3<sup class="ref"><a href="#ref-19">[19]</a></sup> — arrived at strikingly similar conclusions: a two-tower mixture-of-transformers that unifies understanding, world generation, and action for physical AI.</p>
 
 <div class="r-group">Unified multimodal architectures</div>
 <ol>
 <li id="ref-1">W. Liang et al. <a href="https://arxiv.org/abs/2411.04996"><span class="r-title">Mixture-of-Transformers: A Sparse and Scalable Architecture for Multi-Modal Foundation Models</span></a>. <span class="r-venue">TMLR, 2025. arXiv:2411.04996.</span></li>
 <li id="ref-2">C. Zhou et al. <a href="https://arxiv.org/abs/2408.11039"><span class="r-title">Transfusion: Predict the Next Token and Diffuse Images with One Multi-Modal Model</span></a>. <span class="r-venue">2024. arXiv:2408.11039.</span></li>
 <li id="ref-3">Chameleon Team (Meta FAIR). <a href="https://arxiv.org/abs/2405.09818"><span class="r-title">Chameleon: Mixed-Modal Early-Fusion Foundation Models</span></a>. <span class="r-venue">2024. arXiv:2405.09818.</span></li>
+<li id="ref-4">J. Xie et al. <a href="https://arxiv.org/abs/2408.12528"><span class="r-title">Show-o: One Single Transformer to Unify Multimodal Understanding and Generation</span></a>. <span class="r-venue">ICLR, 2025. arXiv:2408.12528.</span></li>
+<li id="ref-5">X. Wang et al. (BAAI). <a href="https://arxiv.org/abs/2409.18869"><span class="r-title">Emu3: Next-Token Prediction is All You Need</span></a>. <span class="r-venue">2024. arXiv:2409.18869.</span></li>
+<li id="ref-6">C. Wu et al. (DeepSeek-AI). <a href="https://arxiv.org/abs/2410.13848"><span class="r-title">Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation</span></a>. <span class="r-venue">2024. arXiv:2410.13848.</span></li>
+<li id="ref-7">X. Chen et al. (DeepSeek-AI). <a href="https://arxiv.org/abs/2501.17811"><span class="r-title">Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling</span></a>. <span class="r-venue">2025. arXiv:2501.17811.</span></li>
+<li id="ref-8">J. Lu et al. (AI2). <a href="https://arxiv.org/abs/2312.17172"><span class="r-title">Unified-IO 2: Scaling Autoregressive Multimodal Models with Vision, Language, Audio, and Action</span></a>. <span class="r-venue">CVPR, 2024. arXiv:2312.17172.</span></li>
+<li id="ref-9">T. Li et al. <a href="https://arxiv.org/abs/2406.11838"><span class="r-title">Autoregressive Image Generation without Vector Quantization (MAR)</span></a>. <span class="r-venue">NeurIPS, 2024. arXiv:2406.11838.</span></li>
+<li id="ref-10">C. Deng et al. (ByteDance Seed). <a href="https://arxiv.org/abs/2505.14683"><span class="r-title">Emerging Properties in Unified Multimodal Pretraining (BAGEL)</span></a>. <span class="r-venue">2025. arXiv:2505.14683.</span></li>
 </ol>
 
 <div class="r-group">World models &amp; imagination</div>
 <ol>
-<li id="ref-4">D. Ha and J. Schmidhuber. <a href="https://arxiv.org/abs/1803.10122"><span class="r-title">World Models</span></a>. <span class="r-venue">NeurIPS, 2018. arXiv:1803.10122.</span></li>
-<li id="ref-5">D. Hafner et al. <a href="https://arxiv.org/abs/2301.04104"><span class="r-title">Mastering Diverse Domains through World Models (DreamerV3)</span></a>. <span class="r-venue">2023. arXiv:2301.04104.</span></li>
-<li id="ref-6">J. Bruce et al. <a href="https://arxiv.org/abs/2402.15391"><span class="r-title">Genie: Generative Interactive Environments</span></a>. <span class="r-venue">ICML, 2024. arXiv:2402.15391.</span></li>
+<li id="ref-11">D. Ha and J. Schmidhuber. <a href="https://arxiv.org/abs/1803.10122"><span class="r-title">World Models</span></a>. <span class="r-venue">NeurIPS, 2018. arXiv:1803.10122.</span></li>
+<li id="ref-12">D. Hafner et al. <a href="https://arxiv.org/abs/2301.04104"><span class="r-title">Mastering Diverse Domains through World Models (DreamerV3)</span></a>. <span class="r-venue">Nature, 2025. arXiv:2301.04104.</span></li>
+<li id="ref-13">J. Bruce et al. <a href="https://arxiv.org/abs/2402.15391"><span class="r-title">Genie: Generative Interactive Environments</span></a>. <span class="r-venue">ICML, 2024. arXiv:2402.15391.</span></li>
+<li id="ref-14">V. Micheli et al. <a href="https://arxiv.org/abs/2209.00588"><span class="r-title">Transformers are Sample-Efficient World Models (IRIS)</span></a>. <span class="r-venue">ICLR, 2023. arXiv:2209.00588.</span></li>
+<li id="ref-15">E. Alonso et al. <a href="https://arxiv.org/abs/2405.12399"><span class="r-title">Diffusion for World Modeling: Visual Details Matter in Atari (DIAMOND)</span></a>. <span class="r-venue">NeurIPS, 2024. arXiv:2405.12399.</span></li>
+<li id="ref-16">A. Hu et al. (Wayve). <a href="https://arxiv.org/abs/2309.17080"><span class="r-title">GAIA-1: A Generative World Model for Autonomous Driving</span></a>. <span class="r-venue">2023. arXiv:2309.17080.</span></li>
+<li id="ref-17">S. Gao et al. <a href="https://arxiv.org/abs/2405.17398"><span class="r-title">Vista: A Generalizable Driving World Model with High Fidelity and Versatile Controllability</span></a>. <span class="r-venue">NeurIPS, 2024. arXiv:2405.17398.</span></li>
+<li id="ref-18">A. Bar et al. (Meta FAIR / NYU). <a href="https://arxiv.org/abs/2412.03572"><span class="r-title">Navigation World Models</span></a>. <span class="r-venue">CVPR, 2025. arXiv:2412.03572.</span></li>
 </ol>
 
-<div class="r-group">Physical-AI foundation models</div>
+<div class="r-group">Physical-AI &amp; world-action foundation models</div>
 <ol>
-<li id="ref-7">NVIDIA. <a href="https://arxiv.org/abs/2501.03575"><span class="r-title">Cosmos World Foundation Model Platform for Physical AI</span></a>. <span class="r-venue">2025. arXiv:2501.03575.</span></li>
-<li id="ref-8">NVIDIA. <a href="https://arxiv.org/abs/2606.02800"><span class="r-title">Cosmos 3: Omnimodal World Models for Physical AI</span></a>. <span class="r-venue">2026. arXiv:2606.02800.</span></li>
-<li id="ref-9">NVIDIA. <a href="https://arxiv.org/abs/2503.14734"><span class="r-title">GR00T N1: An Open Foundation Model for Generalist Humanoid Robots</span></a>. <span class="r-venue">2025. arXiv:2503.14734.</span></li>
+<li id="ref-19">NVIDIA. <a href="https://arxiv.org/abs/2606.02800"><span class="r-title">Cosmos 3: Omnimodal World Models for Physical AI</span></a>. <span class="r-venue">2026. arXiv:2606.02800.</span></li>
+<li id="ref-20">NVIDIA. <a href="https://arxiv.org/abs/2501.03575"><span class="r-title">Cosmos World Foundation Model Platform for Physical AI</span></a>. <span class="r-venue">2025. arXiv:2501.03575.</span></li>
+<li id="ref-21">NVIDIA. <a href="https://arxiv.org/abs/2511.00062"><span class="r-title">World Simulation with Video Foundation Models for Physical AI (Cosmos-Predict2.5)</span></a>. <span class="r-venue">2025. arXiv:2511.00062.</span></li>
+<li id="ref-22">NVIDIA. <a href="https://arxiv.org/abs/2503.15558"><span class="r-title">Cosmos-Reason1: From Physical Common Sense to Embodied Reasoning</span></a>. <span class="r-venue">2025. arXiv:2503.15558.</span></li>
+<li id="ref-23">NVIDIA. <a href="https://arxiv.org/abs/2503.14734"><span class="r-title">GR00T N1: An Open Foundation Model for Generalist Humanoid Robots</span></a>. <span class="r-venue">2025. arXiv:2503.14734.</span></li>
+<li id="ref-24">Google Robotics. <a href="https://arxiv.org/abs/2212.06817"><span class="r-title">RT-1: Robotics Transformer for Real-World Control at Scale</span></a>. <span class="r-venue">2022. arXiv:2212.06817.</span></li>
+<li id="ref-25">Google DeepMind. <a href="https://arxiv.org/abs/2307.15818"><span class="r-title">RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</span></a>. <span class="r-venue">CoRL, 2023. arXiv:2307.15818.</span></li>
+<li id="ref-26">M. J. Kim et al. (Stanford). <a href="https://arxiv.org/abs/2406.09246"><span class="r-title">OpenVLA: An Open-Source Vision-Language-Action Model</span></a>. <span class="r-venue">CoRL, 2024. arXiv:2406.09246.</span></li>
+<li id="ref-27">K. Black et al. (Physical Intelligence). <a href="https://arxiv.org/abs/2410.24164"><span class="r-title">π0: A Vision-Language-Action Flow Model for General Robot Control</span></a>. <span class="r-venue">2024. arXiv:2410.24164.</span></li>
+<li id="ref-28">Octo Model Team. <a href="https://arxiv.org/abs/2405.12213"><span class="r-title">Octo: An Open-Source Generalist Robot Policy</span></a>. <span class="r-venue">RSS, 2024. arXiv:2405.12213.</span></li>
 </ol>
 
 <div class="r-group">Learning from verifiable rewards</div>
 <ol>
-<li id="ref-10">DeepSeek-AI. <a href="https://arxiv.org/abs/2501.12948"><span class="r-title">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning</span></a>. <span class="r-venue">2025. arXiv:2501.12948.</span></li>
+<li id="ref-29">DeepSeek-AI. <a href="https://arxiv.org/abs/2501.12948"><span class="r-title">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning</span></a>. <span class="r-venue">Nature, 2025. arXiv:2501.12948.</span></li>
+<li id="ref-30">L. Ouyang et al. (OpenAI). <a href="https://arxiv.org/abs/2203.02155"><span class="r-title">Training Language Models to Follow Instructions with Human Feedback (InstructGPT)</span></a>. <span class="r-venue">NeurIPS, 2022. arXiv:2203.02155.</span></li>
+<li id="ref-31">H. Lightman et al. (OpenAI). <a href="https://arxiv.org/abs/2305.20050"><span class="r-title">Let's Verify Step by Step</span></a>. <span class="r-venue">ICLR, 2024. arXiv:2305.20050.</span></li>
+<li id="ref-32">Z. Shao et al. (DeepSeek-AI). <a href="https://arxiv.org/abs/2402.03300"><span class="r-title">DeepSeekMath: Pushing the Limits of Mathematical Reasoning (GRPO)</span></a>. <span class="r-venue">2024. arXiv:2402.03300.</span></li>
+<li id="ref-33">N. Lambert et al. (AI2). <a href="https://arxiv.org/abs/2411.15124"><span class="r-title">Tülu 3: Pushing Frontiers in Open Language Model Post-Training</span></a>. <span class="r-venue">2024. arXiv:2411.15124.</span></li>
+<li id="ref-34">Kimi Team (Moonshot AI). <a href="https://arxiv.org/abs/2501.12599"><span class="r-title">Kimi k1.5: Scaling Reinforcement Learning with LLMs</span></a>. <span class="r-venue">2025. arXiv:2501.12599.</span></li>
 </ol>
+
+<div class="r-group">Self-play &amp; planning</div>
+<ol>
+<li id="ref-35">D. Silver et al. (DeepMind). <a href="https://arxiv.org/abs/1712.01815"><span class="r-title">Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning Algorithm (AlphaZero)</span></a>. <span class="r-venue">Science, 2018. arXiv:1712.01815.</span></li>
+<li id="ref-36">J. Schrittwieser et al. (DeepMind). <a href="https://arxiv.org/abs/1911.08265"><span class="r-title">Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model (MuZero)</span></a>. <span class="r-venue">Nature, 2020. arXiv:1911.08265.</span></li>
+</ol>
+
+<h3 class="cite-h"><span>Cite this essay</span> <button class="cite-copy" id="cite-copy" type="button">Copy BibTeX</button></h3>
+<pre><code id="cite-bib">@misc{choudhary2026multimodalmind,
+  author       = {Siddharth Choudhary},
+  title        = {The Multimodal Mind: Perceive, Imagine, Act},
+  year         = {2026},
+  month        = mar,
+  howpublished = {\url{https://itzsid.github.io/publications/multimodal-mind.html}},
+  note         = {Essay}
+}</code></pre>
 </section>
 
 <footer class="post-footer">
@@ -1529,7 +1801,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
   var W = 660, H = 300;                       // logical drawing units
   var DPR = window.devicePixelRatio || 1;     // sharpen on retina / high-DPI
   cv.width = W * DPR; cv.height = H * DPR;
-  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cv.style.width = W + 'px';   // height left to CSS (height:auto) so it scales without distortion
   ctx.scale(DPR, DPR);
   var x0 = 46, x1 = W - 18, y0 = H - 42, y1 = 36;
 
@@ -1678,6 +1950,72 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
   resetBtn.addEventListener('click', function () { stopPlay(); setP(0); });
 
   setP(0.3);
+})();
+
+/* ============================================================
+   Sticky contents rail — fade-in + scroll-spy
+   ============================================================ */
+(function () {
+  var rail = document.querySelector('.toc-rail');
+  if (!rail) return;
+  var links = Array.prototype.slice.call(rail.querySelectorAll('a'));
+  var map = {};
+  var sections = [];
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    map[id] = a;
+    var s = document.getElementById(id);
+    if (s) sections.push(s);
+  });
+
+  // Fade the rail in once the reader scrolls past the inline contents block,
+  // and highlight whichever section's top has most recently passed the read line.
+  var current = null;
+  function onScroll() {
+    if (window.scrollY > 520) rail.classList.add('visible');
+    else rail.classList.remove('visible');
+    var line = window.innerHeight * 0.3;
+    var best = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top - line <= 0) best = sections[i];
+    }
+    var a = best && map[best.id];
+    if (a && a !== current) {
+      if (current) current.classList.remove('active');
+      a.classList.add('active');
+      current = a;
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* ============================================================
+   Copy BibTeX
+   ============================================================ */
+(function () {
+  var btn = document.getElementById('cite-copy');
+  var bib = document.getElementById('cite-bib');
+  if (!btn || !bib) return;
+  function flash() {
+    btn.classList.add('copied');
+    btn.textContent = 'Copied ✓';
+    setTimeout(function () { btn.classList.remove('copied'); btn.textContent = 'Copy BibTeX'; }, 1600);
+  }
+  function fallback(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  btn.addEventListener('click', function () {
+    var text = bib.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flash, function () { fallback(text); flash(); });
+    } else { fallback(text); flash(); }
+  });
 })();
 </script>
 
