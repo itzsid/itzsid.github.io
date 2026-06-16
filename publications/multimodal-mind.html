@@ -741,7 +741,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <section class="chapter" id="ch-recipe">
 <h2><span class="num">Ch. 04</span> <span>The pretraining recipe: a staged curriculum</span></h2>
 
-<p>The recipe mirrors how we train LLMs — next-token prediction at internet scale — but extends every stage into multimodal space, and crucially, it is <strong>staged</strong>. You do not learn to perceive, imagine, and act all at once. Generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
+<p>The recipe mirrors how we train LLMs — large-scale self-supervised prediction — but extends it into multimodal space, and crucially, it is <strong>staged</strong>. Understanding is autoregressive next-token prediction; generation uses the objective each modality calls for — diffusion for continuous signals like image, video, and audio — so the same backbone is autoregressive where it perceives and diffusion where it generates. You do not learn to perceive, imagine, and act all at once: generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
 
 <div class="math-display" style="font-family: var(--font-mono); text-align:center; margin:1.4rem 0; font-size:0.95rem;">MM understanding → image generation → video / audio generation → action generation</div>
 
@@ -1120,7 +1120,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
   var stages = [
     { n: 'Stage 1', name: 'MM Understanding',
       states: { understand: 'train', image: 'none', video: 'none', audio: 'none', action: 'none' },
-      note: 'Next-token prediction across text, image, video, and audio builds a strong perceptual prior. Only the understanding expert learns — its Q/K/V, output projection, FFN, and norms. There is nothing to freeze yet. This is the foundation every later stage stands on.' },
+      note: 'Autoregressive next-token prediction over interleaved text, image, video, and audio tokens builds a strong perceptual prior. Only the understanding expert learns — its Q/K/V, output projection, FFN, and norms. There is nothing to freeze yet. This is the foundation every later stage stands on.' },
     { n: 'Stage 2', name: 'Image Generation',
       states: { understand: 'frozen', image: 'train', video: 'none', audio: 'none', action: 'none' },
       note: 'The image-generation expert is added and learns to synthesize pixels conditioned on the understood context. The understanding backbone and shared attention are frozen, so generation training cannot erode hard-won perception.' },
