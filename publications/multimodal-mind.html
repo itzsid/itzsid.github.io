@@ -654,7 +654,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all. Improvements to the shared backbone benefit every task at once.</div>
 
-<p>The rest of this page makes that claim concrete. We start with the loop, then the architecture that runs it (a Mixture of Transformers), then the part I want to expand on most: a <strong>staged pretraining recipe</strong> that grows the model one generative capability at a time, freezing what came before. We finish with the self-play flywheel and the unification of today's siloed problems.</p>
+<p>The rest of this page makes that claim concrete: the loop, the architecture that runs it (a Mixture of Transformers), the <strong>staged pretraining recipe</strong> I want to dwell on most — growing the model one generative capability at a time, freezing what came before — and finally the self-play flywheel and the unification of today's siloed problems.</p>
 </section>
 
 <hr class="section-break">
@@ -781,7 +781,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <h3>Why freeze?</h3>
 <p>Freezing earlier components does three things at once:</p>
 <ul>
-<li><strong>No catastrophic forgetting.</strong> Hard-won perception and image priors can't be eroded by the noisier gradients of a new, harder generative task. The capability you already paid for is locked in. This matters most precisely because of the data pyramid: if everything trained jointly, the tiny action dataset would be swamped by — and would perturb — the enormous understanding corpus. Freezing lets the data-poor expert learn from a strong backbone without putting the data-rich capabilities at risk.</li>
+<li><strong>No catastrophic forgetting.</strong> Hard-won perception and image priors can't be eroded by the noisier gradients of a new, harder generative task. This matters most because of the data pyramid: if everything trained jointly, the tiny action dataset would be swamped by — and would perturb — the enormous understanding corpus. Freezing lets the data-poor expert learn from a strong backbone without risking the data-rich capabilities.</li>
 <li><strong>Clean credit assignment.</strong> The newest expert is the only thing learning, so every gradient is attributable to it. Nothing else can drift to "explain away" its errors.</li>
 <li><strong>Cheaper training.</strong> A frozen expert is just a forward pass — no optimizer state, no backward pass through its weights. Each later stage is far cheaper than training the whole stack jointly.</li>
 </ul>
@@ -870,7 +870,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 </div>
 
-<p>Low fidelity and the flywheel slips: the model learns from a simulation that lies about physics, so capability barely compounds. High fidelity and each cycle multiplies the last. The whole strategy lives or dies on the quality of the imagined world.</p>
+<p>Low fidelity and the flywheel slips; high fidelity and each cycle multiplies the last. The whole strategy lives or dies on the quality of the imagined world.</p>
 </section>
 
 <hr class="section-break">
