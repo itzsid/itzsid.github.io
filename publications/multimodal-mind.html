@@ -378,6 +378,54 @@ footer.post-footer {
 }
 footer.post-footer a { color: var(--color-accent); text-decoration: none; }
 
+/* Inline citations */
+section.chapter sup.ref {
+  font-size: 0.6em;
+  font-weight: 600;
+  line-height: 0;
+  white-space: nowrap;
+}
+section.chapter sup.ref a {
+  color: var(--color-accent);
+  border-bottom: none;
+  padding: 0 0.05em;
+}
+section.chapter sup.ref a:hover { border-bottom: none; text-decoration: underline; }
+
+/* Related work / references */
+section.references { counter-reset: ref; }
+section.references .r-group {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 2rem 0 1rem;
+}
+section.references .r-group:first-of-type { margin-top: 0; }
+section.references ol { list-style: none; padding: 0; margin: 0; }
+section.references ol li {
+  counter-increment: ref;
+  position: relative;
+  padding-left: 2.6rem;
+  margin: 0 0 0.95rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+section.references ol li::before {
+  content: '[' counter(ref) ']';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+section.references .r-title { font-style: italic; }
+section.references .r-venue { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.02em; }
+section.references li a { border-bottom: 1px solid var(--color-accent-soft); }
+
 /* ===== Widget: Perceive → Imagine → Act loop (W1) ===== */
 .loop-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
 .loop-svg-wrap { flex: 1 1 280px; display: flex; justify-content: center; }
@@ -641,6 +689,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
     <li><a href="#ch-recipe">The pretraining recipe: a staged curriculum</a></li>
     <li><a href="#ch-flywheel">Post-training &amp; the physics flywheel</a></li>
     <li><a href="#ch-unify">One model, many problems</a></li>
+    <li><a href="#ch-refs">Related work</a></li>
   </ol>
 </nav>
 
@@ -652,7 +701,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <p>Biological intelligence follows that loop without thinking about it: observe the world, mentally simulate what should happen, then intervene. Current AI breaks the loop into disconnected pipelines — a perception model here, a planner there, a controller bolted on the end, each trained by a different team on a different dataset. I propose building it as one model.</p>
 
-<div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all. Improvements to the shared backbone benefit every task at once.</div>
+<div class="callout">Every major AI capability challenge today — controllable video, computer use, robotics, world simulation, autonomous driving, creative tools — is a special case of <strong>multimodal conditional generation</strong>. One architecture subsumes them all.<sup class="ref"><a href="#ref-8">[8]</a></sup> Improvements to the shared backbone benefit every task at once.</div>
 
 <p>The rest of this page makes that claim concrete: the loop, the architecture that runs it (a Mixture of Transformers), the <strong>staged pretraining recipe</strong> I want to dwell on most — growing the model one generative capability at a time, freezing what came before — and finally the self-play flywheel and the unification of today's siloed problems.</p>
 </section>
@@ -667,7 +716,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <ol>
 <li><strong>Perceive.</strong> The model ingests the current state across all modalities — video, audio, proprioception, language — into a unified representation. Perception is inference, not a preprocessing step.</li>
-<li><strong>Imagine.</strong> Before acting, the model thinks in multimodal space. Not just text chain-of-thought, but a <em>mental video</em> of the planned trajectory: predicted proprioception, anticipated contact forces. This multimodal imagination <em>is</em> the world model.</li>
+<li><strong>Imagine.</strong> Before acting, the model thinks in multimodal space. Not just text chain-of-thought, but a <em>mental video</em> of the planned trajectory: predicted proprioception, anticipated contact forces. This multimodal imagination <em>is</em> the world model.<sup class="ref"><a href="#ref-4">[4]</a><a href="#ref-5">[5]</a></sup></li>
 <li><strong>Act.</strong> The model generates whatever output the task requires — motor commands, keyboard/mouse, speech — conditioned on the imagined plan, not on reactive perception alone. The action changes the world, new percepts arrive, and the loop repeats.</li>
 </ol>
 
@@ -708,11 +757,11 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <p>If one model has to perceive <em>and</em> generate images, video, audio, and actions, a single dense network creates a problem: modalities interfere. The statistics of a video frame and a motor command have nothing in common, and forcing the same feed-forward weights to model both means each capability dilutes the other.</p>
 
-<p>The architecture I use is a <strong>Mixture of Transformers (MoT)</strong>. The trick is to split the network by <em>modality</em>:</p>
+<p>The architecture I use is a <strong>Mixture of Transformers (MoT)</strong>.<sup class="ref"><a href="#ref-1">[1]</a></sup> The trick is to split the network by <em>modality</em>:</p>
 
 <ul>
 <li><strong>Every weight is modality-specific.</strong> Each modality gets its own copy of the entire transformer block — the query/key/value and output projections, the feed-forward network, and the layernorms. Those weights <em>are</em> the experts. A token's modality deterministically selects which expert processes it; there is no learned router.</li>
-<li><strong>Only the attention <em>operation</em> is global.</strong> Each token's Q, K, and V are produced by its own modality's projections, but attention then runs over the combined sequence — every token reads all prior context regardless of modality, so a later video token attends to earlier text and action tokens. The pattern tracks the objective: autoregressive tokens attend <em>causally</em> to the past, while a block of tokens being generated by diffusion attends <em>bidirectionally</em> within itself, conditioned on that causal context. The operation has no weights of its own; it is the wire that makes this <em>one</em> model, while every learnable parameter stays modality-specific.</li>
+<li><strong>Only the attention <em>operation</em> is global.</strong> Each token's Q, K, and V are produced by its own modality's projections, but attention then runs over the combined sequence — every token reads all prior context regardless of modality, so a later video token attends to earlier text and action tokens. The pattern tracks the objective: autoregressive tokens attend <em>causally</em> to the past, while a block of tokens being generated by diffusion attends <em>bidirectionally</em> within itself, conditioned on that causal context.<sup class="ref"><a href="#ref-2">[2]</a><a href="#ref-3">[3]</a></sup> The operation has no weights of its own; it is the wire that makes this <em>one</em> model, while every learnable parameter stays modality-specific.</li>
 </ul>
 
 <p>The payoff shows up in the next chapter: because every weight a token touches lives in its modality's expert, you can <strong>freeze an entire expert</strong> — its attention projections included — while training another, and global attention still lets the new expert read everything the frozen ones know.</p>
@@ -741,7 +790,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <section class="chapter" id="ch-recipe">
 <h2><span class="num">Ch. 04</span> <span>The pretraining recipe: a staged curriculum</span></h2>
 
-<p>The recipe mirrors how we train LLMs — large-scale self-supervised prediction — but extends it into multimodal space, and crucially, it is <strong>staged</strong>. Understanding is autoregressive next-token prediction; generation uses the objective each modality calls for — diffusion for continuous signals like image, video, and audio — so the same backbone is autoregressive where it perceives and diffusion where it generates. You do not learn to perceive, imagine, and act all at once: generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
+<p>The recipe mirrors how we train LLMs — large-scale self-supervised prediction — but extends it into multimodal space, and crucially, it is <strong>staged</strong>.<sup class="ref"><a href="#ref-8">[8]</a></sup> Understanding is autoregressive next-token prediction; generation uses the objective each modality calls for — diffusion for continuous signals like image, video, and audio<sup class="ref"><a href="#ref-2">[2]</a></sup> — so the same backbone is autoregressive where it perceives and diffusion where it generates. You do not learn to perceive, imagine, and act all at once: generation is harder than understanding, and each generative capability builds on the one before it. So pretraining climbs a ladder:</p>
 
 <div class="math-display" style="font-family: var(--font-mono); text-align:center; margin:1.4rem 0; font-size:0.95rem;">MM understanding → image generation → video / audio generation → action generation</div>
 
@@ -775,7 +824,7 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 <ul>
 <li><strong>Understanding before generation.</strong> You cannot imagine a coherent future until you can perceive the present. Stage 1 builds the perceptual prior that everything conditions on.</li>
 <li><strong>Image before video.</strong> A video is images over time. The video expert reuses the frozen image expert's spatial priors and only has to learn temporal dynamics — a much smaller lift than learning pixels and motion together.</li>
-<li><strong>Generation before action.</strong> Action is conditioned on <em>imagination</em> (Ch. 2). The model must be able to roll out a predicted video/proprioception trajectory before it can choose a motor command that achieves it. So the action expert comes last, reading from a frozen world model.</li>
+<li><strong>Generation before action.</strong> Action is conditioned on <em>imagination</em> (Ch. 2). The model must be able to roll out a predicted video/proprioception trajectory before it can choose a motor command that achieves it. So the action expert comes last, reading from a frozen world model.<sup class="ref"><a href="#ref-9">[9]</a></sup></li>
 </ul>
 
 <h3>Why freeze?</h3>
@@ -840,9 +889,9 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 
 <p>Trace one lap to see why it <em>compounds</em>. A better world model makes the model's imagination more accurate, so it can plan against a mental simulation it trusts — better plans. Better plans yield better actions, which succeed more often. Those successful rollouts ("this plan led to this outcome") are exactly the labeled examples you want, so they become richer training data — which trains an even better world model. Each lap raises the floor for the next.</p>
 
-<p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains. Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
+<p>Text models can self-improve this way too — but only where an automatic grader exists. Math has checkable answers, code has unit tests, and RL from verifiable rewards has driven much of the recent progress in exactly those domains.<sup class="ref"><a href="#ref-10">[10]</a></sup> Two things limit it. First, <strong>breadth</strong>: verifiable graders cover a narrow slice of what we care about, and everything else falls back on learned proxies — reward models, LLM judges — which are themselves models that can be reward-hacked and carry no ground truth about the physical world. Second, <strong>what the signal improves</strong>: a unit test sharpens a policy, but it doesn't teach the model how the world works. Physics fixes both. It is a broad, grounded grader across the entire embodied space — did the glass actually lift? did the motion obey gravity? — and that signal flows back into the world model itself. Physics is to physical reality what unit tests are to code.</p>
 
-<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds. And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity, and corrected by physics engines for physical consistency.</p>
+<p>The catch is that the whole loop runs <em>inside</em> a simulation, so its ceiling is <strong>simulation fidelity</strong>. Train against a simulator that gets physics wrong and the model learns from a lie — the rewards are noise and nothing compounds. And neither obvious option is enough on its own: a hand-built physics engine is accurate but can't render the visual richness of the real world, while real video is realistic but you can't act inside it. The essential ingredient is therefore a <em>learned</em> world simulator — trained on real video for realism and interactivity,<sup class="ref"><a href="#ref-6">[6]</a></sup> and corrected by physics engines for physical consistency.<sup class="ref"><a href="#ref-7">[7]</a></sup></p>
 
 <p>Drag the fidelity slider to see how it gates the compounding rate.</p>
 
@@ -901,6 +950,41 @@ canvas.lr { display: block; max-width: 100%; height: auto; border: 0.5px solid v
 </div>
 
 <p>Today each of these is a separate model, dataset, and research community. The Perceive → Imagine → Act framework unifies them as different routes through one architecture — and improvements to the shared backbone benefit every task simultaneously. That is the whole bet: <strong>build the multimodal mind once, and every capability comes along for the ride.</strong></p>
+</section>
+
+<hr class="section-break">
+
+<!-- ============ RELATED WORK ============ -->
+<section class="chapter references" id="ch-refs">
+<h2><span class="num">Refs</span> <span>Related work</span></h2>
+
+<p>This essay synthesizes several lines of work. The architecture draws on sparse, modality-decoupled transformers and unified autoregressive-plus-diffusion models; the cognitive loop and physics flywheel build on the world-models tradition; and the physical-AI framing tracks a recent wave of world foundation models. Some of it — most directly NVIDIA's Cosmos 3<sup class="ref"><a href="#ref-8">[8]</a></sup> — appeared after this page and arrived at strikingly similar conclusions: a two-tower Mixture-of-Transformers that unifies understanding, world generation, and action for physical AI.</p>
+
+<div class="r-group">Unified multimodal architectures</div>
+<ol>
+<li id="ref-1">W. Liang et al. <a href="https://arxiv.org/abs/2411.04996"><span class="r-title">Mixture-of-Transformers: A Sparse and Scalable Architecture for Multi-Modal Foundation Models</span></a>. <span class="r-venue">TMLR, 2025. arXiv:2411.04996.</span></li>
+<li id="ref-2">C. Zhou et al. <a href="https://arxiv.org/abs/2408.11039"><span class="r-title">Transfusion: Predict the Next Token and Diffuse Images with One Multi-Modal Model</span></a>. <span class="r-venue">2024. arXiv:2408.11039.</span></li>
+<li id="ref-3">Chameleon Team (Meta FAIR). <a href="https://arxiv.org/abs/2405.09818"><span class="r-title">Chameleon: Mixed-Modal Early-Fusion Foundation Models</span></a>. <span class="r-venue">2024. arXiv:2405.09818.</span></li>
+</ol>
+
+<div class="r-group">World models &amp; imagination</div>
+<ol>
+<li id="ref-4">D. Ha and J. Schmidhuber. <a href="https://arxiv.org/abs/1803.10122"><span class="r-title">World Models</span></a>. <span class="r-venue">NeurIPS, 2018. arXiv:1803.10122.</span></li>
+<li id="ref-5">D. Hafner et al. <a href="https://arxiv.org/abs/2301.04104"><span class="r-title">Mastering Diverse Domains through World Models (DreamerV3)</span></a>. <span class="r-venue">2023. arXiv:2301.04104.</span></li>
+<li id="ref-6">J. Bruce et al. <a href="https://arxiv.org/abs/2402.15391"><span class="r-title">Genie: Generative Interactive Environments</span></a>. <span class="r-venue">ICML, 2024. arXiv:2402.15391.</span></li>
+</ol>
+
+<div class="r-group">Physical-AI foundation models</div>
+<ol>
+<li id="ref-7">NVIDIA. <a href="https://arxiv.org/abs/2501.03575"><span class="r-title">Cosmos World Foundation Model Platform for Physical AI</span></a>. <span class="r-venue">2025. arXiv:2501.03575.</span></li>
+<li id="ref-8">NVIDIA. <a href="https://arxiv.org/abs/2606.02800"><span class="r-title">Cosmos 3: Omnimodal World Models for Physical AI</span></a>. <span class="r-venue">2026. arXiv:2606.02800.</span></li>
+<li id="ref-9">NVIDIA. <a href="https://arxiv.org/abs/2503.14734"><span class="r-title">GR00T N1: An Open Foundation Model for Generalist Humanoid Robots</span></a>. <span class="r-venue">2025. arXiv:2503.14734.</span></li>
+</ol>
+
+<div class="r-group">Learning from verifiable rewards</div>
+<ol>
+<li id="ref-10">DeepSeek-AI. <a href="https://arxiv.org/abs/2501.12948"><span class="r-title">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning</span></a>. <span class="r-venue">2025. arXiv:2501.12948.</span></li>
+</ol>
 </section>
 
 <footer class="post-footer">
