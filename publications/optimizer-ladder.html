@@ -79,6 +79,18 @@ header.post-header time {
   color: var(--color-text-tertiary);
   display: block;
 }
+header.post-header .byline {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  margin: 0.4rem 0 0;
+}
+header.post-header .byline a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-soft);
+}
 header.post-header .lede {
   font-family: var(--font-serif);
   font-size: 1.25rem;
@@ -142,6 +154,52 @@ header.post-header .lede {
 .chapter-index a:hover {
   border-bottom-color: var(--color-accent);
 }
+
+/* Sticky left-margin contents rail */
+.toc-rail {
+  position: fixed;
+  top: 50%;
+  left: 2rem;
+  transform: translateY(-50%);
+  width: 210px;
+  max-height: 82vh;
+  overflow-y: auto;
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+.toc-rail.visible { opacity: 1; visibility: visible; }
+.toc-rail .toc-rail-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 0 0 0.85rem 0.95rem;
+}
+.toc-rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: railitem;
+}
+.toc-rail a {
+  display: block;
+  padding: 0.4rem 0 0.4rem 0.95rem;
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  border-left: 2px solid var(--color-border-tertiary);
+  transition: color 0.18s, border-color 0.18s;
+}
+.toc-rail a:hover { color: var(--color-text-secondary); border-color: var(--color-accent-soft); }
+.toc-rail a.active { color: var(--color-accent); border-color: var(--color-accent); font-weight: 600; }
+/* Hide the rail only when there isn't room beside the ~720px reading column */
+@media (max-width: 1240px) { .toc-rail { display: none; } }
+@media (prefers-reduced-motion: reduce) { .toc-rail { transition: none; } }
 
 /* Article sections */
 section.chapter {
@@ -294,6 +352,88 @@ section.chapter ul, section.chapter ol {
 section.chapter li {
   margin: 0.35rem 0;
 }
+
+/* Inline citations */
+section.chapter sup.ref {
+  font-size: 0.6em;
+  font-weight: 600;
+  line-height: 0;
+  white-space: nowrap;
+}
+section.chapter sup.ref a {
+  color: var(--color-accent);
+  border-bottom: none;
+  padding: 0 0.05em;
+}
+section.chapter sup.ref a:hover { border-bottom: none; text-decoration: underline; }
+
+/* References */
+section.references { counter-reset: ref; }
+section.references .r-group {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin: 2rem 0 1rem;
+}
+section.references .r-group:first-of-type { margin-top: 0; }
+section.references ol { list-style: none; padding: 0; margin: 0; }
+section.references ol li {
+  counter-increment: ref;
+  position: relative;
+  padding-left: 2.6rem;
+  margin: 0 0 0.95rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+section.references ol li::before {
+  content: '[' counter(ref) ']';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+section.references .r-title { font-style: italic; }
+section.references .r-venue { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.02em; }
+section.references li a { border-bottom: 1px solid var(--color-accent-soft); }
+
+/* Convergence "speedrun ladder" widgets */
+canvas.conv-canvas {
+  display: block; max-width: 100%; height: auto;
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md); margin: 0 auto;
+}
+.conv-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center;
+  font-size: 12px; margin: 0.8rem auto 0; max-width: 520px;
+}
+.conv-legend-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.conv-legend-sw { width: 15px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.conv-legend-it.is-new { font-weight: 600; color: var(--color-text-primary); }
+.conv-board { margin: 1.1rem auto 0; max-width: 460px; font-size: 12.5px; }
+.conv-board table { width: 100%; border-collapse: collapse; margin: 0; }
+.conv-board th, .conv-board td {
+  padding: 0.34rem 0.5rem; border-bottom: 1px solid var(--color-border-tertiary);
+}
+.conv-board th {
+  font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--color-text-tertiary); text-align: left;
+}
+.conv-board td.r { font-family: var(--font-mono); text-align: right; }
+.conv-board tr.is-new td { color: var(--color-accent); font-weight: 600; }
+.conv-board td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: middle; }
+.conv-note {
+  font-size: 11.5px; color: var(--color-text-tertiary); font-style: italic;
+  margin: 0.9rem auto 0; max-width: 520px; text-align: center; line-height: 1.5;
+}
+.conv-note a { color: var(--color-text-tertiary); border-bottom: 1px solid var(--color-border-tertiary); }
+.conv-controls { display: flex; align-items: center; gap: 10px; margin: 1rem 0 0; flex-wrap: wrap; }
+.conv-controls .conv-scrub { flex: 1; min-width: 130px; }
+.conv-step { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-tertiary); min-width: 116px; text-align: right; }
 
 /* Widget container — can break out wider than text */
 .widget-container {
@@ -449,6 +589,7 @@ footer.post-footer {
 <header class="post-header">
   <time datetime="2026-05-11">May 2026</time>
   <h1>The Optimizer Ladder<br><span class="accent">from SGD to MuonH</span></h1>
+  <p class="byline">Siddharth Choudhary</p>
   <p class="lede">A guided tour through neural-network optimizers, with twelve interactive widgets. Each one solves a specific problem in the previous, and the trajectory tells you something about where deep learning is going.</p>
 </header>
 
@@ -467,6 +608,26 @@ footer.post-footer {
     <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
+  </ol>
+</nav>
+
+<nav class="toc-rail" aria-label="Contents">
+  <div class="toc-rail-label">Contents</div>
+  <ol>
+    <li><a href="#ch-sgd">SGD &amp; the stochastic gradient</a></li>
+    <li><a href="#ch-momentum">Momentum</a></li>
+    <li><a href="#ch-adam">Adam: AdaGrad to RMSProp to Adam</a></li>
+    <li><a href="#ch-snr">Adam as a signal-to-noise ratio</a></li>
+    <li><a href="#ch-adamw">AdamW: the one-line fix</a></li>
+    <li><a href="#ch-signsgd">Interlude — SignSGD</a></li>
+    <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
+    <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
+    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
+    <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
+    <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
+    <li><a href="#ch-coda">Coda: the through-line</a></li>
+    <li><a href="#ch-refs">References</a></li>
   </ol>
 </nav>
 
@@ -609,6 +770,22 @@ canvas.lin { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The next chapter — momentum — fixes the second of these and partially the first. After that, RMSprop and Adam will tackle the third.</p>
 
+<h3>An aside: how the speedrun-ladder charts work</h3>
+
+<p>From here on, every chapter ends with a <em>speedrun ladder</em> — an interactive chart that races each optimizer introduced so far to the same target loss. They are all the same experiment: a small but genuinely deep MLP fitting a random teacher network (so the per-matrix optimizers later in the story have real matrix structure to exploit), trained on minibatches. Each optimizer runs at its own best learning rate from a small sweep, under one shared schedule — 10% linear warmup, a constant middle, then a cosine cooldown over the final 20%.</p>
+
+<p>Press <strong>Play</strong> to watch them race, or drag the slider to scrub through training; the leaderboard fills in as each curve crosses the target. It's one small toy network, not a benchmark — the <em>ordering</em> tracks the textbook ladder, but the exact margins are illustrative (a browser-scale toy can't reproduce the real thing). The full comparison code is on GitHub: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
+
+<div class="widget-caption"><span class="num">Fig. 1.3</span>The speedrun ladder begins. SGD needs the full training budget to reach the target loss — every later chapter adds a faster curve to this same chart.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd" data-new="sgd" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Press <strong>Play</strong> to race them, or drag the slider to scrub through training.</p>
+</div>
+</div>
+
 </section>
 
 <hr class="section-break">
@@ -695,6 +872,16 @@ canvas.mom { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>What it did not touch is the third complaint: there is still one global learning rate, applied uniformly to every parameter. In real models, some parameters have gradients on the order of 100 and others on the order of 0.001 <em>at the same time</em>. No single global <code>lr</code> is right for both. The fix everyone arrived at, more or less independently, in the early 2010s: keep a per-parameter estimate of recent gradient magnitudes, and divide each parameter's step by that estimate.</p>
 
+<div class="widget-caption"><span class="num">Fig. 2.2</span>Speedrun ladder, after momentum. The velocity buffer reaches the target loss in a fraction of SGD's steps. Press Play to watch the two race.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum" data-new="momentum" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Press <strong>Play</strong> to race them, or drag the slider to scrub through training.</p>
+</div>
+</div>
+
 </section>
 
 <hr class="section-break">
@@ -715,7 +902,7 @@ w ← w − lr · g / sqrt(G + ε)</code></pre>
 
 <p>A parameter that's been seeing huge gradients gets divided by a huge <code>sqrt(G)</code>, so its effective step shrinks. A parameter with tiny gradients keeps a near-full <code>lr</code>. This is exactly what we wanted — automatic per-parameter scaling.</p>
 
-<p>The catch: <code>G</code> only ever grows. After a few thousand steps, every parameter's effective learning rate is approaching zero, and the optimizer just stops. Fine for sparse problems; fatal for deep learning where we'll train for millions of steps.</p>
+<p>The catch: <code>G</code> only ever grows. After a few thousand steps, every parameter's effective learning rate is approaching zero, and the optimizer just stops. Fine for sparse problems; fatal for deep learning where we'll train for millions of steps.<sup class="ref"><a href="#ref-1">[1]</a></sup></p>
 
 <h3>RMSprop: just take an average</h3>
 
@@ -724,7 +911,7 @@ w ← w − lr · g / sqrt(G + ε)</code></pre>
 <pre><code>v ← β₂ · v + (1 − β₂) · g²
 w ← w − lr · g / sqrt(v + ε)</code></pre>
 
-<p>Now <code>v</code> is bounded — it tracks the <em>recent</em> squared-gradient magnitude rather than the lifetime sum. Per-parameter scaling without monotonic decay. If gradients are roughly stationary at some long-run value, the steady-state <code>v</code> satisfies "EMA equals itself" and plateaus at the average squared gradient. The effective learning rate is preserved forever.</p>
+<p>Now <code>v</code> is bounded — it tracks the <em>recent</em> squared-gradient magnitude rather than the lifetime sum. Per-parameter scaling without monotonic decay. If gradients are roughly stationary at some long-run value, the steady-state <code>v</code> satisfies "EMA equals itself" and plateaus at the average squared gradient. The effective learning rate is preserved forever.<sup class="ref"><a href="#ref-2">[2]</a></sup></p>
 
 <p>Compare the two accumulators on the same constant gradient stream:</p>
 
@@ -765,7 +952,7 @@ canvas.acc { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <h3>Adam: RMSProp meets momentum</h3>
 
-<p>Adam's contribution is conceptually small but practically enormous. It just stacks the two ideas: keep a momentum term (EMA of gradients) <em>and</em> a per-parameter scale term (EMA of squared gradients), and use both:</p>
+<p>Adam's contribution is conceptually small but practically enormous.<sup class="ref"><a href="#ref-3">[3]</a></sup> It just stacks the two ideas: keep a momentum term (EMA of gradients) <em>and</em> a per-parameter scale term (EMA of squared gradients), and use both:</p>
 
 <pre><code>m ← β₁ · m + (1 − β₁) · g          ← this is momentum
 v ← β₂ · v + (1 − β₂) · g²         ← this is RMSProp
@@ -837,6 +1024,16 @@ canvas.adm { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Adam works at default settings on most problems. That single fact — "default Adam works on a new problem" — is why it became the field's reflexive choice for nearly a decade.</p>
 
+<div class="widget-caption"><span class="num">Fig. 3.3</span>Speedrun ladder, after Adam. Per-parameter normalization vaults Adam to the front of the pack — a clear step past momentum.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adam" data-new="adam" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Press <strong>Play</strong> to race them, or drag the slider to scrub through training.</p>
+</div>
+</div>
+
 </section>
 
 <hr class="section-break">
@@ -844,7 +1041,7 @@ canvas.adm { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-snr">
 <h2><span class="num">Ch. 04</span> <span>Adam as a signal-to-noise ratio</span></h2>
 
-<p>"Smoothed gradient over square root of squared gradients" is a mouthful. Here's the cleaner reading: Adam's update is computing a <strong>per-parameter signal-to-noise ratio</strong>, on a scale of −1 to +1.</p>
+<p>"Smoothed gradient over square root of squared gradients" is a mouthful. Here's the cleaner reading: Adam's update is computing a <strong>per-parameter signal-to-noise ratio</strong> — in steady state, on a scale of roughly −1 to +1.</p>
 
 <p>Walk through a single parameter, observing a noisy gradient written as <code>signal + noise</code> at each step. Imagine the signal as the true mean (what the gradient <em>should</em> be) and the noise as a zero-mean random kick with standard deviation σ. After many steps:</p>
 
@@ -868,7 +1065,7 @@ canvas.adm { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 </tbody>
 </table>
 
-<p>Look down the "update" column. It's in <code>[−1, +1]</code> and it's measuring how confidently the optimizer should commit to <em>this direction</em>. Strong clean signal → 1. Strong noisy signal → ~0.3. Pure noise or oscillation → 0. And critically, magnitude alone (compare A and F) doesn't change the answer — only the <em>signal-to-magnitude ratio</em> matters.</p>
+<p>Look down the "update" column. In this stationary regime it lands in <code>[−1, +1]</code> (only approximately, and only once the EMAs have settled — the caveat below) and it's measuring how confidently the optimizer should commit to <em>this direction</em>. Strong clean signal → 1. Strong noisy signal → ~0.3. Pure noise or oscillation → 0. And critically, magnitude alone (compare A and F) doesn't change the answer — only the <em>signal-to-magnitude ratio</em> matters.</p>
 
 <p>The widget below feeds three different gradient streams to the same Adam update. The line plotted is <code>m̂ / sqrt(v̂)</code> — the update direction, not the gradient itself.</p>
 
@@ -911,7 +1108,7 @@ canvas.snr { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-adamw">
 <h2><span class="num">Ch. 05</span> <span>AdamW: the one-line fix</span></h2>
 
-<p>Adam was published in 2014. AdamW, the version everyone actually uses, came out in 2017. The change is one line of code. The reason it took three years is that nobody — including the people who originally wrote Adam — noticed the bug.</p>
+<p>Adam was published in 2014.<sup class="ref"><a href="#ref-3">[3]</a></sup> AdamW, the version everyone actually uses, came out in 2017.<sup class="ref"><a href="#ref-4">[4]</a></sup> The change is one line of code. The reason it took three years is that nobody — including the people who originally wrote Adam — noticed the bug.</p>
 
 <p>Weight decay's job: at every step, gently pull parameters toward zero. Small parameters → simpler model → better generalization. The "gentle pull" is a multiplier slightly less than 1:</p>
 
@@ -994,6 +1191,17 @@ canvas.dec { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>AdamW is the optimizer that trained essentially every transformer between 2017 and ~2023. It's the silent default behind GPT-2, GPT-3, BERT, T5, ViT, CLIP, and most of what came in their wake.</p>
 
+<div class="widget-caption"><span class="num">Fig. 5.2</span>Speedrun ladder, after AdamW — the single adaptive rung (Adam and AdamW are indistinguishable on training speed). AdamW's real edge over Adam is generalization, which a speed chart can't show.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw" data-new="adamw" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). On training speed AdamW is indistinguishable from plain Adam, so the ladder carries one adaptive rung; AdamW's distinct benefit is generalization, not steps-to-target.</p>
+</div>
+</div>
+
+
 </section>
 
 <hr class="section-break">
@@ -1007,9 +1215,9 @@ canvas.dec { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <pre><code>w ← w − lr · sign(g)</code></pre>
 
-<p>That's it. No <code>m</code>, no <code>v</code>, no momentum, no per-parameter scale. Every parameter steps by exactly <code>lr</code> in some direction each step. The optimizer holds zero state — your only memory cost is the weights themselves.</p>
+<p>That's it.<sup class="ref"><a href="#ref-5">[5]</a></sup> No <code>m</code>, no <code>v</code>, no momentum, no per-parameter scale. Every parameter steps by exactly <code>lr</code> in some direction each step. The optimizer holds zero state — your only memory cost is the weights themselves.</p>
 
-<p>Two big practical wins. <strong>Optimizer state</strong>: AdamW costs 2× the model weights in optimizer state. For a 70B parameter model in mixed precision, that's ~280GB just for the optimizer. SignSGD costs zero. <strong>Distributed communication</strong>: in distributed training, you can compress each gradient to one bit per parameter — a 32× reduction in bandwidth.</p>
+<p>Two big practical wins. <strong>Optimizer state</strong>: AdamW keeps two extra values per parameter — <code>m</code> and <code>v</code> — so 2× the parameter count in optimizer state. For a 70B-parameter model with the usual fp32 moments, that's ~560 GB for <code>m</code> and <code>v</code> alone, on top of the weights. SignSGD costs zero. <strong>Distributed communication</strong>: in distributed training, you can compress each gradient to one bit per parameter — a 32× reduction in bandwidth.</p>
 
 <p>But SignSGD has two real issues.</p>
 
@@ -1068,6 +1276,16 @@ canvas.sgn { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>SignSGD is rarely used as-is in practice — too brittle. But it cleanly demonstrates two things that turn out to matter for what comes next. The <em>directionally normalized step</em> (everything moves by ~lr) is doing most of the work that makes Adam great. The magnitude correction in <code>m / sqrt(v)</code> is a refinement, not the core mechanism. And you can pay almost nothing in optimizer state and still get serviceable training, especially if you add back just a momentum buffer to handle noise.</p>
 
+<div class="widget-caption"><span class="num">Fig. 6.2</span>Speedrun ladder, after SignSGD — the one rung that moves <em>backward</em>. Its curve is slower than AdamW; the win is zero optimizer state, not convergence.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd" data-new="signsgd" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). Honest exception, visible in the run: SignSGD finishes <em>behind</em> AdamW — stripping the magnitude information costs convergence speed and noise-robustness; what it buys is zero optimizer state.</p>
+</div>
+</div>
+
 </section>
 
 <hr class="section-break">
@@ -1075,7 +1293,7 @@ canvas.sgn { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-lion">
 <h2><span class="num">Ch. 07</span> <span>Lion: one buffer instead of two</span></h2>
 
-<p>Lion is the optimizer that emerged when Google Brain ran a massive program search over the space of optimizer update rules — they let an evolutionary algorithm hunt for new optimizers and Lion is what won. The result is striking: substantially simpler than AdamW, half the optimizer state, matches or beats AdamW on most large-scale benchmarks. The name stands for "EvoLved sIgn mOmeNtum."</p>
+<p>Lion is the optimizer that emerged when Google Brain ran a massive program search over the space of optimizer update rules — they let an evolutionary algorithm hunt for new optimizers and Lion is what won.<sup class="ref"><a href="#ref-6">[6]</a></sup> The result is striking: substantially simpler than AdamW, half the optimizer state, and competitive with AdamW across many large-scale benchmarks — though its wins are task- and tuning-dependent, and several follow-ups found it needs careful sweeps to match AdamW on language models. The name stands for "EvoLved sIgn mOmeNtum."</p>
 
 <p>We have all the parts. SignSGD without momentum was brittle. The fix is: smooth the gradient first, then take the sign. The actual rule has one extra wrinkle — Lion uses <em>two different</em> mixing rates, one for taking the step and one for updating the momentum buffer:</p>
 
@@ -1144,6 +1362,16 @@ canvas.lio { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 </div>
 
 <p>What makes Lion intellectually interesting isn't that it's better than AdamW — sometimes it is, sometimes it isn't. What's interesting is that it's <em>competitive</em> while throwing away half the machinery. That's strong evidence for a claim worth examining carefully in the next chapter: the most important thing Adam was doing all along was producing per-parameter normalized steps.</p>
+
+<div class="widget-caption"><span class="num">Fig. 7.2</span>Speedrun ladder, after Lion. On this toy it lands around momentum's pace, a bit behind AdamW — but the headline is half the optimizer state, and at scale Lion is typically on par with AdamW.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion" data-new="lion" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). On this toy run Lion lands a bit behind AdamW (near momentum's pace); at scale it's typically on par or better.<sup class="ref"><a href="#ref-6">[6]</a></sup> Either way the headline is one buffer instead of two, not a dramatic speedup.</p>
+</div>
+</div>
 
 </section>
 
@@ -1388,7 +1616,7 @@ W ← W − lr · û</code></pre>
 
 <p>For hidden weight matrices only — embeddings, biases, and norm parameters use AdamW. That's why Muon comes packaged with a side-by-side optimizer in practice: it only knows what to do with matrices.</p>
 
-<p>Replacing the singular values directly via SVD is too slow for every step of training. The Muon paper uses <strong>Newton-Schulz iteration</strong>: a degree-5 polynomial in the matrix that, applied iteratively (typically 5 times), pushes all singular values toward 1 without ever computing the SVD. Each iteration is just matrix multiplications, which GPUs are exceptionally good at.</p>
+<p>Replacing the singular values directly via SVD is too slow for every step of training. The Muon paper uses <strong>Newton-Schulz iteration</strong>: a degree-5 polynomial in the matrix that, applied iteratively (typically 5 times), pushes all singular values toward 1 without ever computing the SVD.<sup class="ref"><a href="#ref-10">[10]</a></sup> Each iteration is just matrix multiplications, which GPUs are exceptionally good at. One honest caveat: Newton-Schulz only <em>approximates</em> the ideal orthogonalization. The standard degree-5 coefficients are tuned for speed, not accuracy — they leave the singular values in a band near 1 rather than exactly at 1, and the left/right singular vectors are only approximately preserved. In practice that approximation is more than good enough.</p>
 
 <div class="widget-caption"><span class="num">Fig. 10.1</span>What orthogonalization does to a matrix's singular value spectrum.</div>
 <div class="widget-container">
@@ -1426,9 +1654,19 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The vanilla momentum step is dominated by a few large singular directions. Muon's orthogonalized step has equal magnitude in every direction <code>U Σ V<sup>T</sup></code> defines. Every direction the gradient knows about gets attention. Parameters that would have been ignored under vanilla momentum (because they sat in low-singular-value directions of the gradient) get the same step size as the dominant directions.</p>
 
-<p>Practically, Muon set the current speed records for nanoGPT training and was used at the trillion-parameter scale for Kimi K2. The Muon comes with built-in μP scaling — as you make the model bigger, you don't need to retune the learning rate, which is one of the most labor-intensive parts of training large models.</p>
+<p>Practically, Muon set the current speed records for nanoGPT training<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
 
 <p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. The next chapter — Shampoo — goes one level deeper and asks: what if the optimizer also tracks the <em>curvature</em> structure of each matrix?</p>
+
+<div class="widget-caption"><span class="num">Fig. 10.2</span>Speedrun ladder, after Muon — the second big jump. Per-matrix orthogonalization clearly clears the per-parameter frontier.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon" data-new="muon" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). Muon's clear lead here (≈1.4× faster than AdamW to the target) echoes the ≈1.35× speedups reported at scale.<sup class="ref"><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a></sup></p>
+</div>
+</div>
 
 </section>
 
@@ -1437,15 +1675,17 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-shampoo">
 <h2><span class="num">Ch. 11</span> <span>Shampoo: curvature-aware preconditioning</span></h2>
 
-<p>Shampoo predates Muon by several years (the original paper is from 2018) and was actually the first matrix-aware optimizer to gain real attention. The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
+<p>Shampoo predates Muon by several years (the original paper is from 2018)<sup class="ref"><a href="#ref-7">[7]</a></sup> and was actually the first matrix-aware optimizer to gain real attention. The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
 
 <p>Shampoo's pitch: approximate the full Hessian using just <em>two</em> matrices per layer, one capturing how rows interact and one capturing how columns interact. For a weight matrix <code>W ∈ ℝ<sup>m×n</sup></code> with gradient <code>G</code>, maintain:</p>
 
-<pre><code>L ← L + G G<sup>T</sup>      ← m × m left preconditioner (row curvature)
-R ← R + G<sup>T</sup> G      ← n × n right preconditioner (column curvature)
+<pre><code>L ← β·L + (1−β)·G G<sup>T</sup>      ← m × m left preconditioner (row curvature)
+R ← β·R + (1−β)·G<sup>T</sup> G      ← n × n right preconditioner (column curvature)
 W ← W − lr · L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code></pre>
 
 <p>The <code>−1/4</code> exponents come from a Kronecker-factorization argument — the full Hessian is approximately <code>L ⊗ R</code>, so its inverse-square-root applied to <code>G</code> works out to multiplying by <code>L<sup>−1/4</sup></code> on the left and <code>R<sup>−1/4</sup></code> on the right.</p>
+
+<p>One bookkeeping note that echoes the AdaGrad → RMSProp story from chapter 3: the <em>original</em> 2018 Shampoo accumulated <code>L</code> and <code>R</code> as un-decayed running sums (<code>L ← L + GGᵀ</code>), exactly the AdaGrad form, with the same eventual-stall problem. Every practical implementation since — Distributed Shampoo, SOAP — uses the exponential moving average shown above, so the preconditioner tracks <em>recent</em> curvature instead of the lifetime sum.<sup class="ref"><a href="#ref-8">[8]</a><a href="#ref-9">[9]</a></sup></p>
 
 <p>Three optimizers, same gradient, same matrix, three different updates:</p>
 
@@ -1482,11 +1722,23 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) flattens the singular value spectrum — same row/column structure, but reshaped to equal magnitude in every direction. Shampoo (gold) does something subtly different: it uses the empirical row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't.</p>
 
+<p>A caveat on these last two figures: unlike the 2D demos in earlier chapters, Figs. 10.1 and 11.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
+
 <h3>Practical considerations</h3>
 
 <p>Shampoo's chief practical issues are cost (computing matrix square roots is expensive — typically every few hundred steps, not every step), memory (the two preconditioners take additional space proportional to <code>m² + n²</code>), and tuning (more hyperparameters than Muon). Variants like Distributed Shampoo and SOAP (Shampoo + Adam fused) have made it more practical. Recent benchmarks have it roughly tied with Muon at small scale and behind Muon at large scale once optimizer-aware learning rate transfer (μP) is factored in.</p>
 
-<p>The interesting question this raises — and Sid you've thought about this — is whether μP plus Muon plus Shampoo is redundant. If μP already gives you scale-invariant learning rates, and Muon already orthogonalizes per-matrix, what additional curvature signal is Shampoo capturing that the others miss? The answer seems to be: not as much as you'd hope at large scale, but enough at moderate scale to keep Shampoo in the conversation. It's the optimizer that proved matrix-aware preconditioning was a real direction — even if Muon turned out to be the simpler practical winner.</p>
+<p>The interesting question this raises is whether μP plus Muon plus Shampoo is redundant. If μP already gives you scale-invariant learning rates, and Muon already orthogonalizes per-matrix, what additional curvature signal is Shampoo capturing that the others miss? The answer seems to be: not as much as you'd hope at large scale, but enough at moderate scale to keep Shampoo in the conversation. It's the optimizer that proved matrix-aware preconditioning was a real direction — even if Muon turned out to be the simpler practical winner.</p>
+
+<div class="widget-caption"><span class="num">Fig. 11.2</span>Speedrun ladder, after Shampoo. Strong — close behind Muon, matching the essay's claim that it trails Muon at large scale once μP is factored in.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo" data-new="shampoo" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). Shampoo lands just behind Muon — matching the chapter's claim that it trails Muon at large scale; SOAP/Shampoo report ≈1.25–1.4× over AdamW.<sup class="ref"><a href="#ref-9">[9]</a></sup>.</p>
+</div>
+</div>
 
 </section>
 
@@ -1497,13 +1749,13 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Every optimizer so far has been about <em>the update direction</em>. SGD: raw gradient. Momentum: smoothed. Adam: per-element normalized. Muon: per-matrix orthogonalized. Shampoo: curvature-aware. But there's a parallel question we've only touched lightly in the AdamW chapter: <strong>how should we control the magnitude of the weights themselves?</strong></p>
 
-<p>Weight decay was the default answer. MuonH is a more radical one.</p>
+<p>Weight decay was the default answer. MuonH — from recent work on hypersphere optimization and transferable learning-rate scaling — is a more radical one.<sup class="ref"><a href="#ref-15">[15]</a></sup> It is much newer and less battle-tested than the optimizers above, so treat this chapter as a report on an active research direction rather than settled practice.</p>
 
 <h3>Scale invariance reframes the question</h3>
 
 <p>Modern transformers wrap every weight matrix in RMSNorm layers — the "RMSNorm sandwich." RMSNorm is <em>scale-invariant</em>: scaling its input by any positive α produces identical output. As a consequence, the weight matrix's magnitude doesn't actually affect what function the layer computes. Only its <em>direction</em> matters.</p>
 
-<p>But weights still grow during training. Without any weight decay, the Frobenius norm grows roughly as <code>√t</code>, which inflates the parameter scale relative to step size and shrinks the effective learning signal. AdamW's decoupled weight decay handles this by gently pulling weights toward zero each step, creating an equilibrium norm that weights "hover" near.</p>
+<p>But weights still grow during training. With the roughly-orthogonal, fixed-magnitude updates Muon produces, successive steps are close to uncorrelated, so the Frobenius norm grows diffusively — roughly as <code>√t</code> (the exact rate is regime-dependent, but the point is that it grows without bound). That inflates the parameter scale relative to step size and shrinks the effective learning signal. AdamW's decoupled weight decay handles this by gently pulling weights toward zero each step, creating an equilibrium norm that weights "hover" near.</p>
 
 <p>The Hyperball question is: if magnitude doesn't matter functionally, why not just <em>fix</em> the magnitude exactly?</p>
 
@@ -1515,7 +1767,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 W_temp   = W_t + U_t                              ← take the step
 W_{t+1}  = R · Normalize(W_temp)                  ← retract back to radius R</code></pre>
 
-<p>The weight matrix lives on a hypersphere of radius <code>R</code> for the entire training run. (Despite the name "hyperball," you're constrained to the boundary — a hypersphere.) The update magnitude <code>||U_t||<sub>F</sub> = η · R</code> is fixed, so <code>η</code> takes on a clean geometric meaning: it's the relative step size in units of weight norm. MuonH means "Muon with Hyperball," parallel to AdamW meaning "Adam with decoupled Weight decay."</p>
+<p>The weight matrix lives on a hypersphere of radius <code>R</code> for the entire training run. (Despite the name "hyperball," you're constrained to the boundary — a hypersphere.) The update magnitude <code>||U_t||<sub>F</sub> = η · R</code> is fixed, so <code>η</code> takes on a clean geometric meaning: it's the relative step size in units of weight norm. MuonH means "Muon with Hyperball," parallel to AdamW meaning "Adam with decoupled Weight decay."<sup class="ref"><a href="#ref-15">[15]</a></sup></p>
 
 <h3>The geometric picture</h3>
 
@@ -1567,17 +1819,27 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <h3>The spectral squeeze</h3>
 
-<p>Muon was already controlling the spectrum of the <em>update</em> by flattening its singular values. With Hyperball, you also pin the weight matrix's Frobenius norm. So MuonH gives you complete control over both update structure and weight magnitude — the cleanest version of the matrix-aware story.</p>
+<p>Muon was already controlling the spectrum of the <em>update</em> by flattening its singular values — orthogonalization can be read as steepest descent under a spectral-norm constraint.<sup class="ref"><a href="#ref-14">[14]</a></sup> With Hyperball, you also pin the weight matrix's Frobenius norm. So MuonH gives you complete control over both update structure and weight magnitude — the cleanest version of the matrix-aware story.</p>
 
 <p>But empirically, MuonH doesn't uniformly beat MuonW (Muon with ordinary weight decay). At lower learning rates MuonH wins; at higher rates MuonW pulls ahead. The mechanism: MuonW lets the weight norm grow over training, which provides an <em>implicit annealing schedule</em> — as <code>||W||<sub>F</sub></code> grows, the relative step <code>||ΔW||/||W||</code> shrinks even at fixed <code>lr</code>. MuonH's fixed norm eliminates this annealing.</p>
 
-<p>There's a deeper failure mode at scale, too. Hyperball's retraction multiplies the matrix by a single scalar <code>c = R / ||W_temp||<sub>F</sub></code>. This shrinks all singular values <em>by the same factor</em>. The dominant singular values were big to start, so proportional shrinkage barely affects them. The trailing singular values — which Muon was patiently growing one step at a time — get repeatedly pulled back down by the rescaling. Over many steps, the spectrum collapses into a few dominant modes. This is the "spectral squeeze." Recent benchmarks show MuonH's spectral entropy and participation ratio collapse over training while MuonW maintains both.</p>
+<p>There's a deeper failure mode at scale, too. Hyperball's retraction multiplies the matrix by a single scalar <code>c = R / ||W_temp||<sub>F</sub></code>. This shrinks all singular values <em>by the same factor</em>. The dominant singular values were big to start, so proportional shrinkage barely affects them. The trailing singular values — which Muon was patiently growing one step at a time — get repeatedly pulled back down by the rescaling. Over many steps, the spectrum collapses into a few dominant modes. This is the "spectral squeeze." Recent benchmarks report MuonH's spectral entropy and participation ratio collapsing over training while MuonW maintains both.<sup class="ref"><a href="#ref-15">[15]</a></sup></p>
 
 <h3>Where this leaves us</h3>
 
 <p>The frontier as of mid-2026: MuonW is the safer default for large-scale runs, MuonH is competitive at moderate scale but has the spectral squeeze problem to contend with. Active research questions include Spectral Sphere variants that constrain σ<sub>1</sub> rather than <code>||W||<sub>F</sub></code>, hybrid schemes that handle the output projection separately, and the deeper question of whether the implicit annealing from norm growth in MuonW is a feature or just a happy accident.</p>
 
 <p>The bigger lesson: <strong>weight magnitude has emerged as a third axis of optimizer design</strong>, orthogonal to "what direction to step" and "how aware of curvature." As networks become more carefully internally normalized, the optimizer has more room to manage scale directly, and MuonH is one promising point in that design space.</p>
+
+<div class="widget-caption"><span class="num">Fig. 12.2</span>Speedrun ladder, after MuonH. A small edge at moderate scale — but recall the spectral-squeeze caveat: this advantage is fragile and does not hold uniformly.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo,muonh" data-new="muonh" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). MuonH's small edge reflects its moderate-scale advantage;<sup class="ref"><a href="#ref-15">[15]</a></sup> at higher learning rates MuonW pulls ahead and the spectrum collapses, so read this rung as "promising, not settled.".</p>
+</div>
+</div>
 
 </section>
 
@@ -1586,17 +1848,108 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-coda">
 <h2><span class="num">Coda</span> <span>The through-line</span></h2>
 
-<p>Twelve chapters, twelve widgets, ten optimizers. The arc, compressed:</p>
+<p>Twelve chapters, eleven optimizers. The arc, compressed:</p>
 
 <p><strong>SGD</strong> took small noisy steps in the gradient's direction. <strong>Momentum</strong> gave the optimizer a memory and a velocity. <strong>Adam</strong> added per-parameter learning rates via the EMA of squared gradients, which we then saw was really computing a signal-to-noise ratio bounded in <code>[−1, +1]</code>. <strong>AdamW</strong> noticed that the obvious way to add weight decay to Adam silently broke it, and fixed it in one line. <strong>SignSGD</strong> and <strong>Lion</strong> showed that the per-parameter normalized step was the active ingredient all along — Adam's elaborate machinery was approximating something simpler. <strong>Muon</strong> jumped from per-parameter to per-matrix, orthogonalizing each weight matrix's update so every singular direction gets attention. <strong>Shampoo</strong> went one further and tracked actual curvature per-row and per-column. <strong>MuonH</strong> opened a third axis: control the weight magnitude directly, not just the update.</p>
 
-<p>The arc, abstracted: each optimizer either looked at the previous one and asked <em>what is it failing to use?</em>, or asked <em>what is it doing redundantly that we can throw away?</em> Both directions produced wins.</p>
+<p>The arc, abstracted: each optimizer either looked at the previous one and asked <em>what is it failing to use?</em>, or asked <em>what is it doing redundantly that we can throw away?</em> Both directions produced wins.<sup class="ref"><a href="#ref-3">[3]</a><a href="#ref-10">[10]</a></sup></p>
 
 <p>Where this is going: the matrix-aware optimizers (Muon, Shampoo, MuonH) are still relatively new and rapidly evolving. The next axes that look promising — based on what's getting attention now — are <em>second-order without the cost</em> (cheap Hessian-vector products integrated into the update), <em>even better factorizations</em> of the implicit Hessian, and <em>scale-control as a first-class concept</em>. The story isn't finished, and a few of the chapters above might look quaint in three years. But the through-line will hold: every optimizer fixes a specific failure of the one before it, and noticing the failure clearly is the hard part.</p>
 
+<div class="widget-caption"><span class="num">Ladder</span>Every rung on one chart — press Play to race them. The frontier marches earlier, but not every step does: SignSGD steps back, and the biggest jumps come from momentum, the adaptive step (AdamW), and per-matrix (Muon).</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo,muonh" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP (teacher→student; see <code>optimizer-ladder-sim.py</code>) and animated here — press <strong>Play</strong> to race the whole field, or scrub. The ordering echoes reported large-scale results (Muon ≈1.35× over AdamW,<sup class="ref"><a href="#ref-10">[10]</a></sup> Shampoo/SOAP ≈1.25×,<sup class="ref"><a href="#ref-9">[9]</a></sup> Lion ≈ AdamW<sup class="ref"><a href="#ref-6">[6]</a></sup>) but magnitudes are illustrative — a browser-scale toy can't reproduce the real ladder. Full comparison code: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
+</div>
+</div>
+
 </section>
 
+<hr class="section-break">
 
+<section class="chapter references" id="ch-refs">
+<h2><span class="num">Refs</span> <span>References &amp; further reading</span></h2>
+
+<p>This essay is a synthesis rather than original research; the lineage it traces is drawn from the papers below. The classical adaptive methods established per-parameter scaling; the sign-based family showed how little of that machinery was load-bearing; and the matrix-aware methods — Shampoo, Muon, and the hypersphere variants — are the active frontier as of mid-2026. Where the text states empirical claims about large-scale behavior (Muon's records, the spectral-squeeze of MuonH), those trace to the matrix-aware and hypersphere references in the matrix-aware groups. The groups after that collect the foundational and adjacent work the lineage builds on — stochastic approximation and momentum, the analysis of adaptive methods, normalization and weight geometry, natural-gradient and second-order methods, the spectral-norm and duality view of Muon, and learning-rate schedules and large-batch scaling — for readers who want to follow any thread back to its root. Dates and arXiv identifiers are given so each claim can be checked at the source.</p>
+
+<div class="r-group">First-order &amp; adaptive methods</div>
+<ol>
+<li id="ref-1">J. Duchi, E. Hazan, Y. Singer. <span class="r-title">Adaptive Subgradient Methods for Online Learning and Stochastic Optimization (AdaGrad)</span>. <span class="r-venue">JMLR 12, 2011.</span></li>
+<li id="ref-2">T. Tieleman, G. Hinton. <span class="r-title">Lecture 6.5 — RMSProp: Divide the gradient by a running average of its recent magnitude</span>. <span class="r-venue">Coursera: Neural Networks for Machine Learning, 2012.</span></li>
+<li id="ref-3">D. P. Kingma, J. Ba. <a href="https://arxiv.org/abs/1412.6980"><span class="r-title">Adam: A Method for Stochastic Optimization</span></a>. <span class="r-venue">ICLR, 2015. arXiv:1412.6980.</span></li>
+<li id="ref-4">I. Loshchilov, F. Hutter. <a href="https://arxiv.org/abs/1711.05101"><span class="r-title">Decoupled Weight Decay Regularization (AdamW)</span></a>. <span class="r-venue">ICLR, 2019. arXiv:1711.05101.</span></li>
+</ol>
+
+<div class="r-group">Sign-based &amp; learned optimizers</div>
+<ol>
+<li id="ref-5">J. Bernstein, Y.-X. Wang, K. Azizzadenesheli, A. Anandkumar. <a href="https://arxiv.org/abs/1802.04434"><span class="r-title">signSGD: Compressed Optimisation for Non-Convex Problems</span></a>. <span class="r-venue">ICML, 2018. arXiv:1802.04434.</span></li>
+<li id="ref-6">X. Chen et al. <a href="https://arxiv.org/abs/2302.06675"><span class="r-title">Symbolic Discovery of Optimization Algorithms (Lion)</span></a>. <span class="r-venue">NeurIPS, 2023. arXiv:2302.06675.</span></li>
+</ol>
+
+<div class="r-group">Matrix-aware &amp; second-order methods</div>
+<ol>
+<li id="ref-7">V. Gupta, T. Koren, Y. Singer. <a href="https://arxiv.org/abs/1802.09568"><span class="r-title">Shampoo: Preconditioned Stochastic Tensor Optimization</span></a>. <span class="r-venue">ICML, 2018. arXiv:1802.09568.</span></li>
+<li id="ref-8">H.-J. M. Shi, T.-H. Lee, S. Iwasaki, J. Gallego-Posada et al. <a href="https://arxiv.org/abs/2309.06497"><span class="r-title">A Distributed Data-Parallel PyTorch Implementation of the Distributed Shampoo Optimizer</span></a>. <span class="r-venue">2023. arXiv:2309.06497.</span></li>
+<li id="ref-9">N. Vyas, D. Morwani, R. Zhao et al. <a href="https://arxiv.org/abs/2409.11321"><span class="r-title">SOAP: Improving and Stabilizing Shampoo using Adam</span></a>. <span class="r-venue">2024. arXiv:2409.11321.</span></li>
+<li id="ref-10">K. Jordan. <a href="https://kellerjordan.github.io/posts/muon/"><span class="r-title">Muon: An Optimizer for Hidden Layers in Neural Networks</span></a>. <span class="r-venue">Blog, 2024.</span></li>
+<li id="ref-11">J. Liu et al. (Moonshot AI). <a href="https://arxiv.org/abs/2502.16982"><span class="r-title">Muon is Scalable for LLM Training</span></a>. <span class="r-venue">2025. arXiv:2502.16982.</span></li>
+<li id="ref-12">Kimi Team (Moonshot AI). <a href="https://arxiv.org/abs/2507.20534"><span class="r-title">Kimi K2: Open Agentic Intelligence</span></a>. <span class="r-venue">2025. arXiv:2507.20534.</span></li>
+</ol>
+
+<div class="r-group">Scaling, norms &amp; weight geometry</div>
+<ol>
+<li id="ref-13">G. Yang et al. <a href="https://arxiv.org/abs/2203.03466"><span class="r-title">Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer (μP)</span></a>. <span class="r-venue">NeurIPS, 2021. arXiv:2203.03466.</span></li>
+<li id="ref-14">L. Chen, J. Li, Q. Liu. <a href="https://arxiv.org/abs/2506.15054"><span class="r-title">Muon Optimizes Under Spectral Norm Constraints</span></a>. <span class="r-venue">2025. arXiv:2506.15054.</span></li>
+<li id="ref-15">L. Ren et al. <a href="https://arxiv.org/abs/2603.28743"><span class="r-title">Rethinking Language Model Scaling under Transferable Hypersphere Optimization (HyperP / MuonH)</span></a>. <span class="r-venue">2026. arXiv:2603.28743.</span></li>
+</ol>
+
+<div class="r-group">Foundations — stochastic approximation &amp; momentum</div>
+<ol>
+<li id="ref-16">H. Robbins, S. Monro. <span class="r-title">A Stochastic Approximation Method</span>. <span class="r-venue">Annals of Mathematical Statistics 22(3), 1951.</span></li>
+<li id="ref-17">B. T. Polyak. <span class="r-title">Some Methods of Speeding Up the Convergence of Iteration Methods (heavy-ball momentum)</span>. <span class="r-venue">USSR Computational Mathematics and Mathematical Physics 4(5), 1964.</span></li>
+<li id="ref-18">Y. Nesterov. <span class="r-title">A Method for Solving the Convex Programming Problem with Convergence Rate O(1/k²)</span>. <span class="r-venue">Soviet Mathematics Doklady 27, 1983.</span></li>
+<li id="ref-19">I. Sutskever, J. Martens, G. Dahl, G. Hinton. <span class="r-title">On the Importance of Initialization and Momentum in Deep Learning</span>. <span class="r-venue">ICML, 2013.</span></li>
+</ol>
+
+<div class="r-group">Adaptive methods — analysis &amp; critique</div>
+<ol>
+<li id="ref-20">S. J. Reddi, S. Kale, S. Kumar. <a href="https://arxiv.org/abs/1904.09237"><span class="r-title">On the Convergence of Adam and Beyond (AMSGrad)</span></a>. <span class="r-venue">ICLR, 2018. arXiv:1904.09237.</span></li>
+<li id="ref-21">L. Balles, P. Hennig. <a href="https://arxiv.org/abs/1705.07774"><span class="r-title">Dissecting Adam: The Sign, Magnitude and Variance of Stochastic Gradients</span></a>. <span class="r-venue">ICML, 2018. arXiv:1705.07774.</span></li>
+</ol>
+
+<div class="r-group">Normalization &amp; weight geometry</div>
+<ol>
+<li id="ref-22">S. Ioffe, C. Szegedy. <a href="https://arxiv.org/abs/1502.03167"><span class="r-title">Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift</span></a>. <span class="r-venue">ICML, 2015. arXiv:1502.03167.</span></li>
+<li id="ref-23">J. L. Ba, J. R. Kiros, G. E. Hinton. <a href="https://arxiv.org/abs/1607.06450"><span class="r-title">Layer Normalization</span></a>. <span class="r-venue">2016. arXiv:1607.06450.</span></li>
+<li id="ref-24">T. Salimans, D. P. Kingma. <a href="https://arxiv.org/abs/1602.07868"><span class="r-title">Weight Normalization: A Simple Reparameterization to Accelerate Training of Deep Neural Networks</span></a>. <span class="r-venue">NeurIPS, 2016. arXiv:1602.07868.</span></li>
+<li id="ref-25">B. Zhang, R. Sennrich. <a href="https://arxiv.org/abs/1910.07467"><span class="r-title">Root Mean Square Layer Normalization (RMSNorm)</span></a>. <span class="r-venue">NeurIPS, 2019. arXiv:1910.07467.</span></li>
+<li id="ref-26">T. van Laarhoven. <a href="https://arxiv.org/abs/1706.05350"><span class="r-title">L2 Regularization versus Batch and Weight Normalization</span></a>. <span class="r-venue">2017. arXiv:1706.05350.</span></li>
+</ol>
+
+<div class="r-group">Second-order &amp; natural-gradient methods</div>
+<ol>
+<li id="ref-27">S. Amari. <span class="r-title">Natural Gradient Works Efficiently in Learning</span>. <span class="r-venue">Neural Computation 10(2), 1998.</span></li>
+<li id="ref-28">J. Martens, R. Grosse. <a href="https://arxiv.org/abs/1503.05671"><span class="r-title">Optimizing Neural Networks with Kronecker-factored Approximate Curvature (K-FAC)</span></a>. <span class="r-venue">ICML, 2015. arXiv:1503.05671.</span></li>
+<li id="ref-29">R. Anil, V. Gupta, T. Koren, K. Regan, Y. Singer. <a href="https://arxiv.org/abs/2002.09018"><span class="r-title">Scalable Second Order Optimization for Deep Learning</span></a>. <span class="r-venue">2020. arXiv:2002.09018.</span></li>
+</ol>
+
+<div class="r-group">Spectral-norm &amp; duality view of Muon</div>
+<ol>
+<li id="ref-30">J. Bernstein, L. Newhouse. <a href="https://arxiv.org/abs/2409.20325"><span class="r-title">Old Optimizer, New Norm: An Anthology</span></a>. <span class="r-venue">2024. arXiv:2409.20325.</span></li>
+<li id="ref-31">J. Bernstein, L. Newhouse. <a href="https://arxiv.org/abs/2410.21265"><span class="r-title">Modular Duality in Deep Learning</span></a>. <span class="r-venue">2024. arXiv:2410.21265.</span></li>
+<li id="ref-32">N. J. Higham. <span class="r-title">Functions of Matrices: Theory and Computation (Newton–Schulz iteration)</span>. <span class="r-venue">SIAM, 2008.</span></li>
+</ol>
+
+<div class="r-group">Learning-rate schedules &amp; large-batch scaling</div>
+<ol>
+<li id="ref-33">I. Loshchilov, F. Hutter. <a href="https://arxiv.org/abs/1608.03983"><span class="r-title">SGDR: Stochastic Gradient Descent with Warm Restarts</span></a>. <span class="r-venue">ICLR, 2017. arXiv:1608.03983.</span></li>
+<li id="ref-34">Y. You, I. Gitman, B. Ginsburg. <a href="https://arxiv.org/abs/1708.03888"><span class="r-title">Large Batch Training of Convolutional Networks (LARS)</span></a>. <span class="r-venue">2017. arXiv:1708.03888.</span></li>
+<li id="ref-35">Y. You, J. Li, S. Reddi, J. Hseu, S. Kumar et al. <a href="https://arxiv.org/abs/1904.00962"><span class="r-title">Large Batch Optimization for Deep Learning: Training BERT in 76 Minutes (LAMB)</span></a>. <span class="r-venue">ICLR, 2020. arXiv:1904.00962.</span></li>
+</ol>
+</section>
 
 <footer class="post-footer">
   Made with care for clear explanations.<br>
@@ -3297,6 +3650,245 @@ function gauss() {
     dOut.textContent = (dM / R).toFixed(3);
   }
   draw();
+})();
+</script>
+
+<script>
+// === Sticky contents rail — fade-in + scroll-spy ===
+(function () {
+  var rail = document.querySelector('.toc-rail');
+  if (!rail) return;
+  var links = Array.prototype.slice.call(rail.querySelectorAll('a'));
+  var map = {};
+  var sections = [];
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    map[id] = a;
+    var s = document.getElementById(id);
+    if (s) sections.push(s);
+  });
+  // Fade the rail in once the reader scrolls past the inline contents block,
+  // and highlight whichever section's top has most recently passed the read line.
+  var current = null;
+  function onScroll() {
+    if (window.scrollY > 600) rail.classList.add('visible');
+    else rail.classList.remove('visible');
+    var line = window.innerHeight * 0.3;
+    var best = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top - line <= 0) best = sections[i];
+    }
+    var a = best && map[best.id];
+    if (a && a !== current) {
+      if (current) current.classList.remove('active');
+      a.classList.add('active');
+      current = a;
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+<script>
+// === Convergence "speedrun ladder" widgets ===
+// MEASURED curves: each optimizer was run offline on a small 5-layer MLP
+// (teacher->student), best learning rate by lowest final loss, relative loss
+// recorded vs step. See optimizer-ladder-sim.py (on GitHub). One toy network,
+// not a benchmark — the ordering is qualitatively the textbook ladder, the
+// magnitudes are illustrative.
+(function () {
+  var T = 4000, DATA = {
+    sgd: {label:'SGD', color:'#8a8a8a', curve:[[0,1],[1,0.998043],[2,0.993885],[3,0.986988],[4,0.977748],[5,0.967224],[6,0.955676],[7,0.941892],[8,0.924764],[10,0.890031],[11,0.869934],[13,0.829039],[14,0.806251],[16,0.763101],[19,0.698433],[21,0.655656],[24,0.59642],[27,0.534757],[31,0.460465],[35,0.393406],[40,0.321901],[45,0.263322],[51,0.2139],[58,0.177802],[66,0.153261],[74,0.138686],[84,0.128317],[95,0.123213],[107,0.119268],[121,0.117191],[137,0.11356],[154,0.11042],[174,0.1063],[197,0.101824],[222,0.0989313],[250,0.0927024],[283,0.0881082],[319,0.0835241],[360,0.0795744],[406,0.0776056],[458,0.0782777],[517,0.0640772],[583,0.0625989],[658,0.0567352],[742,0.0564249],[837,0.0480991],[944,0.0472501],[1065,0.0441199],[1201,0.0403969],[1354,0.037971],[1528,0.0358505],[1723,0.0363593],[1943,0.0331903],[2192,0.027743],[2472,0.0261486],[2788,0.0248057],[3144,0.0230559],[3545,0.0195901],[3999,0.0183778]]},
+    momentum: {label:'Momentum', color:'#1D9E75', curve:[[0,1],[1,0.996014],[2,0.98468],[3,0.963414],[4,0.929748],[5,0.884476],[6,0.829608],[7,0.766617],[8,0.698895],[10,0.563084],[11,0.501728],[13,0.401932],[14,0.36471],[16,0.312834],[19,0.262939],[21,0.235073],[24,0.195915],[27,0.173666],[31,0.158777],[35,0.143767],[40,0.137936],[45,0.12616],[51,0.119581],[58,0.111616],[66,0.106646],[74,0.103275],[84,0.0973094],[95,0.0924598],[107,0.0883245],[121,0.0858789],[137,0.0809896],[154,0.0745998],[174,0.0762519],[197,0.0689981],[222,0.0608933],[250,0.0590937],[283,0.0577846],[319,0.0588039],[360,0.056147],[406,0.0554723],[458,0.043089],[517,0.0453253],[583,0.0418024],[658,0.0361969],[742,0.0304113],[837,0.0325868],[944,0.0266864],[1065,0.0228779],[1201,0.020705],[1354,0.0201856],[1528,0.0181813],[1723,0.0172172],[1943,0.0163617],[2192,0.0146976],[2472,0.013771],[2788,0.0114926],[3144,0.0116399],[3545,0.0076796],[3999,0.0055762]]},
+    adam: {label:'Adam', color:'#7F77DD', curve:[[0,1],[1,0.998102],[2,0.994284],[3,0.988621],[4,0.981133],[5,0.971806],[6,0.960763],[7,0.948062],[8,0.933819],[10,0.901015],[11,0.882582],[13,0.842102],[14,0.820336],[16,0.774936],[19,0.703385],[21,0.65432],[24,0.580723],[27,0.509665],[31,0.4221],[35,0.344854],[40,0.26415],[45,0.20239],[51,0.154563],[58,0.133598],[66,0.126877],[74,0.119803],[84,0.115216],[95,0.111359],[107,0.107158],[121,0.103713],[137,0.0966365],[154,0.0930101],[174,0.0872493],[197,0.080172],[222,0.0752337],[250,0.0701997],[283,0.0641943],[319,0.0571672],[360,0.0526345],[406,0.0485235],[458,0.0409116],[517,0.0380643],[583,0.03192],[658,0.0326214],[742,0.0284375],[837,0.0248246],[944,0.0253736],[1065,0.0217389],[1201,0.0200794],[1354,0.0186824],[1528,0.0177752],[1723,0.0180686],[1943,0.0147359],[2192,0.0143803],[2472,0.0131516],[2788,0.0128083],[3144,0.0133914],[3545,0.0085475],[3999,0.0048849]]},
+    adamw: {label:'AdamW', color:'#5A52C0', curve:[[0,1],[1,0.99809],[2,0.994338],[3,0.988736],[4,0.98124],[5,0.971948],[6,0.960982],[7,0.94848],[8,0.934295],[10,0.901572],[11,0.883277],[13,0.843315],[14,0.821809],[16,0.776463],[19,0.704146],[21,0.65445],[24,0.580591],[27,0.509595],[31,0.422432],[35,0.346311],[40,0.266064],[45,0.203934],[51,0.156228],[58,0.135639],[66,0.128359],[74,0.121921],[84,0.114993],[95,0.110209],[107,0.106462],[121,0.101671],[137,0.0960878],[154,0.0926358],[174,0.0852383],[197,0.0787754],[222,0.0733396],[250,0.0695462],[283,0.0616605],[319,0.0548633],[360,0.0506633],[406,0.0472009],[458,0.04021],[517,0.0354572],[583,0.036686],[658,0.0298372],[742,0.0285741],[837,0.0262131],[944,0.0233482],[1065,0.0235604],[1201,0.0191987],[1354,0.0191543],[1528,0.0181927],[1723,0.0173358],[1943,0.0152832],[2192,0.0134959],[2472,0.0142317],[2788,0.0131617],[3144,0.0110695],[3545,0.0070508],[3999,0.0049098]]},
+    signsgd: {label:'SignSGD', color:'#C8862C', curve:[[0,1],[1,0.99804],[2,0.994125],[3,0.988526],[4,0.980807],[5,0.971197],[6,0.959719],[7,0.946591],[8,0.93189],[10,0.897167],[11,0.87812],[13,0.835839],[14,0.812821],[16,0.764193],[19,0.687006],[21,0.633309],[24,0.551185],[27,0.472116],[31,0.371994],[35,0.282568],[40,0.197267],[45,0.14889],[51,0.128654],[58,0.12088],[66,0.118563],[74,0.114721],[84,0.112646],[95,0.108303],[107,0.102886],[121,0.1004],[137,0.104871],[154,0.103382],[174,0.0937199],[197,0.0973475],[222,0.10332],[250,0.0983311],[283,0.0991551],[319,0.105987],[360,0.101692],[406,0.0932956],[458,0.101815],[517,0.0874295],[583,0.0852717],[658,0.0814278],[742,0.0758759],[837,0.0683272],[944,0.0702656],[1065,0.063591],[1201,0.0593615],[1354,0.0569322],[1528,0.0527009],[1723,0.0514598],[1943,0.0500889],[2192,0.0454427],[2472,0.0438574],[2788,0.0430587],[3144,0.0409905],[3545,0.0242421],[3999,0.0118145]]},
+    lion: {label:'Lion', color:'#2BA17B', curve:[[0,1],[1,0.999803],[2,0.999407],[3,0.998803],[4,0.997995],[5,0.997004],[6,0.995794],[7,0.994381],[8,0.992764],[10,0.988952],[11,0.986739],[13,0.981711],[14,0.978894],[16,0.972667],[19,0.961905],[21,0.953796],[24,0.940302],[27,0.925252],[31,0.902861],[35,0.878053],[40,0.844019],[45,0.807064],[51,0.759657],[58,0.701433],[66,0.633083],[74,0.565291],[84,0.484985],[95,0.406939],[107,0.337871],[121,0.280562],[137,0.23533],[154,0.197965],[174,0.173018],[197,0.174997],[222,0.168017],[250,0.15084],[283,0.13417],[319,0.119364],[360,0.10705],[406,0.092252],[458,0.0793602],[517,0.0677254],[583,0.0563068],[658,0.0465576],[742,0.0382156],[837,0.031987],[944,0.0274514],[1065,0.0241127],[1201,0.0205973],[1354,0.018505],[1528,0.016101],[1723,0.0142196],[1943,0.0126861],[2192,0.011259],[2472,0.0099722],[2788,0.0091575],[3144,0.008375],[3545,0.0062166],[3999,0.0048701]]},
+    muon: {label:'Muon', color:'#D85A30', curve:[[0,1],[1,0.999824],[2,0.999458],[3,0.998902],[4,0.998144],[5,0.99721],[6,0.996065],[7,0.994716],[8,0.993166],[10,0.989493],[11,0.987375],[13,0.982591],[14,0.979925],[16,0.974023],[19,0.963639],[21,0.955882],[24,0.943059],[27,0.928587],[31,0.907201],[35,0.883822],[40,0.852024],[45,0.817753],[51,0.774003],[58,0.720864],[66,0.658952],[74,0.596313],[84,0.518411],[95,0.434018],[107,0.344617],[121,0.246644],[137,0.160336],[154,0.115786],[174,0.100047],[197,0.0872085],[222,0.0763926],[250,0.0655921],[283,0.0558399],[319,0.0488174],[360,0.0407688],[406,0.0367238],[458,0.0316191],[517,0.0268869],[583,0.0256842],[658,0.0219413],[742,0.0191133],[837,0.0167206],[944,0.0167249],[1065,0.0161694],[1201,0.0135599],[1354,0.0139834],[1528,0.0123345],[1723,0.0118049],[1943,0.0114107],[2192,0.010675],[2472,0.0097303],[2788,0.0093684],[3144,0.0096762],[3545,0.0058984],[3999,0.0024831]]},
+    shampoo: {label:'Shampoo', color:'#A0531E', curve:[[0,1],[1,0.998739],[2,0.996687],[3,0.993992],[4,0.990634],[5,0.986978],[6,0.982705],[7,0.978267],[8,0.973099],[10,0.962436],[11,0.956446],[13,0.94361],[14,0.93682],[16,0.922343],[19,0.899239],[21,0.883692],[24,0.857517],[27,0.830044],[31,0.790863],[35,0.751352],[40,0.69967],[45,0.646126],[51,0.577591],[58,0.499018],[66,0.409259],[74,0.322843],[84,0.229161],[95,0.159977],[107,0.125212],[121,0.112767],[137,0.105267],[154,0.097978],[174,0.0901878],[197,0.0820765],[222,0.0730584],[250,0.0652214],[283,0.0593863],[319,0.0549407],[360,0.0559264],[406,0.0456452],[458,0.0402116],[517,0.0378754],[583,0.0327131],[658,0.029657],[742,0.0281946],[837,0.0241489],[944,0.0221231],[1065,0.0204715],[1201,0.018279],[1354,0.017663],[1528,0.0155182],[1723,0.0166658],[1943,0.0158033],[2192,0.0150938],[2472,0.0135674],[2788,0.0107815],[3144,0.0090515],[3545,0.007216],[3999,0.0037396]]},
+    muonh: {label:'MuonH', color:'#8A4FBF', curve:[[0,1.40847],[1,1.40813],[2,1.40744],[3,1.40636],[4,1.4049],[5,1.40303],[6,1.40078],[7,1.39816],[8,1.39516],[10,1.38807],[11,1.38401],[13,1.37483],[14,1.3697],[16,1.35839],[19,1.33881],[21,1.32402],[24,1.29948],[27,1.27195],[31,1.23097],[35,1.18576],[40,1.12412],[45,1.0579],[51,0.974045],[58,0.872388],[66,0.755841],[74,0.644755],[84,0.518033],[95,0.398401],[107,0.290489],[121,0.200428],[137,0.144306],[154,0.120466],[174,0.0991216],[197,0.0814848],[222,0.0698236],[250,0.0603469],[283,0.0524134],[319,0.0454783],[360,0.039809],[406,0.0378578],[458,0.0336799],[517,0.0294179],[583,0.0262158],[658,0.0256367],[742,0.0224756],[837,0.0227972],[944,0.0230478],[1065,0.0205552],[1201,0.0195426],[1354,0.0183321],[1528,0.0190399],[1723,0.0194172],[1943,0.0158543],[2192,0.0171493],[2472,0.0159058],[2788,0.0149724],[3144,0.0147091],[3545,0.0105951],[3999,0.0055595]]}
+  };
+  var TARGET = 0.03, YMIN = 0.002, YMAX = 1.0;
+
+  function rgba(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function stepsToTarget(curve) {        // first crossing of TARGET, interpolated
+    for (var i = 1; i < curve.length; i++) {
+      if (curve[i][1] <= TARGET) {
+        var x0 = curve[i - 1][0], y0 = curve[i - 1][1], x1 = curve[i][0], y1 = curve[i][1];
+        return y0 === y1 ? x1 : Math.round(x0 + (x1 - x0) * (y0 - TARGET) / (y0 - y1));
+      }
+    }
+    return null;
+  }
+
+  function valAt(curve, s) {            // interpolate relative loss at step s
+    if (s <= curve[0][0]) return curve[0][1];
+    for (var i = 1; i < curve.length; i++) {
+      if (curve[i][0] >= s) {
+        var x0 = curve[i - 1][0], y0 = curve[i - 1][1], x1 = curve[i][0], y1 = curve[i][1];
+        return x1 === x0 ? y1 : y0 + (y1 - y0) * (s - x0) / (x1 - x0);
+      }
+    }
+    return curve[curve.length - 1][1];
+  }
+
+  function setup(canvas) {
+    var keys = (canvas.getAttribute('data-optims') || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var newKey = canvas.getAttribute('data-new');
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    var Lm = 52, Rm = 16, Tm = 16, Bm = 42;
+    var pW = W - Lm - Rm, pH = H - Tm - Bm;
+    var log10 = Math.log(10);
+    function l10(v) { return Math.log(v) / log10; }
+    function xPix(s) { return Lm + (s / T) * pW; }
+    function yPix(v) { v = Math.min(YMAX, Math.max(YMIN, v)); return Tm + (l10(v) / l10(YMIN)) * pH; }
+    var monoF = getComputedStyle(document.body).getPropertyValue('--font-mono');
+    var serifF = getComputedStyle(document.body).getPropertyValue('--font-serif');
+    var cross = {}; keys.forEach(function (k) { cross[k] = stepsToTarget(DATA[k].curve); });
+    var base = stepsToTarget(DATA.adamw.curve);
+
+    // build controls (injected so the per-chapter DOM stays simple)
+    var wrap = canvas.parentNode;
+    var ctr = document.createElement('div'); ctr.className = 'conv-controls';
+    var playBtn = document.createElement('button'); playBtn.type = 'button'; playBtn.textContent = 'Play';
+    var resetBtn = document.createElement('button'); resetBtn.type = 'button'; resetBtn.textContent = 'Reset';
+    var scrub = document.createElement('input'); scrub.type = 'range'; scrub.className = 'conv-scrub';
+    scrub.min = 0; scrub.max = T; scrub.step = 1; scrub.value = 0;
+    scrub.setAttribute('aria-label', 'training step');
+    var readout = document.createElement('span'); readout.className = 'conv-step';
+    ctr.appendChild(playBtn); ctr.appendChild(resetBtn); ctr.appendChild(scrub); ctr.appendChild(readout);
+    wrap.insertBefore(ctr, canvas.nextSibling);
+
+    var disp = T, playing = false, raf = null;   // start fully revealed
+
+    function drawAxes(ty) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.font = '10px ' + monoF; ctx.textBaseline = 'middle';
+      [1, 0.1, 0.01].forEach(function (v) {
+        var y = yPix(v);
+        ctx.strokeStyle = 'rgba(128,128,128,0.16)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(Lm, y); ctx.lineTo(W - Rm, y); ctx.stroke();
+        ctx.fillStyle = '#999'; ctx.textAlign = 'right';
+        ctx.fillText(v === 1 ? '1.0' : (v === 0.1 ? '0.1' : '.01'), Lm - 7, y);
+      });
+      ctx.textBaseline = 'top'; ctx.textAlign = 'center'; ctx.fillStyle = '#999';
+      [0, 1000, 2000, 3000, 4000].forEach(function (s) {
+        ctx.fillText(s === 0 ? '0' : (s / 1000) + 'k', xPix(s), H - Bm + 8);
+      });
+      ctx.fillStyle = '#888'; ctx.font = '11px ' + serifF; ctx.textAlign = 'center';
+      ctx.fillText('training steps', Lm + pW / 2, H - 16);
+      ctx.save(); ctx.translate(12, Tm + pH / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillText('loss  (relative to start)', 0, 0); ctx.restore();
+      // target line
+      ctx.strokeStyle = 'rgba(120,120,120,0.7)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(Lm, ty); ctx.lineTo(W - Rm, ty); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#888'; ctx.font = '10px ' + monoF; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText('target loss', W - Rm - 2, ty - 3);
+    }
+
+    function drawCurve(k, ty) {
+      var o = DATA[k], isNew = k === newKey;
+      ctx.strokeStyle = isNew ? o.color : rgba(o.color, 0.45);
+      ctx.lineWidth = isNew ? 2.6 : 1.4;
+      ctx.beginPath();
+      var moved = false;
+      for (var i = 0; i < o.curve.length; i++) {
+        var p = o.curve[i];
+        if (p[0] > disp) break;
+        var px = xPix(p[0]), py = yPix(p[1]);
+        if (!moved) { ctx.moveTo(px, py); moved = true; } else ctx.lineTo(px, py);
+      }
+      if (disp > o.curve[0][0]) ctx.lineTo(xPix(disp), yPix(valAt(o.curve, disp))); // reveal frontier
+      ctx.stroke();
+      if (cross[k] != null && cross[k] <= disp) {     // crossing marker
+        ctx.fillStyle = o.color;
+        ctx.beginPath(); ctx.arc(xPix(cross[k]), ty, isNew ? 4.5 : 3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+      }
+    }
+
+    function updateBoard() {
+      var board = wrap.querySelector('.conv-board'); if (!board) return;
+      var rows = keys.map(function (k) { return { k: k, done: cross[k] != null && cross[k] <= disp, s: cross[k] }; });
+      rows.sort(function (a, b) {
+        if (a.done !== b.done) return a.done ? -1 : 1;            // crossed first
+        if (a.done) return a.s - b.s;                            // by step
+        return valAt(DATA[a.k].curve, disp) - valAt(DATA[b.k].curve, disp); // else by current loss
+      });
+      var adamwDone = cross.adamw != null && cross.adamw <= disp && keys.indexOf('adamw') >= 0;
+      board.innerHTML = '<table><thead><tr><th>Rank</th><th>Optimizer</th>' +
+        '<th style="text-align:right">Steps to target</th><th style="text-align:right">vs AdamW</th></tr></thead><tbody>' +
+        rows.map(function (row, i) {
+          var o = DATA[row.k], vs = '—';
+          if (row.k === 'adamw' && row.done) {
+            vs = 'baseline';
+          } else if (row.done && adamwDone && base != null) {
+            var sp = base / row.s;
+            vs = Math.abs(sp - 1) < 0.02 ? '≈ AdamW' : (sp >= 1 ? sp.toFixed(2) + '× faster' : (1 / sp).toFixed(2) + '× slower');
+          }
+          return '<tr class="' + (row.k === newKey ? 'is-new' : '') + '">' +
+            '<td class="r">' + (row.done ? (i + 1) : '·') + '</td>' +
+            '<td><span class="sw" style="background:' + o.color + '"></span>' + o.label + (row.k === newKey ? ' &middot; new' : '') + '</td>' +
+            '<td class="r">' + (row.done ? row.s : 'running…') + '</td>' +
+            '<td class="r">' + vs + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+
+    function draw() {
+      var ty = yPix(TARGET);
+      drawAxes(ty);
+      var ordered = keys.slice().sort(function (a, b) { return (a === newKey) - (b === newKey); });
+      ordered.forEach(function (k) { drawCurve(k, ty); });
+      scrub.value = disp;
+      readout.textContent = 'step ' + Math.round(disp) + ' / ' + T;
+      updateBoard();
+    }
+
+    function tick() {
+      if (!playing) return;
+      disp += T / 320;
+      if (disp >= T) { disp = T; playing = false; playBtn.textContent = 'Replay'; }
+      draw();
+      if (playing) raf = requestAnimationFrame(tick);
+    }
+    playBtn.addEventListener('click', function () {
+      if (disp >= T) disp = 0;
+      playing = !playing;
+      playBtn.textContent = playing ? 'Pause' : 'Play';
+      if (playing) { if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); }
+    });
+    resetBtn.addEventListener('click', function () {
+      playing = false; if (raf) cancelAnimationFrame(raf);
+      playBtn.textContent = 'Play'; disp = 0; draw();
+    });
+    scrub.addEventListener('input', function () {
+      playing = false; if (raf) cancelAnimationFrame(raf);
+      disp = +scrub.value;
+      playBtn.textContent = disp >= T ? 'Replay' : 'Play';
+      draw();
+    });
+
+    // build legend once
+    var leg = wrap.querySelector('.conv-legend');
+    if (leg) {
+      leg.innerHTML = keys.map(function (k) {
+        var o = DATA[k];
+        return '<span class="conv-legend-it' + (k === newKey ? ' is-new' : '') + '">' +
+          '<span class="conv-legend-sw" style="background:' + o.color + '"></span>' +
+          o.label + (k === newKey ? ' &middot; new' : '') + '</span>';
+      }).join('');
+    }
+    draw();
+  }
+
+  document.querySelectorAll('canvas.conv-canvas').forEach(setup);
 })();
 </script>
 
