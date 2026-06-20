@@ -93,15 +93,16 @@ def step_opt(kind, W, st, g, j, lr_t, t, wd, R0):
         W[j] -= lr_t * np.sign(g)
     elif kind == 'lion':
         m = s.get('m', np.zeros_like(g))
-        W[j] -= lr_t * (np.sign(0.9 * m + 0.1 * g) + 0.02 * W[j]); s['m'] = 0.99 * m + 0.01 * g
+        W[j] -= lr_t * (np.sign(0.9 * m + 0.1 * g) + wd * W[j]); s['m'] = 0.99 * m + 0.01 * g   # wd=0 in the no-decay ladder, like AdamW
     elif kind == 'muon':
         u = s.get('u', np.zeros_like(g)); u = mu * u + g; s['u'] = u
         W[j] -= lr_t * ns5(u) * (max(g.shape) / min(g.shape)) ** 0.5
     elif kind == 'shampoo':
         m_, n_ = g.shape
+        u = s.get('u', np.zeros_like(g)); u = mu * u + g; s['u'] = u   # momentum, as Shampoo is used in practice
         Lm = s.get('L', np.eye(m_) * 1e-6); Rm = s.get('R', np.eye(n_) * 1e-6)
         Lm = 0.95 * Lm + 0.05 * (g @ g.T); Rm = 0.95 * Rm + 0.05 * (g.T @ g); s['L'], s['R'] = Lm, Rm
-        W[j] -= lr_t * (inv_pth_root(Lm, 4) @ g @ inv_pth_root(Rm, 4))
+        W[j] -= lr_t * (inv_pth_root(Lm, 4) @ u @ inv_pth_root(Rm, 4))   # precondition the smoothed gradient
     elif kind == 'muonh':
         u = s.get('u', np.zeros_like(g)); u = mu * u + g; s['u'] = u
         uhat = ns5(u); U = -lr_t * R0[j] * uhat / (np.linalg.norm(uhat) + 1e-12)
