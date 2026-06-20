@@ -401,6 +401,24 @@ section.references .r-title { font-style: italic; }
 section.references .r-venue { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.02em; }
 section.references li a { border-bottom: 1px solid var(--color-accent-soft); }
 
+/* Cite-this block */
+.cite-h { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.cite-copy {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.34rem 0.75rem;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cite-copy:hover, .cite-copy.copied { border-color: var(--color-accent); color: var(--color-accent); }
+
 /* Convergence "speedrun ladder" widgets */
 canvas.conv-canvas {
   display: block; max-width: 100%; height: auto;
@@ -2002,6 +2020,16 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <li id="ref-34">Y. You, I. Gitman, B. Ginsburg. <a href="https://arxiv.org/abs/1708.03888"><span class="r-title">Large Batch Training of Convolutional Networks (LARS)</span></a>. <span class="r-venue">2017. arXiv:1708.03888.</span></li>
 <li id="ref-35">Y. You, J. Li, S. Reddi, J. Hseu, S. Kumar et al. <a href="https://arxiv.org/abs/1904.00962"><span class="r-title">Large Batch Optimization for Deep Learning: Training BERT in 76 Minutes (LAMB)</span></a>. <span class="r-venue">ICLR, 2020. arXiv:1904.00962.</span></li>
 </ol>
+
+<h3 class="cite-h"><span>Cite this essay</span> <button class="cite-copy" id="cite-copy" type="button">Copy BibTeX</button></h3>
+<pre><code id="cite-bib">@misc{choudhary2026genealogy,
+  author       = {Siddharth Choudhary},
+  title        = {A Genealogy of Optimizers},
+  year         = {2026},
+  month        = may,
+  howpublished = {\url{https://itzsid.github.io/publications/optimizer-ladder.html}},
+  note         = {Essay}
+}</code></pre>
 </section>
 
 <footer class="post-footer">
@@ -4014,6 +4042,33 @@ function gauss() {
   }
   skewIn.addEventListener('input', draw);
   draw();
+})();
+</script>
+
+<script>
+// === Copy BibTeX ===
+(function () {
+  var btn = document.getElementById('cite-copy');
+  var bib = document.getElementById('cite-bib');
+  if (!btn || !bib) return;
+  function flash() {
+    btn.classList.add('copied');
+    btn.textContent = 'Copied ✓';
+    setTimeout(function () { btn.classList.remove('copied'); btn.textContent = 'Copy BibTeX'; }, 1600);
+  }
+  function fallback(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  btn.addEventListener('click', function () {
+    var text = bib.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flash, function () { fallback(text); flash(); });
+    } else { fallback(text); flash(); }
+  });
 })();
 </script>
 
