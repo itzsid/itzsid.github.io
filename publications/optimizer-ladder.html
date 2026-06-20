@@ -605,6 +605,7 @@ footer.post-footer {
     <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
     <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
     <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-spectral">The right kind of uniform: directions, not entries</a></li>
     <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
@@ -623,6 +624,7 @@ footer.post-footer {
     <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
     <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
     <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-spectral">The right kind of uniform: directions, not entries</a></li>
     <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
@@ -1489,7 +1491,7 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Practically, Muon set the current speed records for nanoGPT training<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
 
-<p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. But notice what it still leaves on the table: like every optimizer so far, it only ever looks at the gradient, never the <em>curvature</em>. The next section is about that blind spot.</p>
+<p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. But we slipped past something worth pausing on: why is making the step uniform across singular <em>directions</em> better than the across-the-board uniform step that Adam and SignSGD already give us? The next section makes the difference visible.</p>
 
 <div class="widget-caption"><span class="num">Fig. 9.2</span>Speedrun ladder, after Muon — the second big jump. Per-matrix orthogonalization clearly clears the per-parameter frontier.</div>
 <div class="widget-container">
@@ -1505,14 +1507,65 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <hr class="section-break">
 
+<section class="chapter" id="ch-spectral">
+<h2><span class="num">Sec. 10</span> <span>The right kind of uniform: directions, not entries</span></h2>
+
+<p>Back in the per-parameter normalization section we found the through-line: the strongest optimizers take a <em>uniform</em> step — every parameter moves by roughly the same amount, regardless of its gradient's magnitude. Adam and SignSGD do this per <em>entry</em> of the weight matrix. Muon does it too, but in a different sense, and the gap between the two senses is the whole point.</p>
+
+<p>"Uniform per entry" is uniform in the basis of matrix <em>coordinates</em> — this row, that column. But that basis is arbitrary. What a weight matrix actually <em>does</em> — the function the layer computes — is set by its <strong>singular directions</strong>: the orthogonal directions it stretches input space along, and by how much (the singular values). Rotate your coordinate frame and every entry changes while the function doesn't move at all.</p>
+
+<p>So the real question isn't "did every entry move by the same amount?" It's "did the update push <em>equally hard in every direction it acts on</em>?" A step can nudge every entry identically and still be wildly lopsided in direction space — pouring almost all of its effect into one or two singular directions while the rest barely budge. When the gradient is concentrated, it gets worse: <code>sign</code> of a near-rank-one matrix is still near-rank-one, so the per-entry step funnels the <em>entire</em> update into a single direction.</p>
+
+<p>Muon's orthogonalization is exactly the fix: it keeps the gradient's singular <em>directions</em> but flattens its singular <em>values</em> to 1. The update becomes isotropic — it advances every direction the gradient knows about by the same amount. That is the right kind of uniform.</p>
+
+<p>The clearest way to see it is the update's singular-value spectrum — the size of the step it takes in each of the matrix's directions. A balanced update is <em>flat</em>. Below, the same gradient is turned into a step three ways; the bars are each scaled so the tallest is 1, so only the <em>shape</em> matters.</p>
+
+<div class="widget-caption"><span class="num">Fig. 10.1</span>Singular-value spectrum of the update — the step taken in each direction. Only Muon's is flat; the per-entry step inherits the gradient's lopsidedness and, when the gradient concentrates, collapses onto one direction.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+#spec-canvas { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.spec-row { display: flex; align-items: center; gap: 12px; margin: 1rem 0 0; }
+.spec-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 130px; }
+.spec-row .val { font-size: 13px; font-weight: 500; min-width: 44px; text-align: right; font-family: var(--font-mono); }
+.spec-leg { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 12px; margin: 0.9rem auto 0; max-width: 520px; }
+.spec-leg-it { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); }
+.spec-leg-sw { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+.spec-hint { font-size: 12px; color: var(--color-text-tertiary); margin: 0.5rem 0 0; text-align: center; }
+</style>
+<canvas id="spec-canvas" width="540" height="300"></canvas>
+<p class="spec-hint">balance = smallest singular value &divide; largest (1.00 = every direction moves equally)</p>
+<div class="spec-row">
+  <label>Gradient skew</label>
+  <input type="range" id="spec-skew" min="0" max="4.5" step="0.1" value="2.4" style="flex: 1;">
+  <span class="val" id="spec-skew-val">2.4</span>
+</div>
+<div class="spec-leg">
+  <div class="spec-leg-it"><span class="spec-leg-sw" style="background:#9a9a9a"></span>Raw gradient</div>
+  <div class="spec-leg-it"><span class="spec-leg-sw" style="background:#7F77DD"></span>Per-entry step (SignSGD / Adam)</div>
+  <div class="spec-leg-it"><span class="spec-leg-sw" style="background:#D85A30"></span>Muon (orthogonalized)</div>
+</div>
+</div>
+</div>
+
+<p>Drag <strong>gradient skew</strong> up. The raw gradient's spectrum (gray) tilts steeply — it wants to move almost entirely in its top direction. The per-entry step (purple) refuses to flatten with it: at low skew it is merely uneven, and as the gradient concentrates it <em>collapses</em>, dumping the whole step into one direction. Muon (coral) is flat at every setting — balance pinned to 1.00.</p>
+
+<p>That is the deeper reason per-matrix beats per-parameter. Per-entry normalization asks "is each number stepping equally?" — a question whose answer depends on how you happened to lay the matrix out. Muon asks "is each <em>direction</em> stepping equally?" — a question about the layer's real geometry, and the only one that survives a change of basis.</p>
+
+<p>And yet, balanced as it is across directions, even Muon is still working from a single piece of information — the gradient. It never sees how sharply the loss curves. The next section is about that blind spot.</p>
+
+</section>
+
+<hr class="section-break">
+
 <section class="chapter" id="ch-second-order">
-<h2><span class="num">Sec. 10</span> <span>What first-order optimizers can't see</span></h2>
+<h2><span class="num">Sec. 11</span> <span>What first-order optimizers can't see</span></h2>
 
 <p>Every optimizer so far — SGD, momentum, Adam, Lion, even Muon — uses one piece of information at each parameter: the gradient. That tells you the slope. It doesn't tell you the <em>curvature</em>.</p>
 
 <p>Here's the difference. Imagine two parameters, both with the same gradient right now. The first is in a gently curving region — small changes in the parameter barely change the slope. The second is in a sharply curving region — small changes in the parameter rapidly change the slope. The optimal step for these two cases is very different. The gently curving parameter can take a big step safely. The sharply curving one is about to roll past its minimum if you step too far.</p>
 
-<div class="widget-caption"><span class="num">Fig. 10.1</span>Same gradient, very different optimal step.</div>
+<div class="widget-caption"><span class="num">Fig. 11.1</span>Same gradient, very different optimal step.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1551,7 +1604,7 @@ canvas.crv { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The geometric picture is satisfying. The gradient <code>g</code> is the current slope. The Hessian <code>H</code> is how fast that slope is changing. The ratio <code>g / H</code> is "how far do I need to walk before the slope reaches zero" — i.e., the distance to the bottom of the local parabolic bowl.</p>
 
-<div class="widget-caption"><span class="num">Fig. 10.2</span>Newton's step: walk until the slope hits zero.</div>
+<div class="widget-caption"><span class="num">Fig. 11.2</span>Newton's step: walk until the slope hits zero.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1586,7 +1639,7 @@ canvas.nwt { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>For two parameters that's a 2×2 matrix. The diagonal entries are the curvatures along each axis. The off-diagonal entries — these are the interesting ones — say whether the two parameters' curvatures are "tilted" or "rotated" relative to the axes. They're zero only when the level curves are perfectly aligned with the axes.</p>
 
-<div class="widget-caption"><span class="num">Fig. 10.3</span>The 2D Hessian: diagonal entries set axis curvature, off-diagonal entries tilt the bowl.</div>
+<div class="widget-caption"><span class="num">Fig. 11.3</span>The 2D Hessian: diagonal entries set axis curvature, off-diagonal entries tilt the bowl.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1624,7 +1677,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>For a tiny example: <code>L = ½ (w₁² + 4 w₂² + 2 w₁ w₂)</code>. First backward pass gives <code>g = [w₁ + w₂, 4 w₂ + w₁]</code>. Now backprop <code>g[0] = w₁ + w₂</code> with respect to <code>w</code>: that gives the first row of <code>H</code>. Repeat for <code>g[1]</code>: second row.</p>
 
-<div class="widget-caption"><span class="num">Fig. 10.4</span>Double backprop, symbolically.</div>
+<div class="widget-caption"><span class="num">Fig. 11.4</span>Double backprop, symbolically.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1673,7 +1726,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <hr class="section-break">
 
 <section class="chapter" id="ch-shampoo">
-<h2><span class="num">Sec. 11</span> <span>Shampoo: curvature-aware preconditioning</span></h2>
+<h2><span class="num">Sec. 12</span> <span>Shampoo: curvature-aware preconditioning</span></h2>
 
 <p>Shampoo predates Muon by several years (the original paper is from 2018)<sup class="ref"><a href="#ref-7">[7]</a></sup> and was actually the first matrix-aware optimizer to gain real attention. The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
 
@@ -1689,7 +1742,7 @@ W ← W − lr · L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code></pre>
 
 <p>Three optimizers, same gradient, same matrix, three different updates:</p>
 
-<div class="widget-caption"><span class="num">Fig. 11.1</span>How each optimizer transforms the same gradient.</div>
+<div class="widget-caption"><span class="num">Fig. 12.1</span>How each optimizer transforms the same gradient.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1722,7 +1775,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) flattens the singular value spectrum — same row/column structure, but reshaped to equal magnitude in every direction. Shampoo (gold) does something subtly different: it uses the empirical row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't.</p>
 
-<p>A caveat on these last two figures: unlike the 2D demos in earlier sections, Figs. 9.1 and 11.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
+<p>A caveat on these last two figures: unlike the 2D demos in earlier sections, Figs. 9.1 and 12.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
 
 <h3>Practical considerations</h3>
 
@@ -1730,7 +1783,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The interesting question this raises is whether μP plus Muon plus Shampoo is redundant. If μP already gives you scale-invariant learning rates, and Muon already orthogonalizes per-matrix, what additional curvature signal is Shampoo capturing that the others miss? The answer seems to be: not as much as you'd hope at large scale, but enough at moderate scale to keep Shampoo in the conversation. It's the optimizer that proved matrix-aware preconditioning was a real direction — even if Muon turned out to be the simpler practical winner.</p>
 
-<div class="widget-caption"><span class="num">Fig. 11.2</span>Speedrun ladder, after Shampoo. Strong — close behind Muon, matching the essay's claim that it trails Muon at large scale once μP is factored in.</div>
+<div class="widget-caption"><span class="num">Fig. 12.2</span>Speedrun ladder, after Shampoo. Strong — close behind Muon, matching the essay's claim that it trails Muon at large scale once μP is factored in.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo" data-new="shampoo" width="540" height="340"></canvas>
@@ -1745,7 +1798,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <hr class="section-break">
 
 <section class="chapter" id="ch-muonh">
-<h2><span class="num">Sec. 12</span> <span>MuonH: pinning the weight norm</span></h2>
+<h2><span class="num">Sec. 13</span> <span>MuonH: pinning the weight norm</span></h2>
 
 <p>Every optimizer so far has been about <em>the update direction</em>. SGD: raw gradient. Momentum: smoothed. Adam: per-element normalized. Muon: per-matrix orthogonalized. Shampoo: curvature-aware. But there's a parallel question we've only touched lightly in the AdamW section: <strong>how should we control the magnitude of the weights themselves?</strong></p>
 
@@ -1773,7 +1826,7 @@ W_{t+1}  = R · Normalize(W_temp)                  ← retract back to radius R<
 
 <p>In 2D this is a circle. <code>W_t</code> is a point on the circle. The proposed update <code>U_t</code> is a vector starting at <code>W_t</code>. The sum <code>W_t + U_t</code> generally lands off the circle. The retraction projects it back radially — that's <code>W_{t+1}</code>. The actual step <code>ΔW = W_{t+1} − W_t</code> is a chord of the circle.</p>
 
-<div class="widget-caption"><span class="num">Fig. 12.1</span>The Hyperball retraction in 2D.</div>
+<div class="widget-caption"><span class="num">Fig. 13.1</span>The Hyperball retraction in 2D.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1831,7 +1884,7 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The bigger lesson: <strong>weight magnitude has emerged as a third axis of optimizer design</strong>, orthogonal to "what direction to step" and "how aware of curvature." As networks become more carefully internally normalized, the optimizer has more room to manage scale directly, and MuonH is one promising point in that design space.</p>
 
-<div class="widget-caption"><span class="num">Fig. 12.2</span>Speedrun ladder, after MuonH. A small edge at moderate scale — but recall the spectral-squeeze caveat: this advantage is fragile and does not hold uniformly.</div>
+<div class="widget-caption"><span class="num">Fig. 13.2</span>Speedrun ladder, after MuonH. A small edge at moderate scale — but recall the spectral-squeeze caveat: this advantage is fragile and does not hold uniformly.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo,muonh" data-new="muonh" width="540" height="340"></canvas>
@@ -1848,7 +1901,7 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-coda">
 <h2><span class="num">Coda</span> <span>The through-line</span></h2>
 
-<p>Twelve sections, eleven optimizers. The arc, compressed:</p>
+<p>Thirteen sections, eleven optimizers. The arc, compressed:</p>
 
 <p><strong>SGD</strong> took small noisy steps in the gradient's direction. <strong>Momentum</strong> gave the optimizer a memory and a velocity. <strong>Adam</strong> added per-parameter learning rates via the EMA of squared gradients, which we then saw was really computing a signal-to-noise ratio bounded in <code>[−1, +1]</code>. <strong>AdamW</strong> noticed that the obvious way to add weight decay to Adam silently broke it, and fixed it in one line. <strong>SignSGD</strong> and <strong>Lion</strong> showed that the per-parameter normalized step was the active ingredient all along — Adam's elaborate machinery was approximating something simpler. <strong>Muon</strong> jumped from per-parameter to per-matrix, orthogonalizing each weight matrix's update so every singular direction gets attention. <strong>Shampoo</strong> went one further and tracked actual curvature per-row and per-column. <strong>MuonH</strong> opened a third axis: control the weight magnitude directly, not just the update.</p>
 
@@ -3892,6 +3945,77 @@ function gauss() {
 })();
 </script>
 
+
+<script>
+// === Sec 10 spectrum widget: per-entry vs per-direction uniformity ===
+(function () {
+  var c = document.getElementById('spec-canvas'); if (!c) return;
+  var ctx = c.getContext('2d'), W = c.width, H = c.height, n = 8;
+  function rng(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; var t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  var rnd = rng(20260619);
+  function randMat() { var M = []; for (var i = 0; i < n; i++) { M[i] = []; for (var j = 0; j < n; j++) M[i][j] = rnd() * 2 - 1; } return M; }
+  function gs(M) { var Q = []; for (var i = 0; i < n; i++) { var v = M[i].slice(); for (var k = 0; k < i; k++) { var d = 0; for (var j = 0; j < n; j++) d += v[j] * Q[k][j]; for (var j = 0; j < n; j++) v[j] -= d * Q[k][j]; } var nm = 0; for (var j = 0; j < n; j++) nm += v[j] * v[j]; nm = Math.sqrt(nm); for (var j = 0; j < n; j++) v[j] /= nm; Q.push(v); } return Q; }
+  var U = gs(randMat()), V = gs(randMat());
+  function matmul(A, B) { var R = []; for (var i = 0; i < n; i++) { R[i] = []; for (var j = 0; j < n; j++) { var s = 0; for (var k = 0; k < n; k++) s += A[i][k] * B[k][j]; R[i][j] = s; } } return R; }
+  function transpose(A) { var R = []; for (var i = 0; i < n; i++) { R[i] = []; for (var j = 0; j < n; j++) R[i][j] = A[j][i]; } return R; }
+  function eigSym(A) {
+    A = A.map(function (r) { return r.slice(); });
+    for (var sw = 0; sw < 80; sw++) {
+      var off = 0; for (var p = 0; p < n; p++) for (var q = p + 1; q < n; q++) off += A[p][q] * A[p][q];
+      if (off < 1e-16) break;
+      for (var p = 0; p < n; p++) for (var q = p + 1; q < n; q++) {
+        if (Math.abs(A[p][q]) < 1e-18) continue;
+        var th = (A[q][q] - A[p][p]) / (2 * A[p][q]);
+        var t = (th >= 0 ? 1 : -1) / (Math.abs(th) + Math.sqrt(th * th + 1)); if (!isFinite(t)) t = 1;
+        var cc = 1 / Math.sqrt(t * t + 1), ss = t * cc;
+        for (var k = 0; k < n; k++) { var akp = A[k][p], akq = A[k][q]; A[k][p] = cc * akp - ss * akq; A[k][q] = ss * akp + cc * akq; }
+        for (var k = 0; k < n; k++) { var apk = A[p][k], aqk = A[q][k]; A[p][k] = cc * apk - ss * aqk; A[q][k] = ss * apk + cc * aqk; }
+      }
+    }
+    var ev = []; for (var i = 0; i < n; i++) ev.push(A[i][i]); ev.sort(function (a, b) { return b - a; }); return ev;
+  }
+  function singvals(M) { return eigSym(matmul(transpose(M), M)).map(function (x) { return Math.sqrt(Math.max(0, x)); }); }
+  function norm(v) { var mx = Math.max.apply(null, v) || 1; return v.map(function (x) { return x / mx; }); }
+
+  var skewIn = document.getElementById('spec-skew'), skewV = document.getElementById('spec-skew-val');
+  var monoF = getComputedStyle(document.body).getPropertyValue('--font-mono');
+  var serifF = getComputedStyle(document.body).getPropertyValue('--font-serif');
+
+  function drawGroup(x0, gw, vals, label, color, balance) {
+    var pad = 16, base = H - 46, top = 40, barsW = gw - 2 * pad, bw = barsW / n;
+    for (var i = 0; i < n; i++) {
+      var h = vals[i] * (base - top);
+      ctx.fillStyle = color;
+      ctx.fillRect(x0 + pad + i * bw + 1, base - h, bw - 2, h);
+    }
+    ctx.strokeStyle = 'rgba(128,128,128,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0 + pad, base + 0.5); ctx.lineTo(x0 + pad + barsW, base + 0.5); ctx.stroke();
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--color-text-secondary');
+    ctx.font = '12px ' + serifF; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(label, x0 + gw / 2, 22);
+    ctx.fillStyle = color; ctx.font = '11px ' + monoF;
+    ctx.fillText('balance ' + balance.toFixed(2), x0 + gw / 2, H - 16);
+  }
+  function draw() {
+    var sk = parseFloat(skewIn.value); skewV.textContent = sk.toFixed(1);
+    var sig = []; for (var i = 0; i < n; i++) sig.push(Math.exp(-sk * i / (n - 1)));
+    var D = []; for (var i = 0; i < n; i++) { D[i] = []; for (var j = 0; j < n; j++) D[i][j] = (i === j ? sig[i] : 0); }
+    var G = matmul(matmul(U, D), V);
+    var S = G.map(function (r) { return r.map(function (x) { return x > 0 ? 1 : (x < 0 ? -1 : 0); }); });
+    var rawN = norm(sig.slice());
+    var sgnN = norm(singvals(S));
+    var muoN = []; for (var i = 0; i < n; i++) muoN.push(1);
+    function bal(v) { return Math.min.apply(null, v) / Math.max.apply(null, v); }
+    ctx.clearRect(0, 0, W, H);
+    var gw = W / 3;
+    drawGroup(0, gw, rawN, 'Raw gradient', '#9a9a9a', bal(rawN));
+    drawGroup(gw, gw, sgnN, 'Per-entry step', '#7F77DD', bal(sgnN));
+    drawGroup(2 * gw, gw, muoN, 'Muon', '#D85A30', bal(muoN));
+  }
+  skewIn.addEventListener('input', draw);
+  draw();
+})();
+</script>
 
 </body>
 </html>
