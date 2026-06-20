@@ -604,8 +604,8 @@ footer.post-footer {
     <li><a href="#ch-signsgd">Interlude — SignSGD</a></li>
     <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
     <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
-    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
   </ol>
@@ -622,8 +622,8 @@ footer.post-footer {
     <li><a href="#ch-signsgd">Interlude — SignSGD</a></li>
     <li><a href="#ch-lion">Lion: one buffer instead of two</a></li>
     <li><a href="#ch-norm">The hidden invariant: per-parameter normalization</a></li>
-    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-muon">Muon: per-matrix orthogonalization</a></li>
+    <li><a href="#ch-second-order">What first-order optimizers can't see</a></li>
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
     <li><a href="#ch-coda">Coda: the through-line</a></li>
@@ -1420,20 +1420,99 @@ canvas.par { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>This lens reframes Lion's success. Lion isn't beating AdamW because <code>sign()</code> is smarter than <code>m/sqrt(v)</code>. It's beating it because both reach the same destination — flat, per-parameter normalized steps — and Lion gets there with one buffer and one operation while AdamW needs two buffers, a square, a square root, a division, and a bias correction. The work AdamW was doing turned out to be approximating something simpler.</p>
 
-<p>It also points at what comes next. Once you see "per-parameter normalization" as the underlying principle, the obvious question is whether per-parameter is even the right granularity. Real network parameters aren't a flat list — they're organized into matrices, which have richer structure that per-parameter operations throw away. Two sections from now, Muon will exploit exactly this. But first, a detour into what optimizers <em>still</em> aren't seeing.</p>
+<p>It also points at what comes next. Once you see "per-parameter normalization" as the underlying principle, the obvious question is whether per-parameter is even the right granularity. Real network parameters aren't a flat list — they're organized into matrices, which have richer structure that per-parameter operations throw away. The next section, Muon, will exploit exactly this.</p>
+
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-muon">
+<h2><span class="num">Sec. 09</span> <span>Muon: per-matrix orthogonalization</span></h2>
+
+<p>Here's the assumption that every optimizer until now smuggled in: a neural network's parameters are a flat list. Adam looks at each scalar entry of each weight matrix independently and decides how much to step it. The fact that those scalars are organized into a matrix — with rows that mean something, columns that mean something, and a structure that survives matrix multiplication — is information the optimizer throws away.</p>
+
+<p>Muon's bet is that this structure is exactly the information you need.</p>
+
+<h3>The picture: singular values</h3>
+
+<p>Any matrix <code>M</code> has a singular value decomposition: <code>M = U Σ V<sup>T</sup></code>. <code>U</code> and <code>V</code> are rotation matrices. <code>Σ</code> is a diagonal matrix of <em>singular values</em> — these say how much the matrix stretches space along each principal direction. A matrix with one huge singular value and many tiny ones acts almost like a rank-1 projection: it pours all input variation onto one output direction. A matrix with uniform singular values acts like a rotation that preserves the geometry of the input space.</p>
+
+<p>The gradient of a weight matrix has its own singular value structure. And empirically, gradient matrices in training have <em>very</em> unequal singular values. A few directions dominate; most are nearly zero. This means a vanilla gradient step is mostly making progress in one or two directions and barely moving in others.</p>
+
+<h3>Muon's update</h3>
+
+<p>Compute the momentum-smoothed gradient as usual. Then, before stepping, <strong>flatten all its singular values to 1</strong>. Equivalently: replace <code>Σ</code> with the identity. What you get is a "whitened" version of the gradient — same directions as the original (same <code>U</code> and <code>V</code>) but every direction now contributes equally.</p>
+
+<pre><code>u ← β · u + g                  ← momentum buffer
+û = orthogonalize(u)           ← replace u's singular values with 1s
+W ← W − lr · û</code></pre>
+
+<p>For hidden weight matrices only — embeddings, biases, and norm parameters use AdamW. That's why Muon comes packaged with a side-by-side optimizer in practice: it only knows what to do with matrices.</p>
+
+<p>Replacing the singular values directly via SVD is too slow for every step of training. The Muon paper uses <strong>Newton-Schulz iteration</strong>: a degree-5 polynomial in the matrix that, applied iteratively (typically 5 times), pushes all singular values toward 1 without ever computing the SVD.<sup class="ref"><a href="#ref-10">[10]</a></sup> Each iteration is just matrix multiplications, which GPUs are exceptionally good at. One honest caveat: Newton-Schulz only <em>approximates</em> the ideal orthogonalization. The standard degree-5 coefficients are tuned for speed, not accuracy — they leave the singular values in a band near 1 rather than exactly at 1, and the left/right singular vectors are only approximately preserved. In practice that approximation is more than good enough.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.1</span>What orthogonalization does to a matrix's singular value spectrum.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<style>
+canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
+.muo-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
+.muo-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
+.muo-row .val { font-size: 13px; font-weight: 500; min-width: 60px; text-align: right; font-family: var(--font-mono); }
+.muo-leg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin: 0.6rem auto 0; max-width: 460px; }
+.muo-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
+.muo-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 2px; }
+</style>
+<canvas id="muo-canvas" class="muo" width="540" height="280"></canvas>
+<div class="muo-leg">
+  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #888;"></span>raw gradient (skewed spectrum)</div>
+  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #2BA17B;"></span>after orthogonalization</div>
+</div>
+<div class="muo-row">
+  <label>Skew (how unequal)</label>
+  <input type="range" id="muo-skew" min="0" max="3" step="0.05" value="2.0" style="flex: 1;">
+  <span class="val" id="muo-skew-val">2.00</span>
+</div>
+<div class="muo-row">
+  <label>Newton-Schulz iters</label>
+  <input type="range" id="muo-iters" min="0" max="8" step="1" value="5" style="flex: 1;">
+  <span class="val" id="muo-iters-val">5</span>
+</div>
+</div>
+</div>
+
+<p>Drag <strong>skew</strong>: the raw gradient's spectrum (gray) goes from uniform to extremely skewed. Drag <strong>iters</strong>: at 0, the green bars match gray (no orthogonalization). By 3-4 iterations the green spectrum is essentially flat at 1. With heavy skew you can see why standard Newton-Schulz uses 5 iterations as a practical default — it's the smallest count that handles realistic spectra.</p>
+
+<h3>Why this works</h3>
+
+<p>The vanilla momentum step is dominated by a few large singular directions. Muon's orthogonalized step has equal magnitude in every direction <code>U Σ V<sup>T</sup></code> defines. Every direction the gradient knows about gets attention. Parameters that would have been ignored under vanilla momentum (because they sat in low-singular-value directions of the gradient) get the same step size as the dominant directions.</p>
+
+<p>Practically, Muon set the current speed records for nanoGPT training<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
+
+<p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. But notice what it still leaves on the table: like every optimizer so far, it only ever looks at the gradient, never the <em>curvature</em>. The next section is about that blind spot.</p>
+
+<div class="widget-caption"><span class="num">Fig. 9.2</span>Speedrun ladder, after Muon — the second big jump. Per-matrix orthogonalization clearly clears the per-parameter frontier.</div>
+<div class="widget-container">
+<div class="widget-inner">
+<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon" data-new="muon" width="540" height="340"></canvas>
+<div class="conv-legend"></div>
+<div class="conv-board"></div>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). Muon's clear lead here (≈1.4× faster than AdamW to the target) echoes the ≈1.35× speedups reported at scale.<sup class="ref"><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a></sup></p>
+</div>
+</div>
 
 </section>
 
 <hr class="section-break">
 
 <section class="chapter" id="ch-second-order">
-<h2><span class="num">Sec. 09</span> <span>What first-order optimizers can't see</span></h2>
+<h2><span class="num">Sec. 10</span> <span>What first-order optimizers can't see</span></h2>
 
-<p>Every optimizer so far — SGD, momentum, Adam, Lion, all of them — uses one piece of information at each parameter: the gradient. That tells you the slope. It doesn't tell you the <em>curvature</em>.</p>
+<p>Every optimizer so far — SGD, momentum, Adam, Lion, even Muon — uses one piece of information at each parameter: the gradient. That tells you the slope. It doesn't tell you the <em>curvature</em>.</p>
 
 <p>Here's the difference. Imagine two parameters, both with the same gradient right now. The first is in a gently curving region — small changes in the parameter barely change the slope. The second is in a sharply curving region — small changes in the parameter rapidly change the slope. The optimal step for these two cases is very different. The gently curving parameter can take a big step safely. The sharply curving one is about to roll past its minimum if you step too far.</p>
 
-<div class="widget-caption"><span class="num">Fig. 9.1</span>Same gradient, very different optimal step.</div>
+<div class="widget-caption"><span class="num">Fig. 10.1</span>Same gradient, very different optimal step.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1472,7 +1551,7 @@ canvas.crv { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The geometric picture is satisfying. The gradient <code>g</code> is the current slope. The Hessian <code>H</code> is how fast that slope is changing. The ratio <code>g / H</code> is "how far do I need to walk before the slope reaches zero" — i.e., the distance to the bottom of the local parabolic bowl.</p>
 
-<div class="widget-caption"><span class="num">Fig. 9.2</span>Newton's step: walk until the slope hits zero.</div>
+<div class="widget-caption"><span class="num">Fig. 10.2</span>Newton's step: walk until the slope hits zero.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1507,7 +1586,7 @@ canvas.nwt { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>For two parameters that's a 2×2 matrix. The diagonal entries are the curvatures along each axis. The off-diagonal entries — these are the interesting ones — say whether the two parameters' curvatures are "tilted" or "rotated" relative to the axes. They're zero only when the level curves are perfectly aligned with the axes.</p>
 
-<div class="widget-caption"><span class="num">Fig. 9.3</span>The 2D Hessian: diagonal entries set axis curvature, off-diagonal entries tilt the bowl.</div>
+<div class="widget-caption"><span class="num">Fig. 10.3</span>The 2D Hessian: diagonal entries set axis curvature, off-diagonal entries tilt the bowl.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1545,7 +1624,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>For a tiny example: <code>L = ½ (w₁² + 4 w₂² + 2 w₁ w₂)</code>. First backward pass gives <code>g = [w₁ + w₂, 4 w₂ + w₁]</code>. Now backprop <code>g[0] = w₁ + w₂</code> with respect to <code>w</code>: that gives the first row of <code>H</code>. Repeat for <code>g[1]</code>: second row.</p>
 
-<div class="widget-caption"><span class="num">Fig. 9.4</span>Double backprop, symbolically.</div>
+<div class="widget-caption"><span class="num">Fig. 10.4</span>Double backprop, symbolically.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1587,86 +1666,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>But there's a useful escape hatch. We rarely want the whole Hessian — what we usually want is <code>H · v</code> for some vector <code>v</code>. And that's surprisingly cheap: differentiate <code>g · v</code> (a scalar!) once more, and you get <code>H · v</code> directly. One backward pass instead of N. These "Hessian-vector products" are the basis of every practical second-order optimizer ever proposed.</p>
 
-<p>So the second-order story is: don't try to materialize <code>H</code>. Don't try to invert it. Get cheap approximations, ideally factored into pieces that match the matrix structure of your network. The next two sections — Muon and Shampoo — are the two main answers the field has converged on for how to do that.</p>
-
-</section>
-
-<hr class="section-break">
-
-<section class="chapter" id="ch-muon">
-<h2><span class="num">Sec. 10</span> <span>Muon: per-matrix orthogonalization</span></h2>
-
-<p>Here's the assumption that every optimizer until now smuggled in: a neural network's parameters are a flat list. Adam looks at each scalar entry of each weight matrix independently and decides how much to step it. The fact that those scalars are organized into a matrix — with rows that mean something, columns that mean something, and a structure that survives matrix multiplication — is information the optimizer throws away.</p>
-
-<p>Muon's bet is that this structure is exactly the information you need.</p>
-
-<h3>The picture: singular values</h3>
-
-<p>Any matrix <code>M</code> has a singular value decomposition: <code>M = U Σ V<sup>T</sup></code>. <code>U</code> and <code>V</code> are rotation matrices. <code>Σ</code> is a diagonal matrix of <em>singular values</em> — these say how much the matrix stretches space along each principal direction. A matrix with one huge singular value and many tiny ones acts almost like a rank-1 projection: it pours all input variation onto one output direction. A matrix with uniform singular values acts like a rotation that preserves the geometry of the input space.</p>
-
-<p>The gradient of a weight matrix has its own singular value structure. And empirically, gradient matrices in training have <em>very</em> unequal singular values. A few directions dominate; most are nearly zero. This means a vanilla gradient step is mostly making progress in one or two directions and barely moving in others.</p>
-
-<h3>Muon's update</h3>
-
-<p>Compute the momentum-smoothed gradient as usual. Then, before stepping, <strong>flatten all its singular values to 1</strong>. Equivalently: replace <code>Σ</code> with the identity. What you get is a "whitened" version of the gradient — same directions as the original (same <code>U</code> and <code>V</code>) but every direction now contributes equally.</p>
-
-<pre><code>u ← β · u + g                  ← momentum buffer
-û = orthogonalize(u)           ← replace u's singular values with 1s
-W ← W − lr · û</code></pre>
-
-<p>For hidden weight matrices only — embeddings, biases, and norm parameters use AdamW. That's why Muon comes packaged with a side-by-side optimizer in practice: it only knows what to do with matrices.</p>
-
-<p>Replacing the singular values directly via SVD is too slow for every step of training. The Muon paper uses <strong>Newton-Schulz iteration</strong>: a degree-5 polynomial in the matrix that, applied iteratively (typically 5 times), pushes all singular values toward 1 without ever computing the SVD.<sup class="ref"><a href="#ref-10">[10]</a></sup> Each iteration is just matrix multiplications, which GPUs are exceptionally good at. One honest caveat: Newton-Schulz only <em>approximates</em> the ideal orthogonalization. The standard degree-5 coefficients are tuned for speed, not accuracy — they leave the singular values in a band near 1 rather than exactly at 1, and the left/right singular vectors are only approximately preserved. In practice that approximation is more than good enough.</p>
-
-<div class="widget-caption"><span class="num">Fig. 10.1</span>What orthogonalization does to a matrix's singular value spectrum.</div>
-<div class="widget-container">
-<div class="widget-inner">
-<style>
-canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); margin: 0 auto; }
-.muo-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
-.muo-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
-.muo-row .val { font-size: 13px; font-weight: 500; min-width: 60px; text-align: right; font-family: var(--font-mono); }
-.muo-leg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin: 0.6rem auto 0; max-width: 460px; }
-.muo-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
-.muo-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 2px; }
-</style>
-<canvas id="muo-canvas" class="muo" width="540" height="280"></canvas>
-<div class="muo-leg">
-  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #888;"></span>raw gradient (skewed spectrum)</div>
-  <div class="muo-leg-it"><span class="muo-leg-sw" style="background: #2BA17B;"></span>after orthogonalization</div>
-</div>
-<div class="muo-row">
-  <label>Skew (how unequal)</label>
-  <input type="range" id="muo-skew" min="0" max="3" step="0.05" value="2.0" style="flex: 1;">
-  <span class="val" id="muo-skew-val">2.00</span>
-</div>
-<div class="muo-row">
-  <label>Newton-Schulz iters</label>
-  <input type="range" id="muo-iters" min="0" max="8" step="1" value="5" style="flex: 1;">
-  <span class="val" id="muo-iters-val">5</span>
-</div>
-</div>
-</div>
-
-<p>Drag <strong>skew</strong>: the raw gradient's spectrum (gray) goes from uniform to extremely skewed. Drag <strong>iters</strong>: at 0, the green bars match gray (no orthogonalization). By 3-4 iterations the green spectrum is essentially flat at 1. With heavy skew you can see why standard Newton-Schulz uses 5 iterations as a practical default — it's the smallest count that handles realistic spectra.</p>
-
-<h3>Why this works</h3>
-
-<p>The vanilla momentum step is dominated by a few large singular directions. Muon's orthogonalized step has equal magnitude in every direction <code>U Σ V<sup>T</sup></code> defines. Every direction the gradient knows about gets attention. Parameters that would have been ignored under vanilla momentum (because they sat in low-singular-value directions of the gradient) get the same step size as the dominant directions.</p>
-
-<p>Practically, Muon set the current speed records for nanoGPT training<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
-
-<p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. The next section — Shampoo — goes one level deeper and asks: what if the optimizer also tracks the <em>curvature</em> structure of each matrix?</p>
-
-<div class="widget-caption"><span class="num">Fig. 10.2</span>Speedrun ladder, after Muon — the second big jump. Per-matrix orthogonalization clearly clears the per-parameter frontier.</div>
-<div class="widget-container">
-<div class="widget-inner">
-<canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon" data-new="muon" width="540" height="340"></canvas>
-<div class="conv-legend"></div>
-<div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). Muon's clear lead here (≈1.4× faster than AdamW to the target) echoes the ≈1.35× speedups reported at scale.<sup class="ref"><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a></sup></p>
-</div>
-</div>
+<p>So the second-order story is: don't try to materialize <code>H</code>. Don't try to invert it. Get cheap approximations, ideally factored into pieces that match the matrix structure of your network. Shampoo, the next section, is the field's main matrix-aware answer to it.</p>
 
 </section>
 
@@ -1722,7 +1722,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) flattens the singular value spectrum — same row/column structure, but reshaped to equal magnitude in every direction. Shampoo (gold) does something subtly different: it uses the empirical row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't.</p>
 
-<p>A caveat on these last two figures: unlike the 2D demos in earlier sections, Figs. 10.1 and 11.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
+<p>A caveat on these last two figures: unlike the 2D demos in earlier sections, Figs. 9.1 and 11.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
 
 <h3>Practical considerations</h3>
 
