@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A Genealogy of Optimizers</title>
 <meta name="description" content="An interactive tour of how neural-network optimizers evolved — each one solving a specific problem in the previous.">
+<!-- Google Scholar / Highwire citation metadata -->
+<meta name="citation_title" content="A Genealogy of Optimizers">
+<meta name="citation_author" content="Siddharth Choudhary">
+<meta name="citation_author" content="Claude (Anthropic)">
+<meta name="citation_publication_date" content="2026/05/11">
+<meta name="citation_online_date" content="2026/05/11">
+<meta name="citation_pdf_url" content="https://itzsid.github.io/publications/optimizer-ladder.pdf">
+<meta name="citation_abstract_html_url" content="https://itzsid.github.io/publications/optimizer-ladder.html">
+<meta name="citation_keywords" content="optimization; deep learning; neural network optimizers; SGD; Adam; AdamW; SignSGD; Lion; Muon; Shampoo; second-order methods">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -597,6 +606,44 @@ footer.post-footer {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+}
+
+/* Print / PDF rendering — compact, paper-style (not the web layout) */
+@media print {
+  @page { margin: 1.1cm 1.3cm; }
+  html { font-size: 11px; }
+  body { font-size: 9.4pt; line-height: 1.4; }
+  article { max-width: 100% !important; padding: 0 !important; }
+  header.post-header { margin: 0 0 0.7rem !important; max-width: 100% !important; }
+  header.post-header h1 { font-size: 1.7rem !important; margin: 0 0 0.3rem !important; }
+  header.post-header .byline { margin: 0.2rem 0 0 !important; }
+  header.post-header .lede { font-size: 1rem !important; margin: 0.45rem 0 0 !important; max-width: 100% !important; }
+  .chapter-index { display: none !important; }
+  .toc-rail, .conv-controls, .conv-step, .opt-hint, .spec-hint, .lin-cap, .nwt-cap, .dec-cap { display: none !important; }
+  button, input, select { display: none !important; }
+  .acc-row,.acc-stat,.acc-stats,.adm-btns,.adm-row,.adm-stat,.adm-stats,.crv-row,.dbp-btns,.dec-cap,.dec-row,.dec-stat,.dec-stats,.hes-row,.hyp-row,.hyp-stat,.hyp-stats,.lin-btns,.lin-cap,.lin-row,.lin-stat,.lin-stats,.lio-btns,.lio-row,.lio-stat,.lio-stats,.mom-btns,.mom-row,.mom-stat,.mom-stats,.muo-row,.nwt-cap,.nwt-row,.opt-btns,.opt-hint,.opt-row,.opt-stat,.opt-stats,.sgn-btns,.sgn-row,.sgn-stat,.sgn-stats,.sha-row,.snr-stat,.snr-stats,.spec-hint,.spec-row,.fly-controls,.fly-row,.fly-stat,.loop-btns,.lr-btns,.lr-row { display: none !important; }
+  section.chapter { max-width: 100% !important; padding: 0.45rem 0 0.1rem !important; animation: none !important; opacity: 1 !important; }
+  section.chapter h2 { font-size: 1.2rem !important; margin: 0.45rem 0 0.4rem !important; }
+  section.chapter h3 { font-size: 1rem !important; margin: 0.55rem 0 0.25rem !important; }
+  section.chapter h4 { margin: 0.45rem 0 0.2rem !important; }
+  section.chapter p, section.chapter ul, section.chapter ol { margin: 0 0 0.42rem !important; }
+  hr.section-break { margin: 0.45rem 0 !important; }
+  .widget-container { margin: 0.5rem 0 !important; max-width: 100% !important; }
+  .widget-inner { max-width: 100% !important; padding: 0.25rem 0 !important; border: none !important; background: none !important; }
+  .widget-caption { margin: 0.35rem 0 0.15rem !important; }
+  canvas, svg { max-width: 10cm !important; height: auto !important; display: block; margin: 0.2rem auto; }
+  pre { margin: 0.42rem 0 !important; padding: 0.45rem 0.7rem !important; font-size: 0.74rem !important; line-height: 1.4 !important; }
+  .callout { margin: 0.55rem 0 !important; padding: 0.45rem 0.8rem !important; }
+  table { font-size: 0.82rem !important; margin: 0.45rem 0 !important; }
+  .conv-legend, .spec-leg, .sha-leg, .muo-leg, .par-leg, .acc-leg, .mom-leg, .snr-leg, .crv-leg, .hyp-leg, .dec-leg { font-size: 0.72rem !important; margin-top: 0.3rem !important; }
+  .conv-board { font-size: 0.74rem !important; }
+  section.references ol li { margin: 0 0 0.28rem !important; font-size: 0.84rem !important; padding-left: 2.2rem !important; }
+  section.references .r-group { margin: 0.6rem 0 0.35rem !important; }
+  footer.post-footer { margin: 0.7rem 0 0 !important; padding: 0.45rem 0 0 !important; }
+  pre, table, canvas, svg, img { break-inside: avoid; }
+  .widget-caption { break-after: avoid; }
+  details:not([open]) > *:not(summary) { display: block !important; }
+  a { color: #1a1a1a; text-decoration: none; }
 }
 </style>
 </head>

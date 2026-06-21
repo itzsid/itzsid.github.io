@@ -1,0 +1,449 @@
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  xleftmargin=1em,
+  frame=leftline,
+  framesep=6pt,
+  rulecolor=\color{gray!50},
+  aboveskip=6pt, belowskip=6pt,
+}
+
+\title{The Multimodal Mind: Perceive, Imagine, Act}
+\author{\IEEEauthorblockN{Siddharth Choudhary}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The next frontier in AI is a single model that understands the physical world
+well enough to imagine its futures and act to shape them. The path runs through a
+natively multimodal foundation model---one that perceives, reasons, and generates
+across all modalities (image, video, text, speech, action)---organized around a
+three-stage cognitive loop: Perceive $\rightarrow$ Imagine $\rightarrow$ Act.
+Biological intelligence follows that loop without thinking about it, yet current
+AI breaks it into disconnected pipelines, each trained by a different team on a
+different dataset. This essay argues for building it as one model: a
+mixture-of-transformers backbone that runs the loop, a staged pretraining
+curriculum that climbs from understanding to generation to action, and a
+self-play flywheel that grounds learning in physics. The unifying observation is
+that every major AI capability challenge---controllable video, computer use,
+robotics, world simulation, autonomous driving---is a special case of multimodal
+conditional generation, so one architecture subsumes them all.\footnote{\url{https://itzsid.github.io/publications/multimodal-mind.html}}
+\end{abstract}
+
+\section{The Thesis}
+The next frontier in AI is a single model that understands the physical world
+well enough to \emph{imagine} its futures and \emph{act} to shape them. The path
+runs through a natively multimodal foundation model---one that perceives,
+reasons, and generates across all modalities (image, video, text, speech,
+action)---organized around a three-stage cognitive loop: Perceive $\rightarrow$
+Imagine $\rightarrow$ Act.
+
+Biological intelligence follows that loop without thinking about it: observe the
+world, mentally simulate what should happen, then intervene. Current AI breaks
+the loop into disconnected pipelines---a perception model here, a planner there,
+a controller bolted on the end, each trained by a different team on a different
+dataset. I propose building it as one model.
+
+Every major AI capability challenge today---controllable video, computer use,
+robotics, world simulation, autonomous driving, creative tools---is a special
+case of \emph{multimodal conditional generation}. One architecture subsumes them
+all \cite{ref19}. Improvements to the shared backbone benefit every task at once.
+
+The rest of this paper makes that concrete: the cognitive loop, the
+mixture-of-transformers architecture that runs it, the staged pretraining recipe,
+the self-play flywheel, and the unification of today's siloed problems.
+
+\section{Cognitive Loop: Perceive, Imagine, Act}
+Three stages, run in a cycle. Each is inference in the \emph{same} unified
+multimodal space---not three separate modules wired together.
+
+\begin{enumerate}
+\item \textbf{Perceive.} The model ingests the current state across all
+modalities---video, audio, proprioception, language---into a unified
+representation. Perception is inference, not a preprocessing step.
+\item \textbf{Imagine.} Before acting, the model thinks in multimodal space. Not
+just text chain-of-thought, but a \emph{mental video} of the planned trajectory:
+predicted proprioception, anticipated contact forces. This multimodal
+imagination \emph{is} the world model \cite{ref11,ref12}.
+\item \textbf{Act.} The model generates whatever output the task
+requires---motor commands, keyboard/mouse, speech---conditioned on the imagined
+plan, not on reactive perception alone. The action changes the world, new
+percepts arrive, and the loop repeats.
+\end{enumerate}
+
+Consider the canonical example: a model deciding to pick up a glass. In the
+\emph{Perceive} stage, video, audio, proprioception, and language stream in and
+are inferred into one unified representation; the model sees the glass, the
+table, and its own hand position, all in the same space. In the \emph{Imagine}
+stage, the model rolls out a mental video of the plan: the hand approaching,
+fingers closing, the predicted weight shift and contact forces. In the
+\emph{Act} stage, conditioned on the imagined plan, the model emits motor
+commands that close the grasp; the world changes, fresh percepts arrive, and the
+loop returns to Perceive.
+
+The key idea: \textbf{Imagine and Act use the same generative machinery as
+Perceive}. Imagining ``the hand approaching, fingers closing, the weight
+shifting'' is video + proprioception generation. Acting is action generation.
+They are not bolted-on heads---they are the same model generating in different
+output modalities. That is what the next section's architecture buys us.
+
+\section{One Architecture: Mixture of Transformers}
+If one model has to perceive \emph{and} generate images, video, audio, and
+actions, a single dense network creates a problem: modalities interfere. The
+statistics of a video frame and a motor command have nothing in common, and
+forcing the same feed-forward weights to model both means each capability dilutes
+the other.
+
+Start with how the model even sees a video frame or a motor command:
+\textbf{everything becomes tokens}. A per-modality encoder maps each input into
+one shared token space---text by byte-pair encoding, images and video into VAE
+latent patches, audio into neural-codec tokens, actions into discretized or
+continuous control tokens. The transformer then sees a single interleaved stream,
+each token tagged with its modality.
+
+The architecture I use is a \textbf{mixture of transformers (MoT)}
+\cite{ref1}. The trick is to split the network by \emph{modality}:
+
+\begin{itemize}
+\item \textbf{Every weight is modality-specific.} Each modality gets its own copy
+of the entire transformer block---the query/key/value and output projections, the
+feed-forward network, and the RMSNorm layers. Those weights \emph{are} the
+experts. A token's modality deterministically selects which expert processes it;
+there is no learned router.
+\item \textbf{Only the attention \emph{operation} is global.} Each token's Q, K,
+and V are produced by its own modality's projections, but attention then runs
+over the combined sequence---every token reads all prior context regardless of
+modality, so a later video token attends to earlier text and action tokens. The
+pattern tracks the objective: autoregressive tokens attend \emph{causally} to the
+past, while a block of tokens being generated by diffusion attends
+\emph{bidirectionally} within itself, conditioned on that causal context
+\cite{ref2,ref3}. The operation has no weights of its own; it is the wire that
+makes this \emph{one} model, while every learnable parameter stays
+modality-specific.
+\end{itemize}
+
+The experts share no weights---only a single representational space they read and
+write through global attention; that shared space is the \emph{unified multimodal
+space} the loop runs in. Concretely, for token $i$ with modality $m_i$, every
+projection carries the modality subscript while attention mixes across the whole
+sequence:
+\begin{equation}
+\begin{aligned}
+q_i &= W^{Q}_{m_i}x_i, \quad k_i = W^{K}_{m_i}x_i, \quad v_i = W^{V}_{m_i}x_i \\[4pt]
+\alpha_{ij} &= \operatorname{softmax}_j\!\big(q_i^{\top}k_j/\sqrt{d}\big) \\[4pt]
+y_i &= \mathrm{FFN}_{m_i}\!\Big(\textstyle\sum_{j}\alpha_{ij}\,v_j\Big)
+\end{aligned}
+\end{equation}
+
+Every learnable matrix carries the subscript $m_i$. The attention coefficients
+$\alpha_{ij}$ are activations, not parameters---computed at runtime---and the
+mixing they perform runs globally across modalities, which is exactly what lets
+one modality's tokens read another's.
+
+The payoff shows up in the next section: because every weight a token touches
+lives in its modality's expert, you can \textbf{freeze an entire expert}---its
+attention projections included---while training another, and global attention
+still lets the new expert read everything the frozen ones know.
+
+Notice that the attention \emph{operation} never changes---only which modality
+experts (and therefore which Q/K/V, output, FFN, and norm weights) are present
+and active. Drop video and audio and you have a vision-language understanding
+model. Add the action expert and the same backbone becomes an agent.
+\textbf{One model, reconfigured by which experts are switched on.}
+
+\section{The Pretraining Recipe: A Staged Curriculum}
+The recipe mirrors how we train LLMs, but extends it into multimodal space
+\cite{ref19}. Understanding is autoregressive next-token prediction; generation
+uses the objective each modality calls for---diffusion for continuous signals
+like image, video, audio, and continuous motor control \cite{ref2}---so the same
+backbone is autoregressive where it perceives and diffusion where it generates.
+Summed over the understanding token positions $\mathcal{U}$ and the generation
+positions $\mathcal{G}$, one pretraining loss carries both objectives:
+\begin{equation}
+\mathcal{L} =
+\underbrace{-\sum_{i\in\mathcal{U}}\log p_\theta\big(x_i \mid x_{<i}\big)}_{\text{autoregressive --- understand}}
++ \lambda\,
+\underbrace{\sum_{i\in\mathcal{G}}\mathbb{E}_{t,\epsilon}\big\|\,\epsilon - \epsilon_\theta\big(x_i^{(t)},\,t \mid c_i\big)\big\|^2}_{\text{diffusion --- generate}}
+\end{equation}
+where $c_i$ is the multimodal context attended to by token $i$, and $\lambda$
+balances the two objectives, which live on different scales. You do not learn to
+perceive, imagine, and act all at once: generation is harder than understanding,
+and each generative capability builds on the one before it. So pretraining climbs
+a ladder:
+\begin{equation*}
+\text{MM understanding} \rightarrow \text{image gen.} \rightarrow \text{video / audio gen.} \rightarrow \text{action gen.}
+\end{equation*}
+
+Two rules govern the climb:
+\begin{itemize}
+\item \textbf{Add one expert per stage.} Each new stage introduces a new MoT
+generation expert (Section III) on top of everything learned so far.
+\item \textbf{Freeze everything earlier.} When training a later generation
+component, the earlier components are frozen. Only the newest expert learns.
+\end{itemize}
+
+Formally, at stage $s$ only the new expert's parameters $\theta_s$ are trained,
+with every earlier expert held fixed:
+\begin{equation}
+\theta_s^{\star} = \arg\min_{\theta_s}\ \mathcal{L}_s\big(\theta_s \,;\, \underbrace{\theta_1^{\star},\dots,\theta_{s-1}^{\star}}_{\text{frozen}}\big)
+\end{equation}
+
+\subsection{Why this order?}
+The sequence is not arbitrary---each arrow is a dependency. \emph{Understanding
+before generation}: you cannot imagine a coherent future until you can perceive
+the present; stage 1 builds the perceptual prior that everything conditions on.
+\emph{Image before video}: a video is images over time, so the video expert
+reuses the frozen image expert's spatial priors and only has to learn temporal
+dynamics---a much smaller lift than learning pixels and motion together.
+\emph{Generation before action}: action is conditioned on \emph{imagination}
+(Section II), so the model must be able to roll out a predicted
+video/proprioception trajectory before it can choose a motor command that
+achieves it; the action expert comes last, reading from a frozen world model
+\cite{ref23}.
+
+\subsection{The data pyramid}
+Staging is also the only practical option, because \textbf{data gets scarcer at
+every stage}. The corpus of text, images, video, and audio for
+\emph{understanding} is internet-scale. Paired data for high-quality image
+\emph{generation} is smaller; video and audio generation smaller still; and
+action data---robot trajectories, labeled screen recordings, driving logs---is
+the scarcest of all. Each stage trains on roughly an order of magnitude less data
+than the one before. So we spend the abundant data first to build the strongest
+possible backbone, then climb into the data-poor regimes on top of it.
+
+\subsection{Why freeze?}
+Freezing earlier components does three things at once. \emph{No catastrophic
+forgetting}: hard-won perception and image priors cannot be eroded by the noisier
+gradients of a new, harder generative task; this matters most because of the data
+pyramid, since if everything trained jointly the tiny action dataset would be
+swamped by---and would perturb---the enormous understanding corpus. \emph{Clean
+credit assignment}: the newest expert is the only thing learning, so every
+gradient is attributable to it, and nothing else can drift to ``explain away''
+its errors. \emph{Cheaper training}: a frozen expert is just a forward pass---no
+optimizer state, no backward pass through its weights, so each later stage is far
+cheaper than training the whole stack jointly. Because every weight---attention
+projections included---lives inside a modality expert, freezing an expert freezes
+its Q/K/V too. The global attention operation has no parameters of its own; it
+simply lets each newly added expert read and write through the frozen experts'
+representations.
+
+\subsection{The learning-rate schedule}
+All of this rides on a single learning-rate schedule with three phases: a short
+\textbf{warm-up} that ramps the LR to its peak, a long \textbf{constant-LR} (CLR)
+plateau that does the bulk of the work, and a \textbf{ramp-down} that anneals the
+LR toward zero. The staged curriculum maps directly onto it. The first \textbf{50\%
+of the CLR plateau is understanding only}---the data-rich foundation---and the
+generation stages (image, then video/audio, then action) are layered into the
+second half. The ramp-down is reserved for \textbf{high-quality data across every
+modality}, polishing the whole stack as the LR decays to zero.
+
+The staged-and-frozen recipe turns one terrifying joint-training problem into
+four tractable ones. Each stage asks a single, well-posed question---\emph{given
+everything I already know, how do I generate this one new modality?}---and answers
+it without disturbing the rest.
+
+\section{Post-training and the Physics Flywheel}
+Pretraining learns the prior over how the multimodal world works. Two stages turn
+that prior into a capable agent:
+\begin{itemize}
+\item \textbf{Post-training (SFT).} Supervised fine-tuning on curated Perceive
+$\rightarrow$ Imagine $\rightarrow$ Act demonstrations, with explicit multimodal
+reasoning traces---the imagination made legible.
+\item \textbf{RL via self-play in simulation} with automatic reward signals. This
+is where the model becomes \emph{self-improving}.
+\end{itemize}
+
+In simulation, the model runs its full loop and grades itself automatically on
+three questions. \emph{Did what I imagined actually happen?}---imagination
+accuracy. \emph{Did I succeed?}---task completion. \emph{Does my prediction
+violate physics?}---consistency, checked against engine constraints. Call it
+\emph{RL from physics feedback} (RLPF).
+
+Self-play maximizes expected return under a composite reward that folds these
+together:
+\begin{equation}
+\max_{\theta}\ \mathbb{E}_{\tau\sim\pi_\theta}\!\Big[\textstyle\sum_t R_t\Big],
+\qquad R = \alpha\,R_{\text{task}} + \beta\,R_{\text{imag}} + \gamma\,R_{\text{phys}}
+\end{equation}
+with $R_{\text{imag}}$ the imagination accuracy and $R_{\text{phys}}$ the
+physics-consistency term (RLPF).
+
+Trace one lap to see why it \emph{compounds}. A better world model makes the
+model's imagination more accurate, so it can plan against a mental simulation it
+trusts---better plans. Better plans yield better actions, which succeed more
+often. Those successful rollouts (``this plan led to this outcome'') are exactly
+the labeled examples you want, so they become richer training data---which trains
+an even better world model. Each lap raises the floor for the next.
+
+\subsection{Why physics, not just text rewards?}
+Text models can self-improve this way too---but only where an automatic grader
+exists. Math has checkable answers, code has unit tests, and RL from verifiable
+rewards has driven much of the recent progress in exactly those domains
+\cite{ref29}. Two things limit it. First, \textbf{breadth}: verifiable graders
+cover a narrow slice of what we care about, and everything else falls back on
+learned proxies---reward models, LLM judges---which are themselves models that can
+be reward-hacked and carry no ground truth about the physical world. Second,
+\textbf{what the signal improves}: a unit test sharpens a policy, but it does not
+teach the model how the world works. Physics fixes both. It is a broad, grounded
+grader across the entire embodied space---did the glass actually lift? did the
+motion obey gravity?---and that signal flows back into the world model itself.
+Physics is to physical reality what unit tests are to code.
+
+The catch is that the whole loop runs \emph{inside} a simulation, so its ceiling
+is \textbf{simulation fidelity}. Train against a simulator that gets physics wrong
+and the model learns from a lie---the rewards are noise and nothing compounds. And
+neither obvious option is enough on its own: a hand-built physics engine is
+accurate but cannot render the visual richness of the real world, while real video
+is realistic but you cannot act inside it. The essential ingredient is therefore a
+\emph{learned} world simulator---trained on real video for realism and
+interactivity \cite{ref13}, and corrected by physics engines for physical
+consistency \cite{ref20}. Low fidelity and the flywheel slips; high fidelity and
+each cycle multiplies the last. The whole strategy lives or dies on the quality of
+the imagined world.
+
+\section{One Model, Many Problems}
+Here is the payoff of building it as one model. Every major AI capability
+challenge is a different \emph{route} through the same architecture---a particular
+choice of input modalities and output modality. Familiar combinations name an
+established task; the rest are potential applications---routes the same model
+could serve, with no household name yet.
+
+Each is the same conditional distribution---choose which modality streams are
+given and which are generated:
+\begin{equation}
+y \sim p_\theta\big(y \mid x_1, x_2, \dots, x_k\big)
+\end{equation}
+
+Table~\ref{tab:routes} reads off several familiar tasks as routes through this
+one conditional model. Today each of these is a separate model, dataset, and
+research community. The Perceive $\rightarrow$ Imagine $\rightarrow$ Act framework
+unifies them as different routes through one architecture---and improvements to
+the shared backbone benefit every task simultaneously. That is the whole bet:
+\textbf{build the multimodal mind once, and every capability comes along for the
+ride.}
+
+\begin{table}[t]
+\centering
+\caption{Today's siloed problems as routes through one multimodal conditional
+generator: a choice of input modalities and output modality.}
+\label{tab:routes}
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+inputs (perceive) & output (act) & task \\
+\midrule
+text & image & text-to-image \\
+text & video & text-to-video \\
+text, image & video & image animation \\
+image, action & video & world simulation \\
+video, language & action & robot control (VLA) \\
+screen, instruction & action & computer use \\
+video, sensors & action & autonomous driving \\
+audio, text & speech & speech assistant \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Related Work}
+This essay synthesizes several lines of work. The architecture draws on sparse,
+modality-decoupled transformers and unified autoregressive-plus-diffusion models;
+the cognitive loop and physics flywheel build on the world-models tradition; and
+the physical-AI framing tracks a recent wave of world foundation models. Some of
+it---most directly NVIDIA's Cosmos 3 \cite{ref19}---arrived at strikingly similar
+conclusions: a two-tower mixture-of-transformers that unifies understanding, world
+generation, and action for physical AI.
+
+\begin{thebibliography}{99}
+\footnotesize
+\bibitem{ref1} W. Liang et al., ``Mixture-of-Transformers: A Sparse and Scalable
+  Architecture for Multi-Modal Foundation Models,'' TMLR, 2025. arXiv:2411.04996.
+\bibitem{ref2} C. Zhou et al., ``Transfusion: Predict the Next Token and Diffuse
+  Images with One Multi-Modal Model,'' 2024. arXiv:2408.11039.
+\bibitem{ref3} Chameleon Team (Meta FAIR), ``Chameleon: Mixed-Modal Early-Fusion
+  Foundation Models,'' 2024. arXiv:2405.09818.
+\bibitem{ref4} J. Xie et al., ``Show-o: One Single Transformer to Unify
+  Multimodal Understanding and Generation,'' ICLR, 2025. arXiv:2408.12528.
+\bibitem{ref5} X. Wang et al. (BAAI), ``Emu3: Next-Token Prediction is All You
+  Need,'' 2024. arXiv:2409.18869.
+\bibitem{ref6} C. Wu et al. (DeepSeek-AI), ``Janus: Decoupling Visual Encoding for
+  Unified Multimodal Understanding and Generation,'' 2024. arXiv:2410.13848.
+\bibitem{ref7} X. Chen et al. (DeepSeek-AI), ``Janus-Pro: Unified Multimodal
+  Understanding and Generation with Data and Model Scaling,'' 2025. arXiv:2501.17811.
+\bibitem{ref8} J. Lu et al. (AI2), ``Unified-IO 2: Scaling Autoregressive
+  Multimodal Models with Vision, Language, Audio, and Action,'' CVPR, 2024.
+  arXiv:2312.17172.
+\bibitem{ref9} T. Li et al., ``Autoregressive Image Generation without Vector
+  Quantization (MAR),'' NeurIPS, 2024. arXiv:2406.11838.
+\bibitem{ref10} C. Deng et al. (ByteDance Seed), ``Emerging Properties in Unified
+  Multimodal Pretraining (BAGEL),'' 2025. arXiv:2505.14683.
+\bibitem{ref11} D. Ha and J. Schmidhuber, ``World Models,'' NeurIPS, 2018.
+  arXiv:1803.10122.
+\bibitem{ref12} D. Hafner et al., ``Mastering Diverse Domains through World Models
+  (DreamerV3),'' Nature, 2025. arXiv:2301.04104.
+\bibitem{ref13} J. Bruce et al., ``Genie: Generative Interactive Environments,''
+  ICML, 2024. arXiv:2402.15391.
+\bibitem{ref14} V. Micheli et al., ``Transformers are Sample-Efficient World
+  Models (IRIS),'' ICLR, 2023. arXiv:2209.00588.
+\bibitem{ref15} E. Alonso et al., ``Diffusion for World Modeling: Visual Details
+  Matter in Atari (DIAMOND),'' NeurIPS, 2024. arXiv:2405.12399.
+\bibitem{ref16} A. Hu et al. (Wayve), ``GAIA-1: A Generative World Model for
+  Autonomous Driving,'' 2023. arXiv:2309.17080.
+\bibitem{ref17} S. Gao et al., ``Vista: A Generalizable Driving World Model with
+  High Fidelity and Versatile Controllability,'' NeurIPS, 2024. arXiv:2405.17398.
+\bibitem{ref18} A. Bar et al. (Meta FAIR / NYU), ``Navigation World Models,''
+  CVPR, 2025. arXiv:2412.03572.
+\bibitem{ref19} NVIDIA, ``Cosmos 3: Omnimodal World Models for Physical AI,''
+  2026. arXiv:2606.02800.
+\bibitem{ref20} NVIDIA, ``Cosmos World Foundation Model Platform for Physical
+  AI,'' 2025. arXiv:2501.03575.
+\bibitem{ref21} NVIDIA, ``World Simulation with Video Foundation Models for
+  Physical AI (Cosmos-Predict2.5),'' 2025. arXiv:2511.00062.
+\bibitem{ref22} NVIDIA, ``Cosmos-Reason1: From Physical Common Sense to Embodied
+  Reasoning,'' 2025. arXiv:2503.15558.
+\bibitem{ref23} NVIDIA, ``GR00T N1: An Open Foundation Model for Generalist
+  Humanoid Robots,'' 2025. arXiv:2503.14734.
+\bibitem{ref24} Google Robotics, ``RT-1: Robotics Transformer for Real-World
+  Control at Scale,'' 2022. arXiv:2212.06817.
+\bibitem{ref25} Google DeepMind, ``RT-2: Vision-Language-Action Models Transfer
+  Web Knowledge to Robotic Control,'' CoRL, 2023. arXiv:2307.15818.
+\bibitem{ref26} M. J. Kim et al. (Stanford), ``OpenVLA: An Open-Source
+  Vision-Language-Action Model,'' CoRL, 2024. arXiv:2406.09246.
+\bibitem{ref27} K. Black et al. (Physical Intelligence), ``$\pi_0$: A
+  Vision-Language-Action Flow Model for General Robot Control,'' 2024.
+  arXiv:2410.24164.
+\bibitem{ref28} Octo Model Team, ``Octo: An Open-Source Generalist Robot
+  Policy,'' RSS, 2024. arXiv:2405.12213.
+\bibitem{ref29} DeepSeek-AI, ``DeepSeek-R1: Incentivizing Reasoning Capability in
+  LLMs via Reinforcement Learning,'' Nature, 2025. arXiv:2501.12948.
+\bibitem{ref30} L. Ouyang et al. (OpenAI), ``Training Language Models to Follow
+  Instructions with Human Feedback (InstructGPT),'' NeurIPS, 2022. arXiv:2203.02155.
+\bibitem{ref31} H. Lightman et al. (OpenAI), ``Let's Verify Step by Step,'' ICLR,
+  2024. arXiv:2305.20050.
+\bibitem{ref32} Z. Shao et al. (DeepSeek-AI), ``DeepSeekMath: Pushing the Limits
+  of Mathematical Reasoning (GRPO),'' 2024. arXiv:2402.03300.
+\bibitem{ref33} N. Lambert et al. (AI2), ``T\"ulu 3: Pushing Frontiers in Open
+  Language Model Post-Training,'' 2024. arXiv:2411.15124.
+\bibitem{ref34} Kimi Team (Moonshot AI), ``Kimi k1.5: Scaling Reinforcement
+  Learning with LLMs,'' 2025. arXiv:2501.12599.
+\bibitem{ref35} D. Silver et al. (DeepMind), ``Mastering Chess and Shogi by
+  Self-Play with a General Reinforcement Learning Algorithm (AlphaZero),''
+  Science, 2018. arXiv:1712.01815.
+\bibitem{ref36} J. Schrittwieser et al. (DeepMind), ``Mastering Atari, Go, Chess
+  and Shogi by Planning with a Learned Model (MuZero),'' Nature, 2020.
+  arXiv:1911.08265.
+\end{thebibliography}
+
+\end{document}
