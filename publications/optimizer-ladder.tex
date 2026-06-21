@@ -106,13 +106,13 @@ computed automatically from gradient statistics, in three steps.
 divides the step by its square root, $w \leftarrow w - \eta\, g/\sqrt{G+\epsilon}$
 with $G \leftarrow G + g^2$. Loud parameters get shrunk, quiet ones keep a
 near-full rate. The catch: $G$ only grows, so after a few thousand steps every
-effective learning rate approaches zero and the optimizer stalls.
+effective learning rate approaches zero and the optimizer stalls~\cite{ref1}.
 
 \textbf{RMSProp} replaces the running sum with an exponential moving average,
 $v \leftarrow \beta_2 v + (1-\beta_2) g^2$, so $v$ tracks \emph{recent} magnitude
-and plateaus instead of growing forever \cite{rmsprop}. \textbf{Adam} then stacks
+and plateaus instead of growing forever \cite{ref2}. \textbf{Adam} then stacks
 the two ideas --- a momentum EMA of the gradient and an RMSProp EMA of the
-squared gradient, both bias-corrected \cite{adam}:
+squared gradient, both bias-corrected \cite{ref3}:
 \begin{equation}
 \begin{aligned}
 m &\leftarrow \beta_1 m + (1-\beta_1)\, g, &
@@ -172,7 +172,7 @@ is part of why gradient clipping is standard for transformer training.
 
 \section{AdamW: the one-line fix}
 Adam was published in 2014; AdamW, the version everyone actually uses, came in
-2017, and the change is one line \cite{adamw}. Weight decay gently pulls
+2017, and the change is one line \cite{ref4}. Weight decay gently pulls
 parameters toward zero each step to improve generalization. For SGD there is an
 identity: shrinking the parameters is equivalent to adding $\lambda w$ to the
 gradient, so for years people implemented decay by folding $\lambda w$ into the
@@ -196,7 +196,7 @@ T5, ViT, and CLIP.
 \section{Interlude: SignSGD}
 So far the story has been ``track more statistics, use them more cleverly.''
 SignSGD asks the rude question: what if we track \emph{less}? Since Adam's update
-is approximately $\sign(g)$, why not compute the sign directly \cite{signsgd}:
+is approximately $\sign(g)$, why not compute the sign directly \cite{ref5}:
 \begin{equation}
 w \leftarrow w - \eta\, \sign(g).
 \end{equation}
@@ -215,7 +215,7 @@ back a single momentum buffer and most of the brittleness disappears.
 
 \section{Lion: one buffer instead of two}
 Lion emerged from a large program search over optimizer update rules and is what
-won \cite{lion}. It is substantially simpler than AdamW, uses half the optimizer
+won \cite{ref6}. It is substantially simpler than AdamW, uses half the optimizer
 state, and is competitive across many large-scale benchmarks (its wins are
 task- and tuning-dependent). The rule smooths the gradient and then takes the
 sign, with two different mixing rates:
@@ -274,7 +274,7 @@ Every method so far smuggles in the assumption that the parameters are a flat
 list. Adam scales each scalar entry of a weight matrix independently; the fact
 that those scalars form a matrix --- with rows, columns, and structure that
 survives matrix multiplication --- is thrown away. Muon's bet is that this
-structure is exactly the information you need \cite{muon,muon-scalable}.
+structure is exactly the information you need \cite{ref10,ref11}.
 
 Any matrix has a singular value decomposition $M=U\Sigma V^\top$, where $\Sigma$
 holds the singular values --- how much the matrix stretches space along each
@@ -297,9 +297,9 @@ values in a band near $1$ rather than exactly at $1$.
 Muon applies to hidden weight matrices only; embeddings, biases, and norm
 parameters use AdamW alongside it. Practically, Muon set the speed records for
 nanoGPT training and, after work showing it scales, was used at the
-trillion-parameter scale for Kimi K2 \cite{kimik2}. It also transfers its learning
+trillion-parameter scale for Kimi K2 \cite{ref12}. It also transfers its learning
 rate cleanly across model sizes when paired with $\mu$P-style width scaling
-\cite{mup}.
+\cite{ref13}.
 
 \section{The right kind of uniform: directions, not entries}
 The normalization story has a subtlety worth isolating. ``Uniform per entry,''
@@ -321,7 +321,7 @@ matrices are usually orthogonal and the distinction vanishes). The deeper reason
 per-matrix beats per-parameter is basis-independence: per-entry normalization asks
 ``is each number stepping equally,'' a question whose answer depends on how the
 matrix was laid out, while Muon asks ``is each direction stepping equally,'' a
-question about the layer's real geometry.
+question about the layer's real geometry~\cite{ref14}.
 
 \section{What first-order optimizers can't see}
 Every method so far --- including Muon --- uses one piece of information per
@@ -345,7 +345,7 @@ matrix-aware answer.
 
 \section{Shampoo: curvature-aware preconditioning}
 Shampoo predates Muon (2018) and was the first matrix-aware optimizer to gain
-attention; Muon got most of the practical traction \cite{shampoo}. Shampoo
+attention; Muon got most of the practical traction \cite{ref7}. Shampoo
 approximates the full Hessian with two matrices per layer, one for how rows
 interact and one for columns:
 \begin{equation}
@@ -359,7 +359,7 @@ The $-1/4$ exponents come from a Kronecker-factorization argument: the Hessian i
 approximately $L\otimes R$, so its inverse square root applied to $G$ multiplies
 by $L^{-1/4}$ on the left and $R^{-1/4}$ on the right. (The original 2018 version
 accumulated $L,R$ as un-decayed sums, exactly the AdaGrad form; modern variants
-use the EMA shown here \cite{soap}.)
+use the EMA shown here \cite{ref8,ref9}.)
 
 \textbf{Muon versus Shampoo.} The two answer different questions about the same
 gradient matrix. Muon asks which directions the gradient spans and steps equally
@@ -372,7 +372,7 @@ reasons unrelated to the update rule: Muon transfers its learning rate cleanly
 under $\mu$P, Shampoo's matrix roots are expensive enough that the preconditioner
 is recomputed only every few hundred steps (running on stale curvature), and it
 has more knobs. SOAP --- Shampoo's preconditioner with Adam in its eigenbasis ---
-folds the two together and often beats both \cite{soap}.
+folds the two together and often beats both \cite{ref9}.
 
 One fairness point that bites in practice: Shampoo is only competitive when it
 preconditions a \emph{momentum-smoothed} gradient. Feed its curvature factors a
@@ -382,7 +382,7 @@ noise-robustness comes from the same place, its own momentum buffer.
 
 \section{MuonH: pinning the weight norm}
 Every method so far concerns the update \emph{direction}. MuonH instead asks how
-to control the \emph{magnitude} of the weights \cite{muonh}. Modern transformers
+to control the \emph{magnitude} of the weights \cite{ref15}. Modern transformers
 wrap each weight matrix in RMSNorm, which is scale-invariant: scaling the input by
 any positive factor leaves the output unchanged, so the weight matrix's magnitude
 does not affect the function the layer computes --- only its direction does. Yet
@@ -427,32 +427,45 @@ matrix-aware methods are new and evolving, but the through-line should hold: eve
 optimizer fixes a specific failure of the one before it, and noticing the failure
 clearly is the hard part.
 
-\begin{thebibliography}{1}
+The lineage above rests on a broader body of work: stochastic approximation and momentum~\cite{ref16,ref17,ref18,ref19}, analyses and critiques of adaptive methods~\cite{ref20,ref21}, the normalization literature~\cite{ref22,ref23,ref24,ref25,ref26}, second-order and natural-gradient methods~\cite{ref27,ref28,ref29}, the spectral-norm and duality view of matrix optimizers~\cite{ref30,ref31,ref32}, and learning-rate schedules and large-batch scaling~\cite{ref33,ref34,ref35}.
+
+\begin{thebibliography}{99}
 \footnotesize
-\bibitem{rmsprop} T. Tieleman and G. Hinton, ``Lecture 6.5 --- RMSProp,''
-  Coursera: Neural Networks for Machine Learning, 2012.
-\bibitem{adam} D. P. Kingma and J. Ba, ``Adam: A Method for Stochastic
-  Optimization,'' ICLR, 2015. arXiv:1412.6980.
-\bibitem{adamw} I. Loshchilov and F. Hutter, ``Decoupled Weight Decay
-  Regularization,'' ICLR, 2019. arXiv:1711.05101.
-\bibitem{signsgd} J. Bernstein et al., ``signSGD: Compressed Optimisation for
-  Non-Convex Problems,'' ICML, 2018. arXiv:1802.04434.
-\bibitem{lion} X. Chen et al., ``Symbolic Discovery of Optimization Algorithms
-  (Lion),'' NeurIPS, 2023. arXiv:2302.06675.
-\bibitem{shampoo} V. Gupta, T. Koren, and Y. Singer, ``Shampoo: Preconditioned
-  Stochastic Tensor Optimization,'' ICML, 2018. arXiv:1802.09568.
-\bibitem{soap} N. Vyas et al., ``SOAP: Improving and Stabilizing Shampoo using
-  Adam,'' 2024. arXiv:2409.11321.
-\bibitem{muon} K. Jordan, ``Muon: An Optimizer for Hidden Layers in Neural
-  Networks,'' 2024. \url{https://kellerjordan.github.io/posts/muon/}.
-\bibitem{muon-scalable} J. Liu et al., ``Muon is Scalable for LLM Training,''
-  2025. arXiv:2502.16982.
-\bibitem{kimik2} Kimi Team, ``Kimi K2: Open Agentic Intelligence,'' 2025.
-  arXiv:2507.20534.
-\bibitem{mup} G. Yang et al., ``Tensor Programs V: Tuning Large Neural Networks
-  via Zero-Shot Hyperparameter Transfer,'' NeurIPS, 2021. arXiv:2203.03466.
-\bibitem{muonh} L. Ren et al., ``Rethinking Language Model Scaling under
-  Transferable Hypersphere Optimization,'' 2026. arXiv:2603.28743.
+\bibitem{ref1} J. Duchi, E. Hazan, and Y. Singer, ``Adaptive Subgradient Methods for Online Learning and Stochastic Optimization (AdaGrad),'' JMLR 12, 2011.
+\bibitem{ref2} T. Tieleman and G. Hinton, ``Lecture 6.5 --- RMSProp,'' Coursera: Neural Networks for Machine Learning, 2012.
+\bibitem{ref3} D. P. Kingma and J. Ba, ``Adam: A Method for Stochastic Optimization,'' ICLR, 2015. arXiv:1412.6980.
+\bibitem{ref4} I. Loshchilov and F. Hutter, ``Decoupled Weight Decay Regularization (AdamW),'' ICLR, 2019. arXiv:1711.05101.
+\bibitem{ref5} J. Bernstein, Y.-X. Wang, K. Azizzadenesheli, and A. Anandkumar, ``signSGD: Compressed Optimisation for Non-Convex Problems,'' ICML, 2018. arXiv:1802.04434.
+\bibitem{ref6} X. Chen et al., ``Symbolic Discovery of Optimization Algorithms (Lion),'' NeurIPS, 2023. arXiv:2302.06675.
+\bibitem{ref7} V. Gupta, T. Koren, and Y. Singer, ``Shampoo: Preconditioned Stochastic Tensor Optimization,'' ICML, 2018. arXiv:1802.09568.
+\bibitem{ref8} H.-J. M. Shi, T.-H. Lee, S. Iwasaki, J. Gallego-Posada et al., ``A Distributed Data-Parallel PyTorch Implementation of the Distributed Shampoo Optimizer,'' 2023. arXiv:2309.06497.
+\bibitem{ref9} N. Vyas, D. Morwani, R. Zhao et al., ``SOAP: Improving and Stabilizing Shampoo using Adam,'' 2024. arXiv:2409.11321.
+\bibitem{ref10} K. Jordan, ``Muon: An Optimizer for Hidden Layers in Neural Networks,'' blog, 2024. \url{https://kellerjordan.github.io/posts/muon/}.
+\bibitem{ref11} J. Liu et al. (Moonshot AI), ``Muon is Scalable for LLM Training,'' 2025. arXiv:2502.16982.
+\bibitem{ref12} Kimi Team (Moonshot AI), ``Kimi K2: Open Agentic Intelligence,'' 2025. arXiv:2507.20534.
+\bibitem{ref13} G. Yang et al., ``Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer ($\mu$P),'' NeurIPS, 2021. arXiv:2203.03466.
+\bibitem{ref14} L. Chen, J. Li, and Q. Liu, ``Muon Optimizes Under Spectral Norm Constraints,'' 2025. arXiv:2506.15054.
+\bibitem{ref15} L. Ren et al., ``Rethinking Language Model Scaling under Transferable Hypersphere Optimization (HyperP / MuonH),'' 2026. arXiv:2603.28743.
+\bibitem{ref16} H. Robbins and S. Monro, ``A Stochastic Approximation Method,'' Annals of Mathematical Statistics 22(3), 1951.
+\bibitem{ref17} B. T. Polyak, ``Some Methods of Speeding Up the Convergence of Iteration Methods (heavy-ball momentum),'' USSR Comput. Math. and Math. Phys. 4(5), 1964.
+\bibitem{ref18} Y. Nesterov, ``A Method for Solving the Convex Programming Problem with Convergence Rate $O(1/k^2)$,'' Soviet Math. Doklady 27, 1983.
+\bibitem{ref19} I. Sutskever, J. Martens, G. Dahl, and G. Hinton, ``On the Importance of Initialization and Momentum in Deep Learning,'' ICML, 2013.
+\bibitem{ref20} S. J. Reddi, S. Kale, and S. Kumar, ``On the Convergence of Adam and Beyond (AMSGrad),'' ICLR, 2018. arXiv:1904.09237.
+\bibitem{ref21} L. Balles and P. Hennig, ``Dissecting Adam: The Sign, Magnitude and Variance of Stochastic Gradients,'' ICML, 2018. arXiv:1705.07774.
+\bibitem{ref22} S. Ioffe and C. Szegedy, ``Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift,'' ICML, 2015. arXiv:1502.03167.
+\bibitem{ref23} J. L. Ba, J. R. Kiros, and G. E. Hinton, ``Layer Normalization,'' 2016. arXiv:1607.06450.
+\bibitem{ref24} T. Salimans and D. P. Kingma, ``Weight Normalization: A Simple Reparameterization to Accelerate Training of Deep Neural Networks,'' NeurIPS, 2016. arXiv:1602.07868.
+\bibitem{ref25} B. Zhang and R. Sennrich, ``Root Mean Square Layer Normalization (RMSNorm),'' NeurIPS, 2019. arXiv:1910.07467.
+\bibitem{ref26} T. van Laarhoven, ``L2 Regularization versus Batch and Weight Normalization,'' 2017. arXiv:1706.05350.
+\bibitem{ref27} S. Amari, ``Natural Gradient Works Efficiently in Learning,'' Neural Computation 10(2), 1998.
+\bibitem{ref28} J. Martens and R. Grosse, ``Optimizing Neural Networks with Kronecker-factored Approximate Curvature (K-FAC),'' ICML, 2015. arXiv:1503.05671.
+\bibitem{ref29} R. Anil, V. Gupta, T. Koren, K. Regan, and Y. Singer, ``Scalable Second Order Optimization for Deep Learning,'' 2020. arXiv:2002.09018.
+\bibitem{ref30} J. Bernstein and L. Newhouse, ``Old Optimizer, New Norm: An Anthology,'' 2024. arXiv:2409.20325.
+\bibitem{ref31} J. Bernstein and L. Newhouse, ``Modular Duality in Deep Learning,'' 2024. arXiv:2410.21265.
+\bibitem{ref32} N. J. Higham, ``Functions of Matrices: Theory and Computation (Newton--Schulz iteration),'' SIAM, 2008.
+\bibitem{ref33} I. Loshchilov and F. Hutter, ``SGDR: Stochastic Gradient Descent with Warm Restarts,'' ICLR, 2017. arXiv:1608.03983.
+\bibitem{ref34} Y. You, I. Gitman, and B. Ginsburg, ``Large Batch Training of Convolutional Networks (LARS),'' 2017. arXiv:1708.03888.
+\bibitem{ref35} Y. You, J. Li, S. Reddi, J. Hseu, S. Kumar et al., ``Large Batch Optimization for Deep Learning: Training BERT in 76 Minutes (LAMB),'' ICLR, 2020. arXiv:1904.00962.
 \end{thebibliography}
 
 \end{document}
