@@ -437,6 +437,8 @@ span.highlight {
   .profile-header-row img {
     width: 55% !important;
     max-width: 180px !important;
+    aspect-ratio: 1;
+    object-fit: cover;
     border-radius: 50%;
   }
 
@@ -487,7 +489,7 @@ span.highlight {
 
   /* Profile links: wrap is OK on mobile */
   .profile-links { flex-wrap: wrap; }
-  .profile-links a { padding: 6px 8px; }
+  .profile-links a { padding: 6px 6px; letter-spacing: 0.06em; }
 
   /* Thesis: less padding */
   .thesis { padding: 4px 16px 20px; }
