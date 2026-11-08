@@ -591,6 +591,7 @@ footer.post-footer {
   header.post-header h1 { font-size: 2rem; }
   .chapter-index ol { column-count: 1; }
   section.chapter { padding: 3rem 0 1rem; }
+  section.chapter table { display: block; overflow-x: auto; }
   section.chapter h2 {
     flex-direction: column;
     gap: 0.3rem;
@@ -802,7 +803,7 @@ canvas.lin { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <p class="lin-cap">loss as a function of w — green dot is current w, orange dot is the optimum</p>
 <div class="lin-row">
   <label>Batch size</label>
-  <select id="lin-batch" style="flex: 1; max-width: 240px;">
+  <select id="lin-batch" style="flex: 1; min-width: 0; max-width: 240px;">
     <option value="1">1 point (most stochastic)</option>
     <option value="4" selected>4 points</option>
     <option value="24">all 24 points (true gradient)</option>
@@ -1527,6 +1528,7 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 .muo-row { display: flex; align-items: center; gap: 12px; margin: 0.8rem 0; }
 .muo-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
 .muo-row .val { font-size: 13px; font-weight: 500; min-width: 60px; text-align: right; font-family: var(--font-mono); }
+.muo-row input[type=range] { min-width: 0; }
 .muo-leg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin: 0.6rem auto 0; max-width: 460px; }
 .muo-leg-it { display: flex; align-items: center; gap: 8px; color: var(--color-text-secondary); }
 .muo-leg-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 2px; }
