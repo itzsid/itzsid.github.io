@@ -39,7 +39,7 @@ them, the sign-based methods strip the machinery back to its load-bearing core,
 and the matrix-aware methods exploit structure that per-parameter methods throw
 away. We trace that lineage, and along the way isolate a single recurring axis
 --- how each method turns a gradient into a step --- that explains most of the
-progress. An interactive version with live simulations is available online.\footnote{\url{https://itzsid.github.io/publications/optimizer-ladder.html}}
+progress. An interactive version with live simulations is available online.\footnote{\url{https://itzsid.github.io/publications/optimizer-ladder.html}. First version May 2026; revised November 2026.}
 \end{abstract}
 
 \section{SGD and the stochastic gradient}
@@ -191,7 +191,7 @@ w \leftarrow w - \eta\,\lambda\, w.
 Now every parameter gets the same proportional decay regardless of $v$, and
 $\lambda$ is an independent knob. AdamW trained essentially every transformer
 between 2017 and roughly 2023 --- the silent default behind GPT-2, GPT-3, BERT,
-T5, ViT, and CLIP.
+ViT, and CLIP (though not quite all: T5 and PaLM used the memory-saving Adafactor).
 
 \section{Interlude: SignSGD}
 So far the story has been ``track more statistics, use them more cleverly.''
@@ -295,8 +295,8 @@ standard coefficients are tuned for speed, not accuracy: they leave the singular
 values in a band near $1$ rather than exactly at $1$.
 
 Muon applies to hidden weight matrices only; embeddings, biases, and norm
-parameters use AdamW alongside it. Practically, Muon set the speed records for
-nanoGPT training and, after work showing it scales, was used at the
+parameters use AdamW alongside it. Practically, Muon set the nanoGPT training speed
+records standing at the time of writing (May 2026) and, after work showing it scales, was used at the
 trillion-parameter scale for Kimi K2 \cite{ref12}. It also transfers its learning
 rate cleanly across model sizes when paired with $\mu$P-style width scaling
 \cite{ref13}.
@@ -344,8 +344,9 @@ match the matrix structure of the network. Shampoo is the field's main
 matrix-aware answer.
 
 \section{Shampoo: curvature-aware preconditioning}
-Shampoo predates Muon (2018) and was the first matrix-aware optimizer to gain
-attention; Muon got most of the practical traction \cite{ref7}. Shampoo
+Shampoo predates Muon (2018) and was one of the first matrix-aware optimizers to
+gain attention --- preceded by K-FAC, which Kronecker-factors the Fisher matrix
+per layer \cite{ref28} --- though Muon got most of the practical traction \cite{ref7}. Shampoo
 approximates the full Hessian with two matrices per layer, one for how rows
 interact and one for columns:
 \begin{equation}
@@ -355,9 +356,12 @@ R &\leftarrow \beta R + (1-\beta)\, G^\top G, \\
 W &\leftarrow W - \eta\, L^{-1/4}\, G\, R^{-1/4}.
 \end{aligned}
 \end{equation}
-The $-1/4$ exponents come from a Kronecker-factorization argument: the Hessian is
-approximately $L\otimes R$, so its inverse square root applied to $G$ multiplies
-by $L^{-1/4}$ on the left and $R^{-1/4}$ on the right. (The original 2018 version
+The $-1/4$ exponents come from a Kronecker-factorization argument. The ideal
+(full-matrix AdaGrad) preconditioner is the inverse square root of the gradient
+second-moment matrix $\mathbb{E}[\operatorname{vec}(G)\operatorname{vec}(G)^\top]$,
+a stand-in for the Hessian. Shampoo approximates it by $L^{1/2}\otimes R^{1/2}$,
+whose inverse square root is $L^{-1/4}\otimes R^{-1/4}$; applied to $G$, that
+multiplies by $L^{-1/4}$ on the left and $R^{-1/4}$ on the right. (The original 2018 version
 accumulated $L,R$ as un-decayed sums, exactly the AdaGrad form; modern variants
 use the EMA shown here \cite{ref8,ref9}.)
 

@@ -5,12 +5,22 @@ deep MLP teacher->student (every parameter is a weight matrix — the natural
 habitat for the matrix-aware optimizers).
 
 We record TRAIN loss vs step for the optimizers, best learning rate by lowest
-final loss. This is an optimization-SPEED comparison: SGD < momentum < adaptive
-< matrix-aware, the ordering the chapters describe. (A small quadratic can't
-show this — momentum is near-optimal on quadratics — so the network has to be
-genuinely deep.) Adam and AdamW are indistinguishable on training speed, so the
-page carries a single adaptive rung (AdamW); AdamW's real edge is generalization,
-which a training-speed chart can't show.
+final loss. This is an optimization-SPEED comparison. The broad shape is the one
+the chapters describe (SGD slowest, matrix-aware fastest); close neighbours such
+as momentum vs AdamW are within seed noise on a network this small. (A small
+quadratic can't show even the broad shape — momentum is near-optimal on
+quadratics — so the network has to be genuinely deep.) Weight decay is off, so
+Adam and AdamW take identical steps and the page carries a single adaptive rung
+(AdamW); AdamW's real edge is generalization, which a training-speed chart can't
+show.
+
+Every trial (each optimizer, each lr) uses a freshly seeded batch RNG, so all
+runs see the identical minibatch sequence and the output is reproducible.
+
+MuonH keeps each matrix at its initial Frobenius norm R = ||W0||_F, as the essay
+describes. This MLP has no normalization layers, so weight scale matters and the
+fixed radius is a real handicap here; MuonH's premise (scale invariance under
+RMSNorm) is not met by this toy.
 
 One small network, not a benchmark — rankings are problem-dependent. Real
 wall-clock records live in modded-nanogpt.
@@ -67,7 +77,7 @@ def inv_pth_root(M, p, eps=1e-6):
 
 def downsample(v, T):
     idx = np.unique(np.geomspace(1, T, 70).astype(int) - 1)
-    rel = np.clip(v / v[0] if False else v, 1e-9, None)  # caller passes already-relative
+    rel = np.clip(v, 1e-9, None)  # caller passes already-relative values
     return [[int(i), round(float(rel[i]), 7)] for i in idx]
 
 # =========================================================================
@@ -96,7 +106,7 @@ def step_opt(kind, W, st, g, j, lr_t, t, wd, R0):
         W[j] -= lr_t * (np.sign(0.9 * m + 0.1 * g) + wd * W[j]); s['m'] = 0.99 * m + 0.01 * g   # wd=0 in the no-decay ladder, like AdamW
     elif kind == 'muon':
         u = s.get('u', np.zeros_like(g)); u = mu * u + g; s['u'] = u
-        W[j] -= lr_t * ns5(u) * (max(g.shape) / min(g.shape)) ** 0.5
+        W[j] -= lr_t * ns5(u) * max(1, g.shape[0] / g.shape[1]) ** 0.5   # reference Muon scale: max(1, rows/cols)^0.5
     elif kind == 'shampoo':
         m_, n_ = g.shape
         u = s.get('u', np.zeros_like(g)); u = mu * u + g; s['u'] = u   # momentum, as Shampoo is used in practice
@@ -122,7 +132,7 @@ def run_train_ladder():
     teacher = init_net(rng, 1.2)
     N, BATCH, T = 2048, 128, 4000
     X = rng.standard_normal((N, DIMS[0])); Y, _ = forward(teacher, X)
-    W0 = init_net(rng, 1.0); R0 = [np.linalg.norm(w) for w in teacher]
+    W0 = init_net(rng, 1.0); R0 = [np.linalg.norm(w) for w in W0]   # MuonH radius = ||W0||_F, the student's own init norm
     init_loss = mse(W0, X, Y)
     GRID = {'sgd': [3e-2, 1e-1, 3e-1, 1.0, 3.0], 'momentum': [1e-2, 3e-2, 1e-1, 3e-1, 1.0],
             'adam': [1e-3, 3e-3, 1e-2, 3e-2, 1e-1], 'adamw': [1e-3, 3e-3, 1e-2, 3e-2, 1e-1],
@@ -131,10 +141,14 @@ def run_train_ladder():
             'muonh': [3e-3, 1e-2, 3e-2, 1e-1, 3e-1]}
     order = ['sgd', 'momentum', 'adam', 'adamw', 'signsgd', 'lion', 'muon', 'shampoo', 'muonh']
     def trial(kind, lr):
+        # Fresh, identically seeded batch RNG per trial: every optimizer and every lr sees the
+        # exact same minibatch sequence, and a diverged trial can't shift later trials' batches.
+        brng = np.random.default_rng(1)
         W = [w.copy() for w in W0]; st = [dict() for _ in W]; losses = []
         for t in range(T):
             lr_t = lr_sched(lr, t, T)
-            grads = grads_on(W, *(lambda i: (X[i], Y[i]))(rng.integers(0, N, BATCH)))
+            idx = brng.integers(0, N, BATCH)
+            grads = grads_on(W, X[idx], Y[idx])
             for j, g in enumerate(grads):
                 step_opt(kind, W, st, g, j, lr_t, t, 0.0, R0)
             losses.append(mse(W, X, Y))

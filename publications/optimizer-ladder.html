@@ -654,7 +654,7 @@ footer.post-footer {
 <article>
 
 <header class="post-header">
-  <time datetime="2026-05-11">May 2026</time>
+  <time datetime="2026-05-11">May 2026 · updated November 2026</time>
   <h1>A Genealogy of Optimizers</h1>
   <p class="byline">Siddharth Choudhary (with Claude) &middot; <a href="optimizer-ladder.pdf">PDF</a> &middot; <a href="https://doi.org/10.5281/zenodo.20788748">DOI</a></p>
   <p class="lede">A guided tour through neural-network optimizers, with interactive widgets. Each one solves a specific problem in the previous, and the trajectory tells you something about where deep learning is going.</p>
@@ -843,9 +843,9 @@ canvas.lin { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>From here on, every section ends with a <em>speedrun ladder</em> — an interactive chart that races each optimizer introduced so far to the same target loss. They are all the same experiment: a small but genuinely deep MLP fitting a random teacher network (so the per-matrix optimizers later in the story have real matrix structure to exploit), trained on minibatches. Each optimizer runs at its own best learning rate from a small sweep, under one shared schedule — 10% linear warmup, a constant middle, then a cosine cooldown over the final 20%.</p>
 
-<p>Press <strong>Play</strong> to watch them race, or drag the slider to scrub through training; the leaderboard fills in as each curve crosses the target. It's one small toy network, not a benchmark — the <em>ordering</em> tracks the textbook ladder, but the exact margins are illustrative (a browser-scale toy can't reproduce the real thing). The full comparison code is on GitHub: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
+<p>Press <strong>Play</strong> to watch them race, or drag the slider to scrub through training; the leaderboard fills in as each curve crosses the target. It's one small toy network, not a benchmark — the broad shape tracks the textbook ladder (plain SGD slowest, the per-matrix methods fastest), but close calls between neighbouring rungs can flip with the random seed and the exact margins are illustrative (a browser-scale toy can't reproduce the real thing). Every optimizer sees the identical sequence of minibatches. The full comparison code is on GitHub: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
 
-<div class="widget-caption"><span class="num">Fig. 1.3</span>The speedrun ladder begins. SGD needs the full training budget to reach the target loss — every later section adds a faster curve to this same chart.</div>
+<div class="widget-caption"><span class="num">Fig. 1.3</span>The speedrun ladder begins. SGD needs about half of the 4,000-step budget (≈2,080 steps) to reach the target loss — every later section adds a curve to this same chart.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd" data-new="sgd" width="540" height="340"></canvas>
@@ -941,7 +941,7 @@ canvas.mom { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>What it did not touch is the third complaint: there is still one global learning rate, applied uniformly to every parameter. In real models, some parameters have gradients on the order of 100 and others on the order of 0.001 <em>at the same time</em>. No single global <code>lr</code> is right for both. The fix everyone arrived at, more or less independently, in the early 2010s: keep a per-parameter estimate of recent gradient magnitudes, and divide each parameter's step by that estimate.</p>
 
-<div class="widget-caption"><span class="num">Fig. 2.2</span>Speedrun ladder, after momentum. The velocity buffer reaches the target loss in a fraction of SGD's steps. Press Play to watch the two race.</div>
+<div class="widget-caption"><span class="num">Fig. 2.2</span>Speedrun ladder, after momentum. The velocity buffer reaches the target loss in about a third of SGD's steps (≈700 vs ≈2,080). Press Play to watch the two race.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum" data-new="momentum" width="540" height="340"></canvas>
@@ -1093,7 +1093,7 @@ canvas.adm { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Adam works at default settings on most problems. That single fact — "default Adam works on a new problem" — is why it became the field's reflexive choice for nearly a decade.</p>
 
-<div class="widget-caption"><span class="num">Fig. 3.3</span>Speedrun ladder, after Adam. Per-parameter normalization vaults Adam to the front of the pack — a clear step past momentum.</div>
+<div class="widget-caption"><span class="num">Fig. 3.3</span>Speedrun ladder, after Adam. On this small, fairly homogeneous MLP a well-tuned momentum run keeps pace with Adam (≈700 vs ≈750 steps to target, within seed noise). Adam's edge is robustness on heterogeneous networks like transformers, where no single momentum learning rate fits every layer — something a five-layer toy barely exercises.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adam" data-new="adam" width="540" height="340"></canvas>
@@ -1258,15 +1258,15 @@ canvas.dec { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>That's the bug. The optimizer was supposed to apply the same regularization to every parameter, and Adam-with-L2 silently made the regularization strength inversely proportional to gradient magnitude.</p>
 
-<p>AdamW is the optimizer that trained essentially every transformer between 2017 and ~2023. It's the silent default behind GPT-2, GPT-3, BERT, T5, ViT, CLIP, and most of what came in their wake.</p>
+<p>AdamW is the optimizer that trained essentially every transformer between 2017 and ~2023. It's the silent default behind GPT-2, GPT-3, BERT, ViT, CLIP, and most of what came in their wake. (Not quite all: T5 and PaLM, for instance, used the memory-saving Adafactor.)</p>
 
-<div class="widget-caption"><span class="num">Fig. 5.2</span>Speedrun ladder, after AdamW — the single adaptive rung (Adam and AdamW are indistinguishable on training speed). AdamW's real edge over Adam is generalization, which a speed chart can't show.</div>
+<div class="widget-caption"><span class="num">Fig. 5.2</span>Speedrun ladder, after AdamW — the single adaptive rung (with weight decay off, as in this training-speed race, AdamW's update is identical to Adam's). AdamW's real edge over Adam is generalization, which a speed chart can't show.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw" data-new="adamw" width="540" height="340"></canvas>
 <div class="conv-legend"></div>
 <div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). On training speed AdamW is indistinguishable from plain Adam, so the ladder carries one adaptive rung; AdamW's distinct benefit is generalization, not steps-to-target.</p>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). With weight decay switched off for this race, AdamW's update is identical to plain Adam's, so the ladder carries one adaptive rung; AdamW's distinct benefit is generalization, not steps-to-target.</p>
 </div>
 </div>
 
@@ -1345,7 +1345,7 @@ canvas.sgn { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>SignSGD is rarely used as-is in practice — too brittle. But it cleanly demonstrates two things that turn out to matter for what comes next. The <em>directionally normalized step</em> (everything moves by ~lr) is doing most of the work that makes Adam great. The magnitude correction in <code>m / sqrt(v)</code> is a refinement, not the core mechanism. And you can pay almost nothing in optimizer state and still get serviceable training, especially if you add back just a momentum buffer to handle noise.</p>
 
-<div class="widget-caption"><span class="num">Fig. 6.2</span>Speedrun ladder, after SignSGD — the one rung that moves <em>backward</em>. Its curve is slower than AdamW; the win is zero optimizer state, not convergence.</div>
+<div class="widget-caption"><span class="num">Fig. 6.2</span>Speedrun ladder, after SignSGD — the first rung that moves <em>backward</em>. Its curve is slower than AdamW; the win is zero optimizer state, not convergence.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd" data-new="signsgd" width="540" height="340"></canvas>
@@ -1376,7 +1376,7 @@ m ← β₂ · m + (1 − β₂) · g                ← what you remember for n
 
 <h3>What Lion gives up and what it gives back</h3>
 
-<p>Lion's update is in <code>{−1, 0, +1}</code> per parameter — strict sign, no fractional confidence weighting. A parameter Adam would have stepped by 0.1 Lion will step by 0 or full <code>lr</code>. And the per-parameter magnitude normalization from <code>sqrt(v)</code> is replaced by global normalization via the sign function. In practice, neither is fatal. Lion still works.</p>
+<p>Lion's update is in <code>{−1, 0, +1}</code> per parameter — strict sign, no fractional confidence weighting. A parameter Adam would have stepped by 0.1 Lion will step by 0 or full <code>lr</code>. And the per-parameter magnitude normalization from <code>sqrt(v)</code> is replaced by per-parameter normalization via the sign function. In practice, neither is fatal. Lion still works.</p>
 
 <p>What's earned: <strong>memory halved</strong> (only <code>m</code>, no <code>v</code>) and <strong>2-15% throughput improvement</strong> per step depending on hardware. The catch: Lion needs a smaller <code>lr</code> (3–10× smaller is typical) and stronger weight decay than AdamW. The hyperparameter sweet spot shifts.</p>
 
@@ -1432,13 +1432,13 @@ canvas.lio { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>What makes Lion intellectually interesting isn't that it's better than AdamW — sometimes it is, sometimes it isn't. What's interesting is that it's <em>competitive</em> while throwing away half the machinery. That's strong evidence for a claim worth examining carefully in the next section: the most important thing Adam was doing all along was producing per-parameter normalized steps.</p>
 
-<div class="widget-caption"><span class="num">Fig. 7.2</span>Speedrun ladder, after Lion. On this toy it lands around momentum's pace, a bit behind AdamW — but the headline is half the optimizer state, and at scale Lion is typically on par with AdamW.</div>
+<div class="widget-caption"><span class="num">Fig. 7.2</span>Speedrun ladder, after Lion. On this toy it lands a bit behind AdamW and momentum (≈890 steps vs ≈750 and ≈700) — but the headline is half the optimizer state, and at scale Lion is typically on par with AdamW.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion" data-new="lion" width="540" height="340"></canvas>
 <div class="conv-legend"></div>
 <div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). On this toy run Lion lands a bit behind AdamW (near momentum's pace); at scale it's typically on par or better.<sup class="ref"><a href="#ref-6">[6]</a></sup> Either way the headline is one buffer instead of two, not a dramatic speedup.</p>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). On this toy run Lion reaches the target a bit after AdamW (≈890 vs ≈750 steps), though it finishes at a slightly lower final loss; at scale it's typically on par or better.<sup class="ref"><a href="#ref-6">[6]</a></sup> Either way the headline is one buffer instead of two, not a dramatic speedup.</p>
 </div>
 </div>
 
@@ -1455,7 +1455,7 @@ canvas.lio { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <thead><tr><th>optimizer</th><th>effective step for parameter <code>i</code></th><th>scales with |g<sub>i</sub>|?</th></tr></thead>
 <tbody>
 <tr><td>SGD</td><td><code>lr · g<sub>i</sub></code></td><td>yes — linearly</td></tr>
-<tr><td>SGD + momentum</td><td><code>lr · v<sub>i</sub></code> where v is EMA of g</td><td>yes — still linearly</td></tr>
+<tr><td>SGD + momentum</td><td><code>lr · v<sub>i</sub></code> where v is the momentum buffer (decaying sum of past g)</td><td>yes — still linearly</td></tr>
 <tr><td>AdamW</td><td><code>lr · m<sub>i</sub> / sqrt(v<sub>i</sub>) ≈ lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
 <tr><td>Lion</td><td><code>lr · sign(β m<sub>i</sub> + (1−β) g<sub>i</sub>)</code></td><td>no — flat</td></tr>
 <tr><td>SignSGD</td><td><code>lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
@@ -1551,13 +1551,13 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 </div>
 </div>
 
-<p>Drag <strong>skew</strong>: the raw gradient's spectrum (gray) goes from uniform to extremely skewed. Drag <strong>iters</strong>: at 0, the green bars match gray (no orthogonalization). By 3-4 iterations the green spectrum is essentially flat at 1. With heavy skew you can see why standard Newton-Schulz uses 5 iterations as a practical default — it's the smallest count that handles realistic spectra.</p>
+<p>Drag <strong>skew</strong>: the raw gradient's spectrum (gray) goes from uniform to extremely skewed. Drag <strong>iters</strong>: at 0, the green bars are just the gray spectrum rescaled by its Frobenius norm (the one normalization Newton-Schulz needs) — still skewed. At the default skew, by 5 iterations every green bar sits in a band of roughly 0.7–1.2 around 1, not exactly at 1: the standard coefficients are tuned for speed, so extra iterations don't tighten the band. Push skew to the maximum and the very smallest singular values need a 6th or 7th iteration to climb into it — 5 is a practical default, not a guarantee.</p>
 
 <h3>Why this works</h3>
 
 <p>The vanilla momentum step is dominated by a few large singular directions. Muon's orthogonalized step has equal magnitude in every direction <code>U Σ V<sup>T</sup></code> defines. Every direction the gradient knows about gets attention. Parameters that would have been ignored under vanilla momentum (because they sat in low-singular-value directions of the gradient) get the same step size as the dominant directions.</p>
 
-<p>Practically, Muon set the current speed records for nanoGPT training<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
+<p>Practically, Muon set the nanoGPT training speed records standing at the time of writing (May 2026)<sup class="ref"><a href="#ref-10">[10]</a></sup> and — after work showing it scales<sup class="ref"><a href="#ref-11">[11]</a></sup> — was used at the trillion-parameter scale for Kimi K2.<sup class="ref"><a href="#ref-12">[12]</a></sup> Muon also has favorable learning-rate-transfer behavior: paired with μP-style width scaling,<sup class="ref"><a href="#ref-13">[13]</a></sup> you largely avoid re-tuning the learning rate as the model grows — one of the most labor-intensive parts of training large models. (μP is a separate technique, not something baked into Muon, but the two compose unusually well.)</p>
 
 <p>Muon takes <em>only the gradient matrix structure</em> and gets a substantial speedup from it. But we slipped past something worth pausing on: why is making the step uniform across singular <em>directions</em> better than the across-the-board uniform step that Adam and SignSGD already give us? The next section makes the difference visible.</p>
 
@@ -1567,7 +1567,7 @@ canvas.muo { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon" data-new="muon" width="540" height="340"></canvas>
 <div class="conv-legend"></div>
 <div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). Muon's clear lead here (≈1.4× faster than AdamW to the target) echoes the ≈1.35× speedups reported at scale.<sup class="ref"><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a></sup></p>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP and animated here (press <strong>Play</strong> or scrub). Muon's clear lead here (≈1.6× faster than AdamW to the target, ≈476 vs ≈746 steps) echoes the ≈1.35× speedups reported at scale; the toy's margin is larger and only illustrative.<sup class="ref"><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a></sup></p>
 </div>
 </div>
 
@@ -1796,7 +1796,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-shampoo">
 <h2><span class="num">Sec. 12</span> <span>Shampoo: curvature-aware preconditioning</span></h2>
 
-<p>Shampoo predates Muon by several years (the original paper is from 2018)<sup class="ref"><a href="#ref-7">[7]</a></sup> and was actually the first matrix-aware optimizer to gain real attention. The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
+<p>Shampoo predates Muon by several years (the original paper is from 2018)<sup class="ref"><a href="#ref-7">[7]</a></sup> and was one of the first matrix-aware optimizers to gain real attention — preceded by K-FAC (2015), which uses a similar per-layer Kronecker factorization, but of the Fisher matrix rather than of gradient statistics.<sup class="ref"><a href="#ref-28">[28]</a></sup> The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
 
 <p>Shampoo's pitch: approximate the full Hessian using just <em>two</em> matrices per layer, one capturing how rows interact and one capturing how columns interact. For a weight matrix <code>W ∈ ℝ<sup>m×n</sup></code> with gradient <code>G</code>, maintain:</p>
 
@@ -1804,7 +1804,7 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 R ← β·R + (1−β)·G<sup>T</sup> G      ← n × n right preconditioner (column curvature)
 W ← W − lr · L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code></pre>
 
-<p>The <code>−1/4</code> exponents come from a Kronecker-factorization argument — the full Hessian is approximately <code>L ⊗ R</code>, so its inverse-square-root applied to <code>G</code> works out to multiplying by <code>L<sup>−1/4</sup></code> on the left and <code>R<sup>−1/4</sup></code> on the right.</p>
+<p>The <code>−1/4</code> exponents come from a Kronecker-factorization argument. The ideal (full-matrix AdaGrad) preconditioner is the inverse square root of the gradient second-moment matrix <code>E[vec(G) vec(G)<sup>T</sup>]</code>, a stand-in for the Hessian. Shampoo approximates that matrix by <code>L<sup>1/2</sup> ⊗ R<sup>1/2</sup></code> — each factor gets a square root so that the product has the right scale — and the inverse square root of <code>L<sup>1/2</sup> ⊗ R<sup>1/2</sup></code> is <code>L<sup>−1/4</sup> ⊗ R<sup>−1/4</sup></code>. Applied to <code>G</code>, that means multiplying by <code>L<sup>−1/4</sup></code> on the left and <code>R<sup>−1/4</sup></code> on the right.</p>
 
 <p>One bookkeeping note that echoes the AdaGrad → RMSProp story from section 3: the <em>original</em> 2018 Shampoo accumulated <code>L</code> and <code>R</code> as un-decayed running sums (<code>L ← L + GGᵀ</code>), exactly the AdaGrad form, with the same eventual-stall problem. Every practical implementation since — Distributed Shampoo, SOAP — uses the exponential moving average shown above, so the preconditioner tracks <em>recent</em> curvature instead of the lifetime sum.<sup class="ref"><a href="#ref-8">[8]</a><a href="#ref-9">[9]</a></sup></p>
 
@@ -1826,7 +1826,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <div class="sha-leg">
   <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #7F77DD;"></span>AdamW (per-entry)</div>
   <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #2BA17B;"></span>Muon (orthogonalize)</div>
-  <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #C8862C;"></span>Shampoo (precondition)</div>
+  <div class="sha-leg-it"><span class="sha-leg-sw" style="background: #C8862C;"></span>Shampoo (diagonal precondition)</div>
 </div>
 <div class="sha-row">
   <label>Row skew</label>
@@ -1841,7 +1841,7 @@ canvas.sha { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 </div>
 </div>
 
-<p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) flattens the singular value spectrum — same row/column structure, but reshaped to equal magnitude in every direction. Shampoo (gold) does something subtly different: it uses the empirical row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't.</p>
+<p>Same starting matrix. AdamW (purple) operates entry-wise: scale each cell by its own statistic, but the matrix structure is invisible to it. Muon (teal) is the exact polar factor <code>U V<sup>T</sup></code> — the gradient's singular directions kept, every singular value set to 1 — so the update spreads across rows and columns very differently from the raw gradient. Shampoo (gold) does something subtly different: it uses the row- and column-curvature statistics to <em>rebalance</em> the matrix non-uniformly, dampening rows/columns that have been receiving large updates and boosting ones that haven't. One honest simplification: the Shampoo panel keeps only the <em>diagonals</em> of <code>L</code> and <code>R</code>. On a single gradient with no accumulation, full-matrix Shampoo reduces exactly to Muon's <code>U V<sup>T</sup></code> (<code>(GG<sup>T</sup>)<sup>−1/4</sup> G (G<sup>T</sup>G)<sup>−1/4</sup> = U V<sup>T</sup></code>); the two only part ways once <code>L</code> and <code>R</code> average over many steps.</p>
 
 <p>A caveat on these last two figures: unlike the 2D demos in earlier sections, Figs. 9.1 and 12.1 visualize the <em>transform</em> each optimizer applies to a single gradient matrix — they are not optimization runs. There's no loss being descended and no trajectory; the point is purely to see how each method reshapes a matrix, which is where the matrix-aware methods differ from the per-entry ones.</p>
 
@@ -1960,13 +1960,13 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>The bigger lesson: <strong>weight magnitude has emerged as a third axis of optimizer design</strong>, orthogonal to "what direction to step" and "how aware of curvature." As networks become more carefully internally normalized, the optimizer has more room to manage scale directly, and MuonH is one promising point in that design space.</p>
 
-<div class="widget-caption"><span class="num">Fig. 13.2</span>Speedrun ladder, after MuonH. A small edge at moderate scale — but recall the spectral-squeeze caveat: this advantage is fragile and does not hold uniformly.</div>
+<div class="widget-caption"><span class="num">Fig. 13.2</span>Speedrun ladder, after MuonH — a rung this toy can't do justice. The MLP has no normalization layers, so weight norm matters, and pinning each matrix at its initial norm leaves MuonH far behind (≈3,350 steps to target).</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo,muonh" data-new="muonh" width="540" height="340"></canvas>
 <div class="conv-legend"></div>
 <div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). MuonH descends fast early (it reaches the target ahead of AdamW) but then stalls at a higher floor than Muon — the spectral squeeze the section warns about.<sup class="ref"><a href="#ref-15">[15]</a></sup> At higher learning rates MuonW pulls ahead, so read this rung as "promising, not settled."</p>
+<p class="conv-note">Real loss curves traced offline and animated here (press <strong>Play</strong> or scrub). MuonH here does exactly what the update above prescribes: each matrix stays at its initial Frobenius norm <code>R = ||W₀||<sub>F</sub></code>. But this teacher–student MLP has no RMSNorm, so magnitude is <em>not</em> functionally irrelevant — the teacher's weights are larger than the student's initialization — and the fixed radius is a genuine handicap: MuonH only just beats SignSGD (≈3,350 steps to target). (An earlier version of this chart pinned the radius to the teacher's norms, information an optimizer shouldn't have, which made MuonH look competitive.) In the normalized transformers MuonH is designed for, that handicap disappears; there the reported picture is MuonH ahead at lower learning rates and MuonW ahead at higher ones.<sup class="ref"><a href="#ref-15">[15]</a></sup> Read this rung as "premise not met by the toy," not as a verdict.</p>
 </div>
 </div>
 
@@ -1985,13 +1985,15 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Where this is going: the matrix-aware optimizers (Muon, Shampoo, MuonH) are still relatively new and rapidly evolving. The next axes that look promising — based on what's getting attention now — are <em>second-order without the cost</em> (cheap Hessian-vector products integrated into the update), <em>even better factorizations</em> of the implicit Hessian, and <em>scale-control as a first-class concept</em>. The story isn't finished, and a few of the sections above might look quaint in three years. But the through-line will hold: every optimizer fixes a specific failure of the one before it, and noticing the failure clearly is the hard part.</p>
 
-<div class="widget-caption"><span class="num">Ladder</span>Every rung on one chart — press Play to race them. The frontier marches earlier, but not every step does: SignSGD steps back, and the biggest jumps come from momentum, the adaptive step (AdamW), and per-matrix (Muon and Shampoo).</div>
+<p>The lineage above rests on a broader body of work: stochastic approximation and momentum,<sup class="ref"><a href="#ref-16">[16]</a><a href="#ref-17">[17]</a><a href="#ref-18">[18]</a><a href="#ref-19">[19]</a></sup> analyses and critiques of adaptive methods,<sup class="ref"><a href="#ref-20">[20]</a><a href="#ref-21">[21]</a></sup> the normalization literature,<sup class="ref"><a href="#ref-22">[22]</a><a href="#ref-23">[23]</a><a href="#ref-24">[24]</a><a href="#ref-25">[25]</a><a href="#ref-26">[26]</a></sup> second-order and natural-gradient methods,<sup class="ref"><a href="#ref-27">[27]</a><a href="#ref-28">[28]</a><a href="#ref-29">[29]</a></sup> the spectral-norm and duality view of matrix optimizers,<sup class="ref"><a href="#ref-30">[30]</a><a href="#ref-31">[31]</a><a href="#ref-32">[32]</a></sup> and learning-rate schedules and large-batch scaling.<sup class="ref"><a href="#ref-33">[33]</a><a href="#ref-34">[34]</a><a href="#ref-35">[35]</a></sup></p>
+
+<div class="widget-caption"><span class="num">Ladder</span>Every rung on one chart — press Play to race them. The frontier marches earlier, but not every step does: SignSGD steps back, MuonH (on this un-normalized toy) steps back too, momentum and AdamW land close together, and the biggest jumps come from momentum over SGD and from the per-matrix methods (Muon and Shampoo).</div>
 <div class="widget-container">
 <div class="widget-inner">
 <canvas class="conv-canvas" data-optims="sgd,momentum,adamw,signsgd,lion,muon,shampoo,muonh" width="540" height="340"></canvas>
 <div class="conv-legend"></div>
 <div class="conv-board"></div>
-<p class="conv-note">Real loss curves traced offline on a small deep MLP (teacher→student; see <code>optimizer-ladder-sim.py</code>) and animated here — press <strong>Play</strong> to race the whole field, or scrub. The ordering echoes reported large-scale results (Muon ≈1.35× over AdamW,<sup class="ref"><a href="#ref-10">[10]</a></sup> Shampoo/SOAP ≈1.25×,<sup class="ref"><a href="#ref-9">[9]</a></sup> Lion ≈ AdamW<sup class="ref"><a href="#ref-6">[6]</a></sup>) but magnitudes are illustrative — a browser-scale toy can't reproduce the real ladder. Full comparison code: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
+<p class="conv-note">Real loss curves traced offline on a small deep MLP (teacher→student; see <code>optimizer-ladder-sim.py</code>) and animated here — press <strong>Play</strong> to race the whole field, or scrub. The per-matrix lead echoes reported large-scale results (Muon ≈1.35× over AdamW,<sup class="ref"><a href="#ref-10">[10]</a></sup> Shampoo/SOAP ≈1.25×,<sup class="ref"><a href="#ref-9">[9]</a></sup> Lion ≈ AdamW<sup class="ref"><a href="#ref-6">[6]</a></sup>) but magnitudes are illustrative — a browser-scale toy can't reproduce the real ladder. Full comparison code: <a href="https://github.com/itzsid/itzsid.github.io/blob/master/publications/optimizer-ladder-sim.py"><code>optimizer-ladder-sim.py</code></a>.</p>
 </div>
 </div>
 
@@ -2094,7 +2096,7 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <footer class="post-footer">
   Made with care for clear explanations.<br>
-  Twelve interactive widgets, one continuous story.
+  Twenty-eight figures, most of them interactive, one continuous story.
 </footer>
 
 </article>
@@ -3555,13 +3557,15 @@ function gauss() {
     const max = s[0];
     return s.map(x => x / max);
   }
+  // Muon's quintic Newton-Schulz, acting on the singular values: normalize once by the
+  // Frobenius norm, then apply x -> a x + b x^3 + c x^5 with the standard (speed-tuned)
+  // coefficients. These drive the values into a band around 1, not exactly to 1.
+  const YTOP = 1.25;
   function nsIterate(s, iters) {
-    let cur = s.slice();
-    for (let k = 0; k < iters; k++) {
-      const max = Math.max(...cur);
-      cur = cur.map(x => x / Math.max(max, 1e-6));
-      cur = cur.map(x => 1.5 * x - 0.5 * x * x * x);
-    }
+    const a = 3.4445, b = -4.7750, c = 2.0315;
+    const fro = Math.sqrt(s.reduce((acc, x) => acc + x * x, 0));
+    let cur = s.map(x => x / Math.max(fro, 1e-12));
+    for (let k = 0; k < iters; k++) cur = cur.map(x => a * x + b * x ** 3 + c * x ** 5);
     return cur;
   }
   function draw() {
@@ -3571,8 +3575,8 @@ function gauss() {
     const orth = nsIterate(raw, iters);
     ctx.clearRect(0, 0, W, H);
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.18)'; ctx.lineWidth = 0.5;
-    for (const y of [0.25, 0.5, 0.75, 1.0]) {
-      const py = M.top + (1 - y) * PH;
+    for (const y of [0.25, 0.5, 0.75, 1.0, 1.25]) {
+      const py = M.top + (1 - y / YTOP) * PH;
       ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
     }
     ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; ctx.lineWidth = 0.5;
@@ -3581,8 +3585,8 @@ function gauss() {
     ctx.lineTo(W - M.right, H - M.bottom); ctx.stroke();
     ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
     ctx.textAlign = 'right';
-    for (const yt of [0, 0.25, 0.5, 0.75, 1]) {
-      const py = M.top + (1 - yt) * PH;
+    for (const yt of [0, 0.25, 0.5, 0.75, 1, 1.25]) {
+      const py = M.top + (1 - yt / YTOP) * PH;
       ctx.fillText(yt.toFixed(2), M.left - 6, py + 3);
     }
     ctx.textAlign = 'center';
@@ -3593,10 +3597,10 @@ function gauss() {
     const barW = (groupW - gap) / 2;
     for (let i = 0; i < N; i++) {
       const x0 = M.left + i * groupW + gap / 2;
-      const yA = M.top + (1 - raw[i]) * PH;
+      const yA = M.top + (1 - raw[i] / YTOP) * PH;
       ctx.fillStyle = 'rgba(136, 136, 136, 0.75)';
       ctx.fillRect(x0, yA, barW, M.top + PH - yA);
-      const yB = M.top + (1 - Math.max(0, Math.min(1.05, orth[i]))) * PH;
+      const yB = M.top + (1 - Math.max(0, Math.min(YTOP, orth[i])) / YTOP) * PH;
       ctx.fillStyle = 'rgba(43, 161, 123, 0.85)';
       ctx.fillRect(x0 + barW, yB, barW, M.top + PH - yB);
     }
@@ -3643,28 +3647,59 @@ function gauss() {
   function adamWUpdate(G) {
     return G.map(r => r.map(v => Math.sign(v) * Math.min(1, Math.abs(v) * 1.5)));
   }
-  function muonUpdate(G) {
-    let max = 0;
-    for (const r of G) for (const v of r) if (Math.abs(v) > max) max = Math.abs(v);
-    return G.map(r => r.map(v => {
-      const norm = v / Math.max(max, 1e-6);
-      return Math.sign(norm) * Math.pow(Math.abs(norm), 0.3) * 0.95;
-    }));
+  // Symmetric eigendecomposition by cyclic Jacobi (same scheme as the Sec 10 widget),
+  // accumulating eigenvectors as the columns of V.
+  function jacobiEig(A0) {
+    const n = A0.length, A = A0.map(r => r.slice());
+    const V = A.map((r, i) => r.map((_, j) => (i === j ? 1 : 0)));
+    for (let sw = 0; sw < 80; sw++) {
+      let off = 0;
+      for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += A[p][q] * A[p][q];
+      if (off < 1e-20) break;
+      for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
+        if (Math.abs(A[p][q]) < 1e-18) continue;
+        const th = (A[q][q] - A[p][p]) / (2 * A[p][q]);
+        let t = (th >= 0 ? 1 : -1) / (Math.abs(th) + Math.sqrt(th * th + 1)); if (!isFinite(t)) t = 1;
+        const c = 1 / Math.sqrt(t * t + 1), s = t * c;
+        for (let k = 0; k < n; k++) { const akp = A[k][p], akq = A[k][q]; A[k][p] = c * akp - s * akq; A[k][q] = s * akp + c * akq; }
+        for (let k = 0; k < n; k++) { const apk = A[p][k], aqk = A[q][k]; A[p][k] = c * apk - s * aqk; A[q][k] = s * apk + c * aqk; }
+        for (let k = 0; k < n; k++) { const vkp = V[k][p], vkq = V[k][q]; V[k][p] = c * vkp - s * vkq; V[k][q] = s * vkp + c * vkq; }
+      }
+    }
+    return { vals: A.map((r, i) => r[i]), vecs: V };
   }
+  // Muon: the polar factor U V^T of G (every nonzero singular value set to 1), computed from
+  // the eigendecomposition G^T G = V S^2 V^T as sum_k (G v_k / s_k) v_k^T. Directions with
+  // s_k < 1e-3 * s_max are treated as absent, as Newton-Schulz also leaves them near zero.
+  function muonUpdate(G) {
+    const m = G.length, n = G[0].length;
+    const GtG = [];
+    for (let a = 0; a < n; a++) { GtG.push([]); for (let b = 0; b < n; b++) { let s = 0; for (let i = 0; i < m; i++) s += G[i][a] * G[i][b]; GtG[a].push(s); } }
+    const { vals, vecs } = jacobiEig(GtG);
+    const smax = Math.sqrt(Math.max(0, ...vals));
+    const P = G.map(r => r.map(() => 0));
+    for (let k = 0; k < n; k++) {
+      const sk = Math.sqrt(Math.max(0, vals[k]));
+      if (sk < 1e-3 * smax) continue;
+      const v = vecs.map(r => r[k]);
+      const u = G.map(r => r.reduce((s, x, j) => s + x * v[j], 0) / sk);
+      for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) P[i][j] += u[i] * v[j];
+    }
+    return P;
+  }
+  // Shampoo, diagonal version: keep only the diagonals of L = G G^T and R = G^T G (row and
+  // column sums of squares) and apply diag(L)^(-1/4) G diag(R)^(-1/4). (Full-matrix Shampoo on
+  // a single gradient with no accumulation reduces exactly to Muon's U V^T, so the diagonal
+  // form is what shows the row/column rebalancing.)
   function shampooUpdate(G) {
-    const Lscale = G.map(r => Math.sqrt(r.reduce((s, v) => s + v * v, 0) + 0.01));
-    const Rscale = [];
+    const Ldiag = G.map(r => r.reduce((s, v) => s + v * v, 0) + 0.01);
+    const Rdiag = [];
     for (let j = 0; j < gridN; j++) {
       let s = 0;
       for (let i = 0; i < gridM; i++) s += G[i][j] * G[i][j];
-      Rscale.push(Math.sqrt(s + 0.01));
+      Rdiag.push(s + 0.01);
     }
-    const Lmax = Math.max(...Lscale), Rmax = Math.max(...Rscale);
-    return G.map((r, i) => r.map((v, j) => {
-      const lFac = Math.pow(Lscale[i] / Lmax, -0.25);
-      const rFac = Math.pow(Rscale[j] / Rmax, -0.25);
-      return v * lFac * rFac;
-    }));
+    return G.map((r, i) => r.map((v, j) => v * Math.pow(Ldiag[i], -0.25) * Math.pow(Rdiag[j], -0.25)));
   }
   function drawMatrix(matrix, xOff, yOff, label, color) {
     ctx.fillStyle = '#666'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
@@ -3694,7 +3729,7 @@ function gauss() {
     ctx.clearRect(0, 0, W, H);
     drawMatrix(adamWUpdate(G),   xStart + 0 * groupW,            padY, 'AdamW',   '#7F77DD');
     drawMatrix(muonUpdate(G),    xStart + 1 * groupW,            padY, 'Muon',    '#2BA17B');
-    drawMatrix(shampooUpdate(G), xStart + 2 * groupW,            padY, 'Shampoo', '#C8862C');
+    drawMatrix(shampooUpdate(G), xStart + 2 * groupW,            padY, 'Shampoo (diag.)', '#C8862C');
     ctx.fillStyle = '#888'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('parameter update matrix (cell brightness = magnitude)', W / 2, padY + gridM * cellSize + 28);
   }
@@ -3837,19 +3872,20 @@ function gauss() {
 // MEASURED curves: each optimizer was run offline on a small 5-layer MLP
 // (teacher->student), best learning rate by lowest final loss, relative loss
 // recorded vs step. See optimizer-ladder-sim.py (on GitHub). One toy network,
-// not a benchmark — the ordering is qualitatively the textbook ladder, the
+// not a benchmark — the broad shape is the textbook ladder (SGD slowest,
+// per-matrix fastest); close neighbours can swap with the seed, and the
 // magnitudes are illustrative.
 (function () {
   var T = 4000, DATA = {
-    sgd: {label:'SGD', color:'#8a8a8a', curve:[[0,1],[1,0.998043],[2,0.993885],[3,0.986988],[4,0.977748],[5,0.967224],[6,0.955676],[7,0.941892],[8,0.924764],[10,0.890031],[11,0.869934],[13,0.829039],[14,0.806251],[16,0.763101],[19,0.698433],[21,0.655656],[24,0.59642],[27,0.534757],[31,0.460465],[35,0.393406],[40,0.321901],[45,0.263322],[51,0.2139],[58,0.177802],[66,0.153261],[74,0.138686],[84,0.128317],[95,0.123213],[107,0.119268],[121,0.117191],[137,0.11356],[154,0.11042],[174,0.1063],[197,0.101824],[222,0.0989313],[250,0.0927024],[283,0.0881082],[319,0.0835241],[360,0.0795744],[406,0.0776056],[458,0.0782777],[517,0.0640772],[583,0.0625989],[658,0.0567352],[742,0.0564249],[837,0.0480991],[944,0.0472501],[1065,0.0441199],[1201,0.0403969],[1354,0.037971],[1528,0.0358505],[1723,0.0363593],[1943,0.0331903],[2192,0.027743],[2472,0.0261486],[2788,0.0248057],[3144,0.0230559],[3545,0.0195901],[3999,0.0183778]]},
-    momentum: {label:'Momentum', color:'#1D9E75', curve:[[0,1],[1,0.996014],[2,0.98468],[3,0.963414],[4,0.929748],[5,0.884476],[6,0.829608],[7,0.766617],[8,0.698895],[10,0.563084],[11,0.501728],[13,0.401932],[14,0.36471],[16,0.312834],[19,0.262939],[21,0.235073],[24,0.195915],[27,0.173666],[31,0.158777],[35,0.143767],[40,0.137936],[45,0.12616],[51,0.119581],[58,0.111616],[66,0.106646],[74,0.103275],[84,0.0973094],[95,0.0924598],[107,0.0883245],[121,0.0858789],[137,0.0809896],[154,0.0745998],[174,0.0762519],[197,0.0689981],[222,0.0608933],[250,0.0590937],[283,0.0577846],[319,0.0588039],[360,0.056147],[406,0.0554723],[458,0.043089],[517,0.0453253],[583,0.0418024],[658,0.0361969],[742,0.0304113],[837,0.0325868],[944,0.0266864],[1065,0.0228779],[1201,0.020705],[1354,0.0201856],[1528,0.0181813],[1723,0.0172172],[1943,0.0163617],[2192,0.0146976],[2472,0.013771],[2788,0.0114926],[3144,0.0116399],[3545,0.0076796],[3999,0.0055762]]},
-    adam: {label:'Adam', color:'#7F77DD', curve:[[0,1],[1,0.998102],[2,0.994284],[3,0.988621],[4,0.981133],[5,0.971806],[6,0.960763],[7,0.948062],[8,0.933819],[10,0.901015],[11,0.882582],[13,0.842102],[14,0.820336],[16,0.774936],[19,0.703385],[21,0.65432],[24,0.580723],[27,0.509665],[31,0.4221],[35,0.344854],[40,0.26415],[45,0.20239],[51,0.154563],[58,0.133598],[66,0.126877],[74,0.119803],[84,0.115216],[95,0.111359],[107,0.107158],[121,0.103713],[137,0.0966365],[154,0.0930101],[174,0.0872493],[197,0.080172],[222,0.0752337],[250,0.0701997],[283,0.0641943],[319,0.0571672],[360,0.0526345],[406,0.0485235],[458,0.0409116],[517,0.0380643],[583,0.03192],[658,0.0326214],[742,0.0284375],[837,0.0248246],[944,0.0253736],[1065,0.0217389],[1201,0.0200794],[1354,0.0186824],[1528,0.0177752],[1723,0.0180686],[1943,0.0147359],[2192,0.0143803],[2472,0.0131516],[2788,0.0128083],[3144,0.0133914],[3545,0.0085475],[3999,0.0048849]]},
-    adamw: {label:'AdamW', color:'#5A52C0', curve:[[0,1],[1,0.99809],[2,0.994338],[3,0.988736],[4,0.98124],[5,0.971948],[6,0.960982],[7,0.94848],[8,0.934295],[10,0.901572],[11,0.883277],[13,0.843315],[14,0.821809],[16,0.776463],[19,0.704146],[21,0.65445],[24,0.580591],[27,0.509595],[31,0.422432],[35,0.346311],[40,0.266064],[45,0.203934],[51,0.156228],[58,0.135639],[66,0.128359],[74,0.121921],[84,0.114993],[95,0.110209],[107,0.106462],[121,0.101671],[137,0.0960878],[154,0.0926358],[174,0.0852383],[197,0.0787754],[222,0.0733396],[250,0.0695462],[283,0.0616605],[319,0.0548633],[360,0.0506633],[406,0.0472009],[458,0.04021],[517,0.0354572],[583,0.036686],[658,0.0298372],[742,0.0285741],[837,0.0262131],[944,0.0233482],[1065,0.0235604],[1201,0.0191987],[1354,0.0191543],[1528,0.0181927],[1723,0.0173358],[1943,0.0152832],[2192,0.0134959],[2472,0.0142317],[2788,0.0131617],[3144,0.0110695],[3545,0.0070508],[3999,0.0049098]]},
-    signsgd: {label:'SignSGD', color:'#C8862C', curve:[[0,1],[1,0.99804],[2,0.994125],[3,0.988526],[4,0.980807],[5,0.971197],[6,0.959719],[7,0.946591],[8,0.93189],[10,0.897167],[11,0.87812],[13,0.835839],[14,0.812821],[16,0.764193],[19,0.687006],[21,0.633309],[24,0.551185],[27,0.472116],[31,0.371994],[35,0.282568],[40,0.197267],[45,0.14889],[51,0.128654],[58,0.12088],[66,0.118563],[74,0.114721],[84,0.112646],[95,0.108303],[107,0.102886],[121,0.1004],[137,0.104871],[154,0.103382],[174,0.0937199],[197,0.0973475],[222,0.10332],[250,0.0983311],[283,0.0991551],[319,0.105987],[360,0.101692],[406,0.0932956],[458,0.101815],[517,0.0874295],[583,0.0852717],[658,0.0814278],[742,0.0758759],[837,0.0683272],[944,0.0702656],[1065,0.063591],[1201,0.0593615],[1354,0.0569322],[1528,0.0527009],[1723,0.0514598],[1943,0.0500889],[2192,0.0454427],[2472,0.0438574],[2788,0.0430587],[3144,0.0409905],[3545,0.0242421],[3999,0.0118145]]},
-    lion: {label:'Lion', color:'#2BA17B', curve:[[0,1],[1,0.999803],[2,0.999407],[3,0.998804],[4,0.997996],[5,0.997005],[6,0.995796],[7,0.994382],[8,0.992766],[10,0.988955],[11,0.986743],[13,0.981716],[14,0.9789],[16,0.972675],[19,0.961916],[21,0.953809],[24,0.940318],[27,0.925271],[31,0.902885],[35,0.87808],[40,0.844051],[45,0.807098],[51,0.759692],[58,0.701464],[66,0.633102],[74,0.56529],[84,0.484952],[95,0.406873],[107,0.337784],[121,0.280492],[137,0.235285],[154,0.198036],[174,0.173161],[197,0.17522],[222,0.168259],[250,0.151044],[283,0.134318],[319,0.11952],[360,0.107211],[406,0.0923675],[458,0.0795421],[517,0.0679266],[583,0.0565314],[658,0.046759],[742,0.0383895],[837,0.03199],[944,0.0276795],[1065,0.0239758],[1201,0.0207278],[1354,0.0185754],[1528,0.0161548],[1723,0.0139298],[1943,0.0126104],[2192,0.0109866],[2472,0.0099254],[2788,0.0090559],[3144,0.0081688],[3545,0.0062687],[3999,0.0048808]]},
-    muon: {label:'Muon', color:'#D85A30', curve:[[0,1],[1,0.999824],[2,0.999458],[3,0.998902],[4,0.998144],[5,0.99721],[6,0.996065],[7,0.994716],[8,0.993166],[10,0.989493],[11,0.987375],[13,0.982591],[14,0.979925],[16,0.974023],[19,0.963639],[21,0.955882],[24,0.943059],[27,0.928587],[31,0.907201],[35,0.883822],[40,0.852024],[45,0.817753],[51,0.774003],[58,0.720864],[66,0.658952],[74,0.596313],[84,0.518411],[95,0.434018],[107,0.344617],[121,0.246644],[137,0.160336],[154,0.115786],[174,0.100047],[197,0.0872085],[222,0.0763926],[250,0.0655921],[283,0.0558399],[319,0.0488174],[360,0.0407688],[406,0.0367238],[458,0.0316191],[517,0.0268869],[583,0.0256842],[658,0.0219413],[742,0.0191133],[837,0.0167206],[944,0.0167249],[1065,0.0161694],[1201,0.0135599],[1354,0.0139834],[1528,0.0123345],[1723,0.0118049],[1943,0.0114107],[2192,0.010675],[2472,0.0097303],[2788,0.0093684],[3144,0.0096762],[3545,0.0058984],[3999,0.0024831]]},
-    shampoo: {label:'Shampoo', color:'#A0531E', curve:[[0,1],[1,0.999198],[2,0.997318],[3,0.994188],[4,0.989711],[5,0.983833],[6,0.976512],[7,0.967779],[8,0.957678],[10,0.933507],[11,0.919575],[13,0.888388],[14,0.871324],[16,0.834677],[19,0.77497],[21,0.733311],[24,0.669642],[27,0.606373],[31,0.524657],[35,0.447657],[40,0.359474],[45,0.280139],[51,0.201974],[58,0.141931],[66,0.123385],[74,0.117547],[84,0.104142],[95,0.0972087],[107,0.0894336],[121,0.0811444],[137,0.0732896],[154,0.0651612],[174,0.0598279],[197,0.0524458],[222,0.0470378],[250,0.0413001],[283,0.0384688],[319,0.0355229],[360,0.0348647],[406,0.0328847],[458,0.0283492],[517,0.0278888],[583,0.0241241],[658,0.0229811],[742,0.0212002],[837,0.0217859],[944,0.0191951],[1065,0.0185161],[1201,0.0194431],[1354,0.0179226],[1528,0.0181669],[1723,0.0171333],[1943,0.0171806],[2192,0.0168516],[2472,0.0163378],[2788,0.0152563],[3144,0.0155244],[3545,0.0090251],[3999,0.0028011]]},
-    muonh: {label:'MuonH', color:'#8A4FBF', curve:[[0,1.40847],[1,1.40813],[2,1.40744],[3,1.40636],[4,1.4049],[5,1.40303],[6,1.40078],[7,1.39816],[8,1.39516],[10,1.38807],[11,1.38401],[13,1.37483],[14,1.3697],[16,1.35839],[19,1.33881],[21,1.32402],[24,1.29948],[27,1.27195],[31,1.23097],[35,1.18576],[40,1.12412],[45,1.0579],[51,0.974045],[58,0.872388],[66,0.755841],[74,0.644755],[84,0.518033],[95,0.398401],[107,0.290489],[121,0.200428],[137,0.144306],[154,0.120466],[174,0.0991216],[197,0.0814848],[222,0.0698236],[250,0.0603469],[283,0.0524134],[319,0.0454783],[360,0.039809],[406,0.0378578],[458,0.0336799],[517,0.0294179],[583,0.0262158],[658,0.0256367],[742,0.0224756],[837,0.0227972],[944,0.0230478],[1065,0.0205552],[1201,0.0195426],[1354,0.0183321],[1528,0.0190399],[1723,0.0194172],[1943,0.0158543],[2192,0.0171493],[2472,0.0159058],[2788,0.0149724],[3144,0.0147091],[3545,0.0105951],[3999,0.0055595]]}
+    sgd: {label:'SGD', color:'#8a8a8a', curve:[[0,1],[1,0.997794],[2,0.993087],[3,0.986924],[4,0.978199],[5,0.966459],[6,0.954785],[7,0.940292],[8,0.92579],[10,0.891686],[11,0.873217],[13,0.830529],[14,0.80867],[16,0.764727],[19,0.699669],[21,0.653216],[24,0.589084],[27,0.527473],[31,0.456118],[35,0.389804],[40,0.320407],[45,0.263798],[51,0.214771],[58,0.176607],[66,0.150804],[74,0.135866],[84,0.12712],[95,0.122774],[107,0.119213],[121,0.116112],[137,0.113069],[154,0.109186],[174,0.105976],[197,0.103087],[222,0.0980064],[250,0.093295],[283,0.0889959],[319,0.0840919],[360,0.0831267],[406,0.0759684],[458,0.0737542],[517,0.0642372],[583,0.0654675],[658,0.0574154],[742,0.0584721],[837,0.0494241],[944,0.050147],[1065,0.0424848],[1201,0.039564],[1354,0.0397299],[1528,0.0397103],[1723,0.0319489],[1943,0.0319262],[2192,0.0285342],[2472,0.0263339],[2788,0.0257847],[3144,0.0227983],[3545,0.0196018],[3999,0.0184031]]},
+    momentum: {label:'Momentum', color:'#1D9E75', curve:[[0,1],[1,0.995798],[2,0.983634],[3,0.961546],[4,0.92779],[5,0.881421],[6,0.825383],[7,0.761374],[8,0.693636],[10,0.559358],[11,0.498524],[13,0.398494],[14,0.360434],[16,0.304789],[19,0.253529],[21,0.229983],[24,0.196948],[27,0.173408],[31,0.166557],[35,0.148584],[40,0.140107],[45,0.128255],[51,0.120585],[58,0.115332],[66,0.108602],[74,0.103355],[84,0.0987661],[95,0.0927978],[107,0.089354],[121,0.0843236],[137,0.081434],[154,0.0756017],[174,0.0726178],[197,0.070647],[222,0.067344],[250,0.0585553],[283,0.0626512],[319,0.0547374],[360,0.0537381],[406,0.0497739],[458,0.0534863],[517,0.0451006],[583,0.0353393],[658,0.0327786],[742,0.02774],[837,0.0281368],[944,0.0270089],[1065,0.0258186],[1201,0.0229096],[1354,0.0191691],[1528,0.0214014],[1723,0.0162437],[1943,0.0154433],[2192,0.0149198],[2472,0.0123064],[2788,0.0113384],[3144,0.0106962],[3545,0.0078484],[3999,0.0057351]]},
+    adam: {label:'Adam', color:'#7F77DD', curve:[[0,1],[1,0.998092],[2,0.9943],[3,0.988696],[4,0.981281],[5,0.972082],[6,0.961224],[7,0.948695],[8,0.934673],[10,0.902237],[11,0.884061],[13,0.844006],[14,0.822397],[16,0.776843],[19,0.704793],[21,0.655296],[24,0.581249],[27,0.510066],[31,0.4226],[35,0.345318],[40,0.264557],[45,0.201949],[51,0.154217],[58,0.133054],[66,0.128172],[74,0.121225],[84,0.115326],[95,0.110276],[107,0.105968],[121,0.101345],[137,0.0960595],[154,0.092259],[174,0.0879846],[197,0.080664],[222,0.0739209],[250,0.0677258],[283,0.0615559],[319,0.0555273],[360,0.0509327],[406,0.0496923],[458,0.0399531],[517,0.0364904],[583,0.0334328],[658,0.0308013],[742,0.0302319],[837,0.0252379],[944,0.0232032],[1065,0.022114],[1201,0.021489],[1354,0.0207061],[1528,0.0170832],[1723,0.0156573],[1943,0.0146768],[2192,0.0150417],[2472,0.012623],[2788,0.0125318],[3144,0.0118847],[3545,0.007774],[3999,0.0049383]]},
+    adamw: {label:'AdamW', color:'#5A52C0', curve:[[0,1],[1,0.998092],[2,0.9943],[3,0.988696],[4,0.981281],[5,0.972082],[6,0.961224],[7,0.948695],[8,0.934673],[10,0.902237],[11,0.884061],[13,0.844006],[14,0.822397],[16,0.776843],[19,0.704793],[21,0.655296],[24,0.581249],[27,0.510066],[31,0.4226],[35,0.345318],[40,0.264557],[45,0.201949],[51,0.154217],[58,0.133054],[66,0.128172],[74,0.121225],[84,0.115326],[95,0.110276],[107,0.105968],[121,0.101345],[137,0.0960595],[154,0.092259],[174,0.0879846],[197,0.080664],[222,0.0739209],[250,0.0677258],[283,0.0615559],[319,0.0555273],[360,0.0509327],[406,0.0496923],[458,0.0399531],[517,0.0364904],[583,0.0334328],[658,0.0308013],[742,0.0302319],[837,0.0252379],[944,0.0232032],[1065,0.022114],[1201,0.021489],[1354,0.0207061],[1528,0.0170832],[1723,0.0156573],[1943,0.0146768],[2192,0.0150417],[2472,0.012623],[2788,0.0125318],[3144,0.0118847],[3545,0.007774],[3999,0.0049383]]},
+    signsgd: {label:'SignSGD', color:'#C8862C', curve:[[0,1],[1,0.998083],[2,0.994224],[3,0.988541],[4,0.980903],[5,0.971538],[6,0.960422],[7,0.947337],[8,0.933056],[10,0.898929],[11,0.880098],[13,0.837624],[14,0.814572],[16,0.766428],[19,0.690549],[21,0.635747],[24,0.553873],[27,0.473377],[31,0.372121],[35,0.282406],[40,0.194379],[45,0.146079],[51,0.127392],[58,0.122117],[66,0.116787],[74,0.115714],[84,0.109212],[95,0.109458],[107,0.103847],[121,0.0996302],[137,0.100227],[154,0.100454],[174,0.0954239],[197,0.0968201],[222,0.0942826],[250,0.103356],[283,0.101308],[319,0.103995],[360,0.107419],[406,0.115113],[458,0.104528],[517,0.0913502],[583,0.0849911],[658,0.0838798],[742,0.0739376],[837,0.0670618],[944,0.0696736],[1065,0.0622256],[1201,0.0580751],[1354,0.0541443],[1528,0.0531834],[1723,0.0498933],[1943,0.0487914],[2192,0.0483163],[2472,0.0430939],[2788,0.0435562],[3144,0.040521],[3545,0.0232284],[3999,0.0114818]]},
+    lion: {label:'Lion', color:'#2BA17B', curve:[[0,1],[1,0.999806],[2,0.999412],[3,0.998821],[4,0.998026],[5,0.997029],[6,0.995826],[7,0.99441],[8,0.992807],[10,0.988965],[11,0.986752],[13,0.981709],[14,0.978885],[16,0.972663],[19,0.961942],[21,0.953819],[24,0.940307],[27,0.925248],[31,0.902861],[35,0.878067],[40,0.844045],[45,0.807098],[51,0.759747],[58,0.701608],[66,0.633397],[74,0.56568],[84,0.485586],[95,0.407505],[107,0.338589],[121,0.280199],[137,0.233643],[154,0.196705],[174,0.17497],[197,0.177099],[222,0.166331],[250,0.152044],[283,0.134151],[319,0.118867],[360,0.106693],[406,0.0930288],[458,0.0793957],[517,0.0675624],[583,0.0565036],[658,0.0458958],[742,0.0384212],[837,0.0327173],[944,0.0273572],[1065,0.0236455],[1201,0.0205243],[1354,0.0178992],[1528,0.0157683],[1723,0.0138145],[1943,0.0123402],[2192,0.0111311],[2472,0.0102132],[2788,0.0090843],[3144,0.008034],[3545,0.0061501],[3999,0.0048389]]},
+    muon: {label:'Muon', color:'#D85A30', curve:[[0,1],[1,0.999847],[2,0.999547],[3,0.999095],[4,0.998486],[5,0.997729],[6,0.996807],[7,0.995712],[8,0.994455],[10,0.991463],[11,0.989727],[13,0.985797],[14,0.983625],[16,0.978828],[19,0.970519],[21,0.964328],[24,0.954026],[27,0.942496],[31,0.925354],[35,0.906266],[40,0.880149],[45,0.851619],[51,0.815112],[58,0.76946],[66,0.714395],[74,0.658123],[84,0.586912],[95,0.509129],[107,0.426437],[121,0.333602],[137,0.234617],[154,0.151539],[174,0.109222],[197,0.094046],[222,0.082322],[250,0.0706331],[283,0.0593377],[319,0.0515373],[360,0.0430386],[406,0.0348975],[458,0.0314716],[517,0.0266297],[583,0.0224508],[658,0.0213378],[742,0.0179585],[837,0.0163336],[944,0.0151852],[1065,0.0133056],[1201,0.0126171],[1354,0.0110615],[1528,0.0106782],[1723,0.0096884],[1943,0.0092981],[2192,0.0089606],[2472,0.0087034],[2788,0.008285],[3144,0.0077399],[3545,0.0047767],[3999,0.0024031]]},
+    shampoo: {label:'Shampoo', color:'#A0531E', curve:[[0,1],[1,0.999196],[2,0.997316],[3,0.994216],[4,0.989776],[5,0.983983],[6,0.976803],[7,0.968208],[8,0.958275],[10,0.934453],[11,0.920698],[13,0.889743],[14,0.872728],[16,0.836215],[19,0.777005],[21,0.735383],[24,0.671574],[27,0.608082],[31,0.526477],[35,0.449847],[40,0.36194],[45,0.282609],[51,0.2027],[58,0.143015],[66,0.12287],[74,0.117739],[84,0.10453],[95,0.097324],[107,0.0898907],[121,0.0804936],[137,0.0722447],[154,0.0657282],[174,0.0590128],[197,0.0522652],[222,0.0466628],[250,0.0426086],[283,0.0400564],[319,0.0361622],[360,0.0333898],[406,0.0310847],[458,0.0298834],[517,0.0266176],[583,0.0245896],[658,0.0238941],[742,0.0211369],[837,0.0214896],[944,0.0207617],[1065,0.0184734],[1201,0.0192121],[1354,0.0178294],[1528,0.0183117],[1723,0.0179054],[1943,0.0163111],[2192,0.0177436],[2472,0.0161909],[2788,0.0169101],[3144,0.0162412],[3545,0.0087745],[3999,0.0028711]]},
+    muonh: {label:'MuonH', color:'#8A4FBF', curve:[[0,1],[1,0.999469],[2,0.99841],[3,0.996815],[4,0.994619],[5,0.991883],[6,0.988546],[7,0.984594],[8,0.980041],[10,0.969261],[11,0.963006],[13,0.948876],[14,0.941083],[16,0.92405],[19,0.895103],[21,0.873975],[24,0.839458],[27,0.802229],[31,0.749629],[35,0.69505],[40,0.626302],[45,0.558569],[51,0.479749],[58,0.39232],[66,0.298431],[74,0.214204],[84,0.140416],[95,0.115843],[107,0.103407],[121,0.0892293],[137,0.0763993],[154,0.0681358],[174,0.0598413],[197,0.0537398],[222,0.0495636],[250,0.0451893],[283,0.0468879],[319,0.049224],[360,0.0518137],[406,0.0507553],[458,0.0474762],[517,0.055164],[583,0.0444821],[658,0.0436082],[742,0.0429998],[837,0.0434688],[944,0.04876],[1065,0.04244],[1201,0.0445608],[1354,0.0398274],[1528,0.0408283],[1723,0.0478454],[1943,0.0452036],[2192,0.0455509],[2472,0.037718],[2788,0.042083],[3144,0.0375739],[3545,0.0231876],[3999,0.008515]]}
   };
   var TARGET = 0.03, YMIN = 0.002, YMAX = 1.0;
 
