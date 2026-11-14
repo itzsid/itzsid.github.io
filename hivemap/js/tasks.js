@@ -97,7 +97,9 @@ export function makeTask(T, kind) {
   }
   const counts = {}; for (const o of objs) counts[o.cat] = (counts[o.cat] || 0) + 1;
   const prefer = ['fire extinguisher', 'defibrillator', 'chair', 'pallet', 'plant', 'wheelchair', 'box', 'safety cone', 'trash can', 'cabinet', 'shopping cart', 'iv stand', 'nightstand', 'desk', 'fridge', 'medical cart', 'gas cylinder', 'freezer', 'checkout counter', 'whiteboard', 'bookshelf', 'lamp', 'cart'];
-  const cands = prefer.filter((c) => counts[c] >= 2 && counts[c] <= 10);
+  // categories whose instances stand apart (a row of shopping carts can't be counted one by one)
+  const apart = (c) => { const os = objs.filter((o) => o.cat === c); return os.every((a) => os.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y) > 1.5)); };
+  const cands = prefer.filter((c) => counts[c] >= 2 && counts[c] <= 10 && apart(c));
   const cat = cands.length ? pickBy(cands.slice(0, 6), K) : Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
   const text = kind === 'inventory'
     ? pickBy([`Robot 1: list every ${cat} in the building.`, `Robot 1: how many ${cat}s are there, and where?`], K >> 1)

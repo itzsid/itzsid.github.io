@@ -281,7 +281,7 @@ function refreshStats() {
   $('#stats').innerHTML = [
     T.shared ? stat('Shared map:', T.M ? `${T.M.joined.length}/${T.n} robots` : `0/${T.n} robots`, "How many robots' maps are combined into one team map.")
       : stat('Shared map:', 'off', 'This replay runs without a shared map: each robot only knows what it saw.'),
-    Number.isFinite(dis) ? stat('Robots agree within', `${dis.toFixed(2)} m`, 'Average distance between where different robots place the same object. Lower means the maps line up.') : '',
+    Number.isFinite(dis) && T.M?.links?.length ? stat('Robots agree within', `${dis.toFixed(2)} m`, 'Average distance between where different robots place the same object. Lower means the maps line up.') : '',
     Number.isFinite(ate) && ate > 0 ? stat('Accuracy vs. truth', `${ate.toFixed(2)} m`, 'How far the team map is from the true layout. Only knowable in a simulation.') : '',
     stat('Data shared', kb(T.bytes.objects + T.bytes.dgs), 'Bytes robots sent each other: object descriptors and optimization messages, not images.'),
     stat('Agents:', agent, 'The brain each robot uses: a built-in planner, or an open LLM running in your browser.', 'agent'),

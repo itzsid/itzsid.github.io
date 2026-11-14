@@ -308,6 +308,7 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   .suggest button { flex-shrink: 0; }
   .legend { top: 56px; bottom: auto; right: var(--gap); width: min(252px, calc(100vw - 20px)); }
   .replaying .legend { top: 98px; }
+  .dock[data-sheet="full"] ~ .legend { display: none; }
   .drawer { inset: 0; width: auto; border-radius: 0; padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); }
   .drawer-h { top: -12px; }
   .taskform input { font-size: 16px; }   /* no zoom on iOS */

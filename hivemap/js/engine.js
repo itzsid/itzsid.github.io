@@ -200,20 +200,20 @@ export class Team {
 
   // ---------- actions (resolve in simulated time)
   // segs: [{ type: 'path', to, standoff?, tol?, points? } | { type: 'turn', by } | { type: 'turn', toward } | { type: 'wait', until, max }]
-  motion(r, segs, kind, label, { until, untilEvery } = {}) {
+  motion(r, segs, kind, label, { until, untilEvery, maxTime } = {}) {
     if (this.jobs[r]) return Promise.reject(new Error(`${this.robots[r].name} is busy (${this.jobs[r].label}).`));
     if (this.nudges[r]) this.endMover(r, this.nudges[r]);
     if (!segs.length) return Promise.resolve();
-    return new Promise((resolve) => { this.jobs[r] = { segs: segs.slice(), si: 0, kind, label, resolve, until, untilEvery, from: { ...this.pose[r] } }; this.emit({ type: 'job', r }); });
+    return new Promise((resolve) => { this.jobs[r] = { segs: segs.slice(), si: 0, kind, label, resolve, until, untilEvery, from: { ...this.pose[r] }, t0: this.time, maxTime: maxTime ?? 900 }; this.emit({ type: 'job', r }); });
   }
   async exploreRoom(r, room, { until, untilEvery } = {}) {
     if (!this.scene.coverage[room]) throw new Error(`Unknown room "${room}". Rooms: ${this.scene.rooms.map((q) => q.name).join(', ')}`);
     const before = Object.keys(this.local(r).lms).length, d0 = this.sims[r].distance, t0 = this.time;
     const segs = coveragePlan(this.nav, this.scene, this.pose[r], room);
-    await this.motion(r, segs, 'explore', `exploring ${room}`, { until, untilEvery });
+    const done = await this.motion(r, segs, 'explore', `exploring ${room}`, { until, untilEvery, maxTime: 120 + 40 * segs.length });
     this.sims[r].explored.add(room);
     const L = this.local(r);
-    return { room, new_objects: Object.keys(L.lms).length - before, objects_in_my_map: Object.keys(L.lms).length, driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0) };
+    return { room, ...(done?.timedOut ? { timed_out: true } : {}), new_objects: Object.keys(L.lms).length - before, objects_in_my_map: Object.keys(L.lms).length, driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0) };
   }
   async goTo(r, target, label) {
     const cur = this.pose[r];
@@ -228,9 +228,9 @@ export class Team {
     const d0 = this.sims[r].distance, t0 = this.time;
     const segs = [{ type: 'path', to: { x: target.x, y: target.y }, standoff, tol: 1.6, points: pts.slice(1) }];
     if (target.gt || target.faceTo) segs.push({ type: 'turn', toward: target.faceTo || { x: target.x, y: target.y } });
-    await this.motion(r, segs, 'nav', `driving to ${label}`);
+    const done = await this.motion(r, segs, 'nav', `driving to ${label}`, { maxTime: 90 + 6 * plan.length });
     const p = this.pose[r];
-    return { arrived: true, driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0), now_in: roomAt(this.scene, p.x, p.y),
+    return { arrived: !done?.timedOut, ...(done?.timedOut ? { timed_out: true } : {}), driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0), now_in: roomAt(this.scene, p.x, p.y),
       ...(target.gt ? { distance_to_real_object_m: +Math.hypot(target.gt.x - p.x, target.gt.y - p.y).toFixed(2) } : {}) };
   }
   exchange() {
@@ -298,7 +298,7 @@ export class Team {
   endMover(r, m) {
     this.keyframe(r, true);
     this.vel[r] = { v: 0, w: 0 };
-    if (this.jobs[r] === m) { delete this.jobs[r]; this.local(r); this.emit({ type: 'jobdone', r }); m.resolve(); return true; }
+    if (this.jobs[r] === m) { delete this.jobs[r]; this.local(r); this.emit({ type: 'jobdone', r }); m.resolve({ timedOut: !!m.timedOut }); return true; }
     if (this.nudges[r] === m) delete this.nudges[r];
     return false;
   }
@@ -468,6 +468,8 @@ export class Team {
     return null;
   }
   stepMover(r, m, dt) {
+    // per-job timeout: never hang forever; the job ends where the robot is and reports it
+    if (m.maxTime && this.time - m.t0 > m.maxTime) { m.timedOut = true; return this.endMover(r, m); }
     for (let guard = 0; guard < 8; guard++) {
       if (!m.cur) {
         if (m.si >= m.segs.length) return this.endMover(r, m);
