@@ -70,7 +70,17 @@
       <div class="feed" id="log" aria-live="polite" aria-relevant="additions"></div>
       <button type="button" class="jump" id="jump" hidden>New activity ↓</button>
     </div>
-    <div class="stats" id="stats"></div>
+    <div class="stats-wrap">
+      <div class="stats" id="stats"></div>
+      <button type="button" class="stats-i" id="stats-i" aria-expanded="false" aria-controls="stats-help" aria-label="What do these numbers mean?" title="What do these numbers mean?"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+    </div>
+    <dl class="stats-help" id="stats-help" hidden>
+      <div><dt>Shared map</dt><dd>How many robots' maps are combined into one team map.</dd></div>
+      <div><dt>Robots agree within</dt><dd>Average distance between where different robots place the same object. Lower means the maps line up; optimizing the team map reduces it.</dd></div>
+      <div><dt>Accuracy vs. truth</dt><dd>How far the team map is from the true layout. Only knowable in a simulation.</dd></div>
+      <div><dt>Data shared</dt><dd>Bytes robots sent each other: object descriptors and optimization messages, versus megabytes for raw images.</dd></div>
+      <div><dt>Agents</dt><dd>The brain each robot uses: a built-in planner, or an open LLM running in your browser.</dd></div>
+    </dl>
     <div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="pop-title" hidden></div>
   </aside>
 

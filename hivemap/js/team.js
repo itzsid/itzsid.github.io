@@ -19,10 +19,18 @@ export class RobotSim {
     this.scene = scene; this.robot = def; this.R = rng(seed); this.detectProb = detectProb;
     this.yawBias = (this.R.next() * 2 - 1) * 0.014;     // rad per meter, differs per robot
     this.gt = [{ ...def.start }]; this.dr = [{ ...def.start }]; this.odom = []; this.obs = [];
-    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0; this.sightings = {};
+    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0; this.sightings = {}; this.embSum = {};
     this.observe(0);
   }
   get k() { return this.gt.length - 1; }
+  // label of an object from the running mean of its descriptors (no map solve needed)
+  quickLabel(obj) {
+    const e = this.embSum[obj]; if (!e) return null;
+    const c = (this._ql ||= {})[obj], cnt = this.sightings[obj];
+    if (c && c.n === cnt) return c.label;
+    const n = Math.hypot(...e) || 1, label = labelFor(e.map((x) => x / n));
+    this._ql[obj] = { n: cnt, label }; return label;
+  }
   observe(k) {
     const p = this.gt[k], R = this.R;
     for (const o of this.scene.objects) {
@@ -30,7 +38,9 @@ export class RobotSim {
       if (pd <= 0 || R.next() > pd) continue;
       const rel = between(p, o), far = Math.hypot(rel.x, rel.y) / SENSOR.range;
       this.sightings[o.id] = (this.sightings[o.id] || 0) + 1;
-      this.obs.push({ k, obj: o.id, z: { x: rel.x + R.gauss() * NOISE.obsPos * (1 + far), y: rel.y + R.gauss() * NOISE.obsPos * (1 + far), th: wrap(rel.th + R.gauss() * NOISE.obsRot) }, emb: embedObject(o, R, 0.14 + 0.08 * far) });
+      const emb = embedObject(o, R, 0.14 + 0.08 * far), acc = (this.embSum[o.id] ||= new Array(emb.length).fill(0));
+      for (let d = 0; d < emb.length; d++) acc[d] += emb[d];
+      this.obs.push({ k, obj: o.id, z: { x: rel.x + R.gauss() * NOISE.obsPos * (1 + far), y: rel.y + R.gauss() * NOISE.obsPos * (1 + far), th: wrap(rel.th + R.gauss() * NOISE.obsRot) }, emb });
     }
     if (R.next() < NOISE.falseRate) {   // spurious detection (never re-observed -> filtered)
       const a = (R.next() - 0.5) * SENSOR.fov, d = 1 + R.next() * 3;

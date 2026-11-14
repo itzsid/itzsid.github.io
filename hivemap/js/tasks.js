@@ -26,6 +26,8 @@ export async function priorExploration(T) {
 
 const center = (T, room) => { const q = T.scene.rooms.find((x) => x.name === room); return { x: (q.x0 + q.x1) / 2, y: (q.y0 + q.y1) / 2 }; };
 const seenBy = (T, r, objId) => objId in T.local(r).lms;
+// cheap check (no map solve): has robot r seen something matching the query at least twice?
+const quickKnows = (T, r, task) => { const q = embedText(task.query), s = T.sims[r]; return Object.keys(s.sightings).some((id) => { if (s.sightings[id] < MIN_SIGHTINGS) return false; const l = s.quickLabel(id); return l && l.cat === q.cat && (!q.col || l.color === q.col); }); };
 const sighted = (T, r, objId) => (T.sims[r].sightings[objId] || 0) >= MIN_SIGHTINGS;   // cheap: same rule as the map
 const instances = (T, cat, color) => T.scene.objects.filter((o) => o.cat === cat && !o.hidden && (!color || o.color === color));
 const pickBy = (arr, k) => arr[((k % arr.length) + arr.length) % arr.length];
@@ -75,7 +77,9 @@ export function makeTask(T, kind) {
     let pool = objs.filter((o) => others(o) && !seenBy(T, 0, o.id) && nameable(o));
     if (!pool.length) pool = objs.filter((o) => T.robots.some((_, r) => seenBy(T, r, o.id)) && nameable(o));
     if (!pool.length) pool = objs.filter(nameable);
-    // prefer recognisable targets over tiny clutter
+    // prefer targets the robots recognised correctly, and recognisable things over tiny clutter
+    const readOk = (o) => T.robots.some((_, r) => seenBy(T, r, o.id) && T.labelOf(r, o.id) === `${o.color} ${o.cat}`);
+    if (pool.some(readOk)) pool = pool.filter(readOk);
     const big = pool.filter((o) => !CATS[o.cat]?.small);
     const o = pickBy(big.length >= 3 ? big : pool, K);
     const room = unique(o) ? null : roomAt(T.scene, o.x, o.y);
@@ -109,7 +113,7 @@ function dedupe(list) {
 }
 
 // Explore rooms (nearest first) that robot r has not explored, until found() is true.
-async function exploreUntil(T, r, found, { avoid = new Set(), done = (n) => T.sims[r].explored.has(n), every = 3 } = {}) {
+async function exploreUntil(T, r, found, { avoid = new Set(), done = (n) => T.sims[r].explored.has(n), every = 3, cheap = null } = {}) {
   for (;;) {
     if (found()) return true;
     const p = T.pose[r];
@@ -117,7 +121,7 @@ async function exploreUntil(T, r, found, { avoid = new Set(), done = (n) => T.si
     if (!todo.length) return found();
     todo.sort((a, b) => Math.hypot(center(T, a).x - p.x, center(T, a).y - p.y) - Math.hypot(center(T, b).x - p.x, center(T, b).y - p.y));
     avoid.add(todo[0]);
-    await T.exploreRoom(r, todo[0], { until: found, untilEvery: every });
+    await T.exploreRoom(r, todo[0], { until: cheap ? () => cheap() && found() : found, untilEvery: cheap ? 0 : every });
   }
 }
 
@@ -162,7 +166,7 @@ export async function runTask(T, task, log = () => {}) {
 
   if (task.kind === 'fetch') {
     const find = () => T.objectsFor(0).find((o) => matchesTarget(o, task));
-    if (!find()) { say('Robot 1 does not know the target; exploring'); await exploreUntil(T, 0, () => !!find()); }
+    if (!find()) { say('Robot 1 does not know the target; exploring'); await exploreUntil(T, 0, () => !!find(), { cheap: () => quickKnows(T, 0, task) }); }
     const o = find();
     if (o) { say(`Robot 1 drives to ${o.label} (${o.id})`); const nav = await T.goTo(0, { x: o.x, y: o.y, gt: task.target }, o.label); out = { reached_m: nav.distance_to_real_object_m }; }
     const ok = reachedOk(out.reached_m, task.target);
@@ -214,7 +218,7 @@ export async function runTask(T, task, log = () => {}) {
     const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.5;
     const arrivals = await Promise.all(T.robots.map((_, r) => (async () => {
       const find = () => T.objectsFor(r).find((o) => matchesTarget(o, task));
-      if (!find()) await exploreUntil(T, r, () => !!find());
+      if (!find()) await exploreUntil(T, r, () => !!find(), { cheap: () => quickKnows(T, r, task) });
       const o = find(); if (!o) return null;
       const slots = meetingSlots(T, o, T.n, (CATS[task.target.cat]?.r ?? 0.4) + 0.75);
       const s = slots[r] || o;

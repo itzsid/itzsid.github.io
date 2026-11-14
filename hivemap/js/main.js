@@ -126,6 +126,8 @@ $('#b-apply').onclick = () => !worldBusy && buildWorld();
 $('#b-seed').onclick = () => { if (worldBusy) return; seed = Math.floor(Math.random() * 1e6); buildWorld(); };
 function renderSpeed() { $$('#speed button').forEach((x) => { const on = +x.dataset.s === speed; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); }
 $$('#speed button').forEach((b) => (b.onclick = () => { speed = +b.dataset.s; renderSpeed(); }));
+// ?speed=N overrides the simulation speed (handy for demos and automated tests)
+{ const q = +new URLSearchParams(location.search).get('speed'); if (q > 0 && q <= 200) speed = q; }
 renderSpeed();
 $$('[data-layer]').forEach((c) => (c.onchange = () => { view.setLayer(c.dataset.layer, c.checked); syncLegend(); }));
 syncLegend();
