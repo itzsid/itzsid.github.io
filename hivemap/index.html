@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Common Ground — one map, many robots</title>
+  <title>Hivemap — one map, many robots</title>
   <meta name="description" content="Give a robot team a task. A dispatcher picks the right robot; each robot's agent uses the map the team shares. Up to 10 robots, four buildings, distributed object SLAM, and a free in-browser LLM.">
   <meta name="author" content="Siddharth Choudhary">
-  <link rel="canonical" href="https://itzsid.github.io/common-ground/">
+  <link rel="canonical" href="https://itzsid.github.io/hivemap/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Common Ground — one map, many robots">
+  <meta property="og:title" content="Hivemap — one map, many robots">
   <meta property="og:description" content="Does a shared map help a robot team get things done? Try it: give the team a task and watch.">
-  <meta property="og:url" content="https://itzsid.github.io/common-ground/">
-  <meta property="og:image" content="https://itzsid.github.io/common-ground/preview.png">
+  <meta property="og:url" content="https://itzsid.github.io/hivemap/">
+  <meta property="og:image" content="https://itzsid.github.io/hivemap/preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:creator" content="@siddharth0708">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316181d'/%3E%3Ccircle cx='11' cy='13' r='4' fill='%2360a5fa'/%3E%3Ccircle cx='21' cy='13' r='4' fill='%232dd4bf'/%3E%3Ccircle cx='16' cy='21' r='4' fill='%23fbbf24'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2316181d'/%3E%3Cpath d='M11 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z' fill='%2360a5fa'/%3E%3Cpath d='M21 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z' fill='%232dd4bf'/%3E%3Cpath d='M16 15.2l4 2.3v4.6l-4 2.3-4-2.3v-4.6z' fill='%23fbbf24'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
   { "imports": {
@@ -28,8 +28,8 @@
 
   <header class="topbar">
     <div class="brand">
-      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#16181d"/><circle cx="11" cy="13" r="4" fill="#60a5fa"/><circle cx="21" cy="13" r="4" fill="#2dd4bf"/><circle cx="16" cy="21" r="4" fill="#fbbf24"/></svg>
-      <div><b>Common Ground</b><span>One map. Many robots.</span></div>
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#16181d"/><g stroke="#16181d" stroke-width="1.2"><path d="M11 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z" fill="#60a5fa"/><path d="M21 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z" fill="#2dd4bf"/><path d="M16 15.2l4 2.3v4.6l-4 2.3-4-2.3v-4.6z" fill="#fbbf24"/></g></svg>
+      <div><b>Hivemap</b><span>One map. Many robots.</span></div>
     </div>
     <div class="top-actions">
       <span class="pill" id="scene-pill"></span>
