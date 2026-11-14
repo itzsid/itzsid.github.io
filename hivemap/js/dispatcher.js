@@ -16,7 +16,7 @@ const INTENT_SCHEMA = {
 };
 
 export class Dispatcher {
-  constructor(team, ui) { this.T = team; this.ui = ui; }
+  constructor(team, ui) { this.T = team; this.ui = ui; this.load = team.robots.map(() => 0); }
   note(text, extra = {}) { this.ui.log({ kind: 'dispatch', text, ...extra }); }
 
   roomName(t) { return this.T.scene.rooms.find((q) => t.toLowerCase().includes(q.name.toLowerCase()))?.name || null; }
@@ -82,6 +82,7 @@ Fill "target" with the object words (color + kind) and "room" if a room is named
 
   async handle(text) {
     const T = this.T, t0 = T.time, d0 = T.sims.reduce((a, s) => a + s.distance, 0);
+    this.load = this.load.map((x) => x * 0.5);   // older work matters less
     this.ui.log({ kind: 'task', text });
     // direct address: "Robot 3, ..."
     const direct = text.match(/^\s*(?:robot\s*|r)(\d+)\s*[,:]\s*(.+)$/i);
@@ -151,11 +152,14 @@ Fill "target" with the object words (color + kind) and "room" if a room is named
       return this.done(`Visited all ${objs.length} × ${it.target}.`, t0, d0);
     }
 
-    // go_to: cheapest idle robot by actual path length
+    // go_to: idle robot with the lowest cost = path length + recent workload
+    // (so the robot that just worked doesn't win every time)
     const o = objs[0];
-    const ranked = this.idle().map((r) => ({ r, c: this.pathCost(r, o) })).sort((a, b) => a.c - b.c);
-    const pick = ranked[0];
-    const why = ranked.length > 1 ? `closest by path (${fmt(pick.c)} m; next best ${T.robots[ranked[1].r].id} at ${fmt(ranked[1].c)} m)` : `the only free robot (${fmt(pick.c)} m away)`;
+    const ranked = this.idle().map((r) => { const d = this.pathCost(r, o); return { r, d, c: d + 0.8 * this.load[r] }; }).sort((a, b) => a.c - b.c);
+    const pick = ranked[0], nearest = ranked.slice().sort((a, b) => a.d - b.d)[0];
+    const why = ranked.length < 2 ? `the only free robot (${fmt(pick.d)} m away)`
+      : nearest.r === pick.r ? `closest by path (${fmt(pick.d)} m; next ${T.robots[ranked[1].r].id} at ${fmt(ranked[1].d)} m)`
+        : `${fmt(pick.d)} m away; ${T.robots[nearest.r].id} is a bit closer (${fmt(nearest.d)} m) but just worked, so the load is shared`;
     this.note(`${o.label} ${o.id} is in the ${o.room}. Picked ${T.robots[pick.r].name}: ${why}.`, { r: pick.r });
     const reply = await this.run(pick.r, `Go to the ${o.label} (${o.id}).`);
     return this.done(reply, t0, d0);
@@ -174,8 +178,12 @@ Fill "target" with the object words (color + kind) and "room" if a room is named
   }
 
   async run(r, instruction) {
-    const agent = this.ui.agents[r];
+    const agent = this.ui.agents[r], d0 = this.T.sims[r].distance;
     agent.busy = true;
+    this._ran = this._ran || new Set(); this._ran.add(r);
+    try { return await this._run(agent, instruction); } finally { this.load[r] += this.T.sims[r].distance - d0; }
+  }
+  async _run(agent, instruction) {
     try { return await agent.handle(`[from Dispatcher] ${instruction}`, { depth: 0, from: 'dispatcher' }); } finally { agent.busy = false; }
   }
 
