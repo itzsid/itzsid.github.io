@@ -393,11 +393,12 @@ export class Team {
     const blocks = this.parkedBlocks(r);
     const goalTaken = blocks.some((b) => dist(b, goal) < 0.8 + (seg.standoff || 0) * 0.5);
     if (goalTaken && dist(p, goal) <= (seg.tol ?? 2.2)) { m.cur = null; m.si++; return; }   // close enough: stop here
+    if (seg.skippable && m.stall > 6) { m.cur = null; m.si++; return; }                        // coverage waypoint: skip it
     let target = goal;
     if (goalTaken) target = this.spotNear(goal, r, 3) || goal;
-    const again = m.lastReplanBlocker === j && dist(p, m.lastReplanAt) < 0.5;
+    const again = m.lastReplanBlocker === j && dist(p, m.lastReplanAt) < 0.5 && this.time - m.lastReplanT < 6;
     const plan = again ? null : this.nav.plan(p, target, { block: blocks });
-    m.lastReplanBlocker = j; m.lastReplanAt = { x: p.x, y: p.y };
+    if (!again) { m.lastReplanBlocker = j; m.lastReplanAt = { x: p.x, y: p.y }; m.lastReplanT = this.time; }
     if (plan && plan.length < remaining + 12 && plan.points.length > 1) {
       const tr = compileTrack(this.nav, p, truncate(plan.points, target, target === goal ? (seg.standoff || 0) : 0).slice(1));
       if (tr) { m.cur = { type: 'track', tr, s: 0, k: 0, pivotDone: -1, pivot: null, w: 0, seg }; m.stall = 0; return; }
@@ -411,10 +412,10 @@ export class Team {
     }
     // two working robots blocking each other: the lower-priority one (or the one stuck longest) pulls aside
     const otherStuck = other && (other.stall > 0.5 || (other.cur && other.cur.type === 'wait'));
-    if (otherStuck && (r > j || m.stall > 8) && !m.asideOnce) {
+    if (otherStuck && (r > j || m.stall > 8) && this.time - (m.asideAt ?? -99) > 10) {
       const spot = this.asideSpot(r, j, other.cur && other.cur.type === 'track' ? other.cur : null);
       if (spot) {
-        m.asideOnce = true;
+        m.asideAt = this.time;
         const back = { ...seg, points: null };
         const t0 = this.time;
         m.segs.splice(m.si, 1, { type: 'path', to: spot }, { type: 'wait', until: () => dist(this.pose[j], spot) > 1.8 || !this.mover(j) || this.time - t0 > 15, max: 20 }, back);

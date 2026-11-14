@@ -73,7 +73,7 @@ export function makeTask(T, kind) {
   const K = T.seed * 13 + T.n * 7;
   if (kind === 'fetch' || kind === 'rendezvous') {
     let pool = objs.filter((o) => others(o) && !seenBy(T, 0, o.id) && nameable(o));
-    if (!pool.length) pool = objs.filter((o) => !seenBy(T, 0, o.id) && nameable(o));
+    if (!pool.length) pool = objs.filter((o) => T.robots.some((_, r) => seenBy(T, r, o.id)) && nameable(o));
     if (!pool.length) pool = objs.filter(nameable);
     // prefer recognisable targets over tiny clutter
     const big = pool.filter((o) => !CATS[o.cat]?.small);
@@ -211,18 +211,19 @@ export async function runTask(T, task, log = () => {}) {
   }
   if (task.kind === 'rendezvous') {
     // everyone heads for its own slot around the meeting point (slots are ranked the same way by every robot)
-    const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.2 + 0.1 * T.n;
+    const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.5;
     const arrivals = await Promise.all(T.robots.map((_, r) => (async () => {
       const find = () => T.objectsFor(r).find((o) => matchesTarget(o, task));
       if (!find()) await exploreUntil(T, r, () => !!find());
       const o = find(); if (!o) return null;
       const slots = meetingSlots(T, o, T.n, (CATS[task.target.cat]?.r ?? 0.4) + 0.75);
       const s = slots[r] || o;
-      const nav = await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(slots[r] ? {} : { gt: task.target }) }, o.label);
+      await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(slots[r] ? {} : { gt: task.target }) }, o.label);
       const p = T.pose[r];
-      void nav; return Math.hypot(task.target.x - p.x, task.target.y - p.y);
+      // at the meeting point = close to the real object, allowing for the ring of teammates around it
+      return { d: Math.hypot(task.target.x - p.x, task.target.y - p.y), allow: Math.max(near, Math.hypot(s.x - o.x, s.y - o.y) + 0.9) };
     })()));
-    const ok = arrivals.filter((d) => d != null && d < near).length;
+    const ok = arrivals.filter((a) => a && a.d < a.allow).length;
     out = { arrived: ok, robots: T.n }; out.success = ok === T.n; out.score = ok / T.n;
     say(`${ok}/${T.n} robots at the meeting point`);
   }

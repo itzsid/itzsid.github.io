@@ -84,7 +84,7 @@ export function keyframesAlong(start, points, { spinAt = [] } = {}) {
 export function coveragePlan(nav, scene, start, room) {
   let wps = (scene.coverage[room] || []).slice();
   if (wps.length > 1 && Math.hypot(wps[wps.length - 1].x - start.x, wps[wps.length - 1].y - start.y) < Math.hypot(wps[0].x - start.x, wps[0].y - start.y)) wps = wps.reverse();
-  return wps.flatMap((w) => [{ type: 'path', to: { x: w.x, y: w.y }, tol: 2.2 }, { type: 'turn', by: 2 * Math.PI - 1e-3 }]);
+  return wps.flatMap((w) => [{ type: 'path', to: { x: w.x, y: w.y }, tol: 2.2, skippable: true }, { type: 'turn', by: 2 * Math.PI - 1e-3 }]);
 }
 
 // ---- local object SLAM for one robot (warm-started)
