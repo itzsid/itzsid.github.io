@@ -52,7 +52,7 @@ function setSheet(s) {
     if (y0 == null) return; dock.classList.remove('dragging');
     const hNow = dock.getBoundingClientRect().height, vh = window.innerHeight; y0 = null;
     if (!moved) { setSheet(dock.dataset.sheet === 'peek' ? 'half' : 'peek'); return; }
-    const snaps = { peek: 0, half: vh * 0.5, full: vh * 0.86 };
+    const snaps = { peek: 0, half: vh * 0.58, full: vh * 0.86 };
     const peekH = parseFloat(getComputedStyle(dock).getPropertyValue('--peek')) || 196; snaps.peek = peekH;
     setSheet(Object.entries(snaps).sort((a, b) => Math.abs(a[1] - hNow) - Math.abs(b[1] - hNow))[0][0]);
     e.preventDefault();
@@ -243,7 +243,8 @@ function placePop() {
   const w = Math.min(300, d.width - 24);
   pop.style.width = `${w}px`;
   pop.style.left = `${Math.max(12, Math.min(c.left - d.left, d.width - w - 12))}px`;
-  pop.style.top = `${c.bottom - d.top + 8}px`;
+  const top = c.bottom - d.top + 8;
+  pop.style.top = `${top}px`; pop.style.maxHeight = `${Math.max(160, d.height - top - 10)}px`;
 }
 function renderPop(first = false) {
   const T = team, r = popR; if (!T || r == null) return;
@@ -487,14 +488,14 @@ function renderCompare(c) {
   };
   const pct = (r) => (r.success ? 'Done' : `${Math.round(r.score * 100)}% done`);
   const side = (title, r, win, id, cls) => `<div class="side ${win ? 'win' : ''}"><div class="side-h"><span class="swatch ${cls}"></span><h4>${title}</h4>${win ? '<span class="won">Better</span>' : ''}</div>
-    <div class="big">${clock(r.time_s)}<small> min</small></div><div class="sub">${pct(r)} · ${r.distance_m} m · ${kb(r.bytes)}</div>
+    <div class="big">${clock(r.time_s)}</div><div class="sub">${pct(r)} · ${r.distance_m} m · ${kb(r.bytes)}</div>
     <button class="btn" type="button" id="${id}"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg> Watch</button></div>`;
   $('#cmp').innerHTML = `<div class="cmp"><div class="q">“${esc(c.task.text)}”</div><div class="verdict ${meh ? 'meh' : ''}">${verdict}</div>
     <div class="chart" aria-label="Comparison chart">
       ${bars('Time', S.time_s, I.time_s, (v) => `${clock(v)}`)}
       ${bars('Driving', S.distance_m, I.distance_m, (v) => `${(+v).toFixed(0)} m`)}
       ${bars('Data sent', S.bytes, I.bytes, kb)}
-      <div class="chart-key"><span><i class="swatch s-shared"></i>Shared map</span><span><i class="swatch s-alone"></i>Robots alone</span><span class="mute">shorter is better</span></div>
+      <div class="chart-key"><span><i class="swatch s-shared"></i>Shared map</span><span><i class="swatch s-alone"></i>Robots alone</span><span class="mute">shorter time and driving is better</span></div>
     </div>
     <div class="versus">${side('Shared map', S, sWin, 'w-s', 's-shared')}${side('Robots alone', I, !sWin, 'w-i', 's-alone')}</div>
     <details class="runlog"><summary>Run log</summary><pre>${[...S.logs.map((l) => `shared  ${l}`), ...I.logs.map((l) => `alone   ${l}`)].map(esc).join('\n')}</pre></details></div>`;

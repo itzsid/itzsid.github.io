@@ -70,7 +70,7 @@ export function parseTask(scene, nRobots, text) {
     const nums = [m[1], ...(m[2] || '').split(/\s|and|or|r/).filter(Boolean)].map(toNum).filter((x) => x >= 1);
     if (/^ ?r ?\d/.test(m[0]) || /^robots? /.test(m[0])) for (const x of nums) if (!out.robots.includes(x - 1)) out.robots.push(x - 1);
   }
-  t = t.replace(new RegExp(`\\b(?:robots?|r)\\s?${numWord}((?:\\s(?:and|or)?\\s?(?:r\\s?)?${numWord}\\b)*)`, 'g'), ' ');
+  t = t.replace(new RegExp(`\\b(?:robots?|r)\\s?${numWord}((?:\\s(?:and|or)?\\s?(?:r\\s?)?${numWord}\\b)*)`, 'g'), ' ').replace(/\s+/g, ' ');
   const cm = t.match(new RegExp(`\\b${numWord}\\s(?:of (?:the |your )?)?(?:robots?|bots?)\\b`));
   if (cm && !out.robots.length) out.count = toNum(cm[1]);
   out.everyone = /\b(everyone|everybody|all robots|all the robots|all of you|every robot|whole team|the team|all units|all \d+ robots|all \w+ robots|team)\b/.test(t) || /\b(robots|you all)\b/.test(t) && !out.count && /\b(all|every)\b/.test(t);
@@ -79,7 +79,7 @@ export function parseTask(scene, nRobots, text) {
   out.rooms = rooms.map((r) => r.name);
   // "the robot in the kitchen" -> robot filter; "the chair in the office" -> object filter
   for (const r of rooms) {
-    const before = t.slice(Math.max(0, r.at - 40), r.at);
+    const before = t.slice(Math.max(0, r.at - 40), r.at + 1);
     if (/\b(robot|bot|one|whoever|anyone)( that s| that is| who is| currently| which is)? (in|at|inside) (the )?$/.test(before)) out.robotRoom = r.name;
   }
   const otherRooms = rooms.filter((r) => r.name !== out.robotRoom);
@@ -88,7 +88,10 @@ export function parseTask(scene, nRobots, text) {
   if (q) {
     out.target = { col: q.col, cat: q.cat, text: `${q.col || ''} ${q.cat || ''}`.trim() };
     out.objRoom = out.room;
-    out.plural = new RegExp(`\\b(every|all|each|any|${(q.cat || '').split(' ').pop()}s|${(q.cat || '').split(' ').pop()}es)\\b`).test(` ${raw.toLowerCase()} `) || /\b(every|all|each)\b/.test(t);
+    const last = (q.cat || '').split(' ').pop();
+    const noRobots = t.replace(/\b(all|every|each)( of)?( the| you| your)? (robots?|bots?|of you|units?)\b|\beveryone\b/g, ' ');
+    out.plural = new RegExp(`\\b(${last}s|${last}es)\\b`).test(` ${raw.toLowerCase()} `) || /\b(every|all|each)\b/.test(noRobots);
+    out.every = /\b(every|all|each)\b/.test(noRobots);
   }
 
   // intent
@@ -101,12 +104,13 @@ export function parseTask(scene, nRobots, text) {
   else if (has(/\b(explore|survey|map|scan|search|look around|check out)\b/) && (!q || has(/\b(explore|survey|map) (the |every |all )/)) && (rooms.length || has(/\b(building|everything|everywhere|all rooms|every room|the rest|whole|house|floor|area|unexplored|remaining|new rooms)\b/) || !q)) out.intent = 'explore';
   else if (q && has(/\b(how many|count|number of|tally)\b/)) out.intent = 'count';
   else if (q && has(/\b(meet|gather|rendezvous|assemble|regroup|converge|join (me|us)?|congregate)\b/)) out.intent = 'meet';
-  else if (q && has(/\b(visit|check|inspect|tour|patrol|stop by|look at|go to|go round|go around|clean)\b/) && has(/\b(every|all|each)\b/)) out.intent = 'visit_all';
+  else if (q && has(/\b(visit|check|inspect|tour|patrol|stop by|look at|go to|go round|go around|clean)\b/) && out.every) out.intent = 'visit_all';
+  else if (out.robots.length && has(/\bask\b/)) out.intent = 'ask';
   else if (q && has(/\b(list|inventory|catalog|enumerate)\b/)) out.intent = 'list';
   else if (q && has(/^ (where are|which rooms?|what rooms?|are there|do we have|how many)\b/)) out.intent = out.plural || has(/^ (are there|which rooms)/) ? 'list' : 'answer';
   else if (has(/^ (where|what|which|is there|is the|do we|does|do you|have you|has anyone|has any|did anyone|can you see|any|who|tell me|show me|whats|is anything)\b/) || has(/\?$/)) out.intent = rooms.length && !q ? 'room_contents' : 'answer';
   else if (q && out.everyone && has(/\b(go|drive|head|come|move|send|get|navigate|run)\b/) && !out.plural) out.intent = 'meet';
-  else if (q && out.plural && has(/\b(go|drive|head|send|visit|navigate)\b/)) out.intent = 'visit_all';
+  else if (q && out.plural && has(/\b(go|drive|head|send|visit|navigate|check|inspect)\b/)) out.intent = 'visit_all';
   else if (q) out.intent = 'go_to';
   else if (out.room && has(/\b(go|drive|head|send|move|navigate|come|get|meet|gather|be)\b/)) out.intent = out.everyone || has(/\b(meet|gather|assemble)\b/) ? 'meet' : 'go_room';
   else if (out.room) out.intent = 'room_contents';
@@ -142,7 +146,9 @@ export class Dispatcher {
   // -------- interpretation: rules first, the in-browser LLM refines when loaded
   async interpret(text) {
     const T = this.T, base = parseTask(T.scene, T.n, text);
-    if (!this.ui.llm?.ready || ['help', 'status'].includes(base.intent)) return base;
+    // the rules are certain about these; a named robot with an open request goes to its own agent
+    if (!this.ui.llm?.ready || ['help', 'status', 'ask', 'unsupported', 'return', 'sync'].includes(base.intent)) return base;
+    if (base.robots.length === 1 && base.intent === 'unknown') return base;
     try {
       const out = await this.ui.llm.json([
         { role: 'system', content: `Turn a task for ${T.n} indoor robots (R1-R${T.n}) into JSON. Rooms: ${T.scene.rooms.map((r) => r.name).join(', ')}.
@@ -173,12 +179,14 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
       const before = T.M?.joined.length || 0;
       const ex = T.exchange();
       const out = ex.robots_not_overlapping.length ? ` ${listNames(ex.robots_not_overlapping)} ${ex.robots_not_overlapping.length > 1 ? 'are' : 'is'} not linked yet (no overlap or sighting).` : '';
-      if (ex.robots_merged.length !== before || out || !this._synced) this.note(`Merged maps from ${ex.robots_merged.length}/${T.n} robots (${ex.verified_matches} shared objects${ex.robot_encounters_used ? `, ${ex.robot_encounters_used} robot sightings` : ''}).${out}`, { tool: 'exchange_maps', output: ex });
+      if (ex.robots_merged.length !== before || !this._synced) this.note(`Merged maps from ${ex.robots_merged.length}/${T.n} robots (${ex.verified_matches} shared objects${ex.robot_encounters_used ? `, ${ex.robot_encounters_used} robot sightings` : ''}).${out}`, { tool: 'exchange_maps', output: ex });
       this._synced = true;
     }
     if (T.M && !T.optimized && T.M.disInit > 0.12) {
       const op = await T.optimize(true);
-      this.note(`Optimized the team map: disagreement ${op.map_disagreement_before_m} → ${op.map_disagreement_after_m} m.`, { tool: 'optimize_team_map', output: op });
+      // say it the first time and whenever it matters; routine re-optimizations stay quiet
+      if (!this._optimized || op.map_disagreement_before_m - op.map_disagreement_after_m >= 0.15) this.note(`Optimized the team map: disagreement ${op.map_disagreement_before_m} → ${op.map_disagreement_after_m} m.`, { tool: 'optimize_team_map', output: op });
+      this._optimized = true;
     }
     this.cache.clear();
   }
@@ -255,12 +263,18 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     const bad = it.robots.filter((r) => r >= T.n);
     if (bad.length) return this.done(`There is no Robot ${bad[0] + 1}: this run has ${T.n} robot${T.n > 1 ? 's' : ''} (R1–R${T.n}).`, ctx);
 
-    if (it.intent === 'help' || it.intent === 'unknown') return this.done(this.helpText(it.intent === 'unknown'), ctx);
+    if (it.intent === 'help' || (it.intent === 'unknown' && it.robots.length !== 1)) return this.done(this.helpText(it.intent === 'unknown'), ctx);
     if (it.intent === 'unsupported') return this.done(`These robots can drive, explore and map, but have no arms.${it.target ? ` Try "Send a robot to the ${it.target.text}" instead.` : ' Try sending one to an object or room.'}`, ctx);
     if (it.intent === 'status') return this.done(this.statusText(it.robots), ctx);
 
     // a single named robot with a request the dispatcher can't structure: let its agent handle it
-    if (it.robots.length === 1 && ['sync'].includes(it.intent)) return this.done(await this.run(it.robots[0], text.replace(/^\s*(robot\s*\d+|r\d+)\s*[,:]?\s*/i, '')), ctx);
+    const askOne = it.intent === 'ask' && text.match(/^\s*(?:please\s+)?ask\s+(?:robot\s*|r)(\d+)\s*(?:if|whether|about|what|where|to)?\b\s*(.*)$/i);
+    if (askOne) {
+      const r = +askOne[1] - 1;
+      this.note(`Asking ${this.name(r)}.`, { r });
+      return this.done(`${this.name(r)}: ${await this.run(r, /\?$/.test(text) || /^\s*ask\s+\S+\s*\d*\s*(what|where|which|how|is|are|do|did|have|has)\b/i.test(text) ? text.replace(/^\s*(please\s+)?ask\s+(robot\s*|r)\d+\s*/i, '') : text)}`, ctx);
+    }
+    if (it.intent === 'ask' || (it.robots.length === 1 && it.intent === 'sync')) return this.done(await this.run(it.robots[0], text.replace(/^\s*(robot\s*\d+|r\d+)\s*[,:]?\s*/i, '')), ctx);
     if (it.robots.length === 1 && !['go_to', 'go_room', 'explore', 'return', 'answer', 'list', 'count', 'room_contents', 'visit_all'].includes(it.intent)) {
       const r = it.robots[0];
       if (this.ui.agents[r].busy || T.jobs[r]) return this.done(`${this.name(r)} is busy right now.`, ctx);

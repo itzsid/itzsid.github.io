@@ -154,7 +154,7 @@ time { font: 11px var(--mono); color: var(--mute); font-variant-numeric: tabular
 .stats .agent { margin-left: auto; }
 
 /* robot popover */
-.pop { position: absolute; z-index: 7; background: var(--solid); border-radius: 14px; box-shadow: 0 18px 50px -12px rgba(15,23,42,.35), var(--edge); padding: 12px; animation: pop .14s ease-out; }
+.pop { position: absolute; z-index: 7; overflow-y: auto; overscroll-behavior: contain; background: var(--solid); border-radius: 14px; box-shadow: 0 18px 50px -12px rgba(15,23,42,.35), var(--edge); padding: 12px; animation: pop .14s ease-out; }
 @keyframes pop { from { transform: translateY(-4px); opacity: 0; } }
 .pop-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .pop-h > i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 13px var(--font); font-style: normal; flex-shrink: 0; }
@@ -286,11 +286,11 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
   .tbtn, .tbtn.icon { height: 36px; }
   .tbtn.icon { width: 36px; }
   .replay { top: 56px; font-size: 12.5px; max-width: calc(100vw - 20px); }
-  .dock { --peek: 200px; top: auto; left: 0; right: 0; bottom: 0; width: auto; border-radius: 20px 20px 0 0; padding: 4px 14px calc(10px + env(safe-area-inset-bottom)); gap: 10px; transition: height .25s ease; height: 50vh; height: 50dvh; }
+  .dock { --peek: 200px; top: auto; left: 0; right: 0; bottom: 0; width: auto; border-radius: 20px 20px 0 0; padding: 4px 14px calc(10px + env(safe-area-inset-bottom)); gap: 10px; transition: height .25s ease; height: 58vh; height: 58dvh; }
   .dock.dragging { transition: none; }
   .dock[data-sheet="peek"] { height: var(--peek); }
   .dock[data-sheet="full"] { height: 86vh; height: 86dvh; }
-  .dock[data-sheet="peek"] .feed-h, .dock[data-sheet="peek"] .feed-wrap, .dock[data-sheet="peek"] .stats { display: none; }
+  .dock[data-sheet="peek"] .feed-h, .dock[data-sheet="peek"] .feed-wrap, .dock:not([data-sheet="full"]) .stats { display: none; }
   .handle { display: grid; place-items: center; height: 22px; margin: 0 -14px -4px; border: 0; background: none; cursor: grab; touch-action: none; }
   .handle span { width: 40px; height: 5px; border-radius: 99px; background: #cbd2db; }
   .roster { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 0 14px 2px; }

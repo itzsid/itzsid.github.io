@@ -4,7 +4,7 @@
 // - occasional false detections (filtered later by requiring repeat sightings)
 // - per-robot gyro bias, odometry noise and rare wheel-slip events
 import { segIntersect, wrap } from './geom.js';
-import { CATS } from './scenes.js';
+import { CATS, footprint } from './scenes.js';
 
 export const SENSOR = { range: 5.0, fov: (90 * Math.PI) / 180 };
 export const NOISE = { odoTrans: 0.035, odoRot: 0.015, slipProb: 0.01, slipScale: 0.25, obsPos: 0.06, obsRot: 0.06, falseRate: 0.02 };
@@ -22,18 +22,28 @@ function segCircleHit(p, q, c, r) {
   return t > 0.05 && t < 0.95 && Math.hypot(p.x + t * dx - c.x, p.y + t * dy - c.y) < r;
 }
 
+// Low furniture (below the camera) does not block the view.
+const LOW = new Set(['sofa', 'bed', 'hospital bed', 'pallet', 'dining table', 'table', 'workbench', 'checkout counter', 'forklift']);
+function segOBBHit(p, q, b, f, shrink = 1) {   // segment p->q vs object b's oriented footprint
+  const c = Math.cos(b.th), s = Math.sin(b.th);
+  const loc = (u) => ({ x: (u.x - b.x) * c + (u.y - b.y) * s, y: -(u.x - b.x) * s + (u.y - b.y) * c });
+  const hw = f.hw * shrink, hl = f.hl * shrink;
+  return segRectHit(loc(p), loc(q), [-hw, -hl, hw, hl]);
+}
+
 export function makeSensor(scene) {
-  const occluders = scene.objects.filter((o) => o.cat === 'rack' || (CATS[o.cat]?.big && o.cat !== 'sofa' && o.cat !== 'bed' && o.cat !== 'hospital bed'));
+  const occluders = scene.objects.filter((o) => o.cat !== 'door' && (CATS[o.cat]?.block || (CATS[o.cat]?.big && !LOW.has(o.cat))));
   // probability that object o is detected from pose p (0 if not visible)
   return function detectProb(p, o) {
-    if (o.cat === 'rack') return 0;
+    if (CATS[o.cat]?.block || o.hidden) return 0;
     const dx = o.x - p.x, dy = o.y - p.y, r = Math.hypot(dx, dy), R = maxRange(o.cat);
     if (r > R || r < 0.3) return 0;
     if (Math.abs(wrap(Math.atan2(dy, dx) - p.th)) > SENSOR.fov / 2) return 0;
     for (const w of scene.walls) if (segIntersect(p, o, { x: w[0], y: w[1] }, { x: w[2], y: w[3] })) return 0;
     for (const b of occluders) {
       if (b === o) continue;
-      if (b.cat === 'rack' ? segRectHit(p, o, [b.x - 0.5, b.y - 2.2, b.x + 0.5, b.y + 2.2]) : segCircleHit(p, o, b, (CATS[b.cat].r || 0.4) * 0.8)) return 0;
+      const f = footprint(b);
+      if (f.r != null ? segCircleHit(p, o, b, f.r * 0.8) : segOBBHit(p, o, b, f, CATS[b.cat]?.block ? 1 : 0.8)) return 0;
     }
     return 0.97 * (1 - (r / R) ** 3);
   };

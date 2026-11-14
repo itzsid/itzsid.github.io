@@ -23,7 +23,7 @@ function boxGeo(w, h, d, r) {
   if (r <= 0.003) return new THREE.BoxGeometry(w, h, d);
   return new RoundedBoxGeometry(w, h, d, r >= 0.03 ? 2 : 1, r);
 }
-class Kit {
+export class Kit {
   constructor() { this.parts = []; this.o = [0, 0, 0]; }
   add(geo, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, s = null) {
     const me = new THREE.Mesh(geo, m);
@@ -261,11 +261,10 @@ B.plant = (k, c, R) => {
   for (let i = 0; i < n; i++) {
     const a = i * 2.39996 + R() * 0.4, f = i / n, hgt = 0.45 + f * 0.75 + R() * 0.08;
     const d = 0.08 + (1 - f) * 0.2 + R() * 0.05;
-    const x = Math.sin(a) * d, z = Math.cos(a) * d;
-    k.rod([x * 0.2, 0.32, z * 0.2], [x * 0.85, hgt - 0.02, z * 0.85], 0.006, stem, 5);
-    const L = 0.13 + R() * 0.06;
+    const x = Math.sin(a) * d, z = Math.cos(a) * d, L = 0.13 + R() * 0.06;
+    k.rod([x * 0.2, 0.32, z * 0.2], [x, hgt, z], 0.006, stem, 5);
     // leaf: flattened ellipsoid pointing outward, drooping more near the bottom
-    k.sph(1, i % 2 ? l1 : l2, x, hgt, z, L, 0.012, L * 0.45, 0, a - H, -(0.5 - f * 0.6) - R() * 0.2, 10, 6);
+    k.sph(1, i % 2 ? l1 : l2, x + Math.sin(a) * L * 0.8, hgt - (0.5 - f * 0.6) * L * 0.6, z + Math.cos(a) * L * 0.8, L, 0.012, L * 0.45, 0, a - H, -(0.5 - f * 0.6) - R() * 0.2, 10, 6);
   }
 };
 

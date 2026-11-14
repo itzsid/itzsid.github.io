@@ -78,13 +78,12 @@ export function keyframesAlong(start, points, { spinAt = [] } = {}) {
   return out;
 }
 
+// Coverage of a room as motion segments: drive to each waypoint and scan (360 degree turn).
+// Starts from whichever end of the lawnmower order is closer.
 export function coveragePlan(nav, scene, start, room) {
-  const pts = [], spins = []; let from = start;
-  for (const w of scene.coverage[room] || []) {
-    const p = nav.plan(from, w); if (!p || p.points.length < 1) continue;
-    pts.push(...p.points.slice(1)); spins.push(pts.length - 1); from = pts[pts.length - 1] || from;
-  }
-  return keyframesAlong(start, pts, { spinAt: spins });
+  let wps = (scene.coverage[room] || []).slice();
+  if (wps.length > 1 && Math.hypot(wps[wps.length - 1].x - start.x, wps[wps.length - 1].y - start.y) < Math.hypot(wps[0].x - start.x, wps[0].y - start.y)) wps = wps.reverse();
+  return wps.flatMap((w) => [{ type: 'path', to: { x: w.x, y: w.y }, tol: 2.2 }, { type: 'turn', by: 2 * Math.PI - 1e-3 }]);
 }
 
 // ---- local object SLAM for one robot (warm-started)

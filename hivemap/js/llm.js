@@ -32,13 +32,34 @@ export class LocalLLM {
     } finally { this.loading = false; }
   }
 
-  // One constrained-JSON completion.
-  async json(messages, schema, maxTokens = 320) {
-    const res = await this.engine.chat.completions.create({
-      messages, temperature: 0.2, max_tokens: maxTokens,
-      response_format: { type: 'json_object', schema: JSON.stringify(schema) },
-    });
-    const txt = res.choices[0].message.content || '{}';
-    try { return JSON.parse(txt); } catch { return { action: 'reply', message: txt.slice(0, 400) }; }
+  // One constrained-JSON completion. Calls are serialized (one engine, one GPU
+  // queue) so parallel agents never interleave requests.
+  json(messages, schema, maxTokens = 256) {
+    const run = async () => {
+      const res = await this.engine.chat.completions.create({
+        messages, temperature: 0.1, max_tokens: maxTokens,
+        response_format: { type: 'json_object', schema: JSON.stringify(schema) },
+      });
+      return parseJSON(res.choices[0].message.content || '{}');
+    };
+    const p = (this.queue || Promise.resolve()).then(run, run);
+    this.queue = p.catch(() => {});
+    return p;
   }
+}
+
+// Parse model output; repair the usual small-model slips (prose around the
+// object, a cut-off ending) before giving up.
+export function parseJSON(txt) {
+  try { return JSON.parse(txt); } catch { /* repair below */ }
+  const s = txt.indexOf('{');
+  if (s >= 0) {
+    let body = txt.slice(s);
+    const e = body.lastIndexOf('}');
+    try { return JSON.parse(body.slice(0, e + 1)); } catch { /* try closing it */ }
+    const close = (b) => b + ((b.match(/(?<!\\)"/g) || []).length % 2 ? '"' : '') + '}';
+    try { return JSON.parse(close(body)); } catch { /* drop the cut-off field */ }
+    try { return JSON.parse(close(body.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, ''))); } catch { /* fall through */ }
+  }
+  return { action: 'reply', message: txt.slice(0, 400) };
 }
