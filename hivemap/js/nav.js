@@ -50,9 +50,11 @@ export function makeNav(scene) {
       const heap = []; const push = (f, id) => { heap.push([f, id]); let k = heap.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= heap[k][0]) break; [heap[p], heap[k]] = [heap[k], heap[p]]; k = p; } };
       const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let m = k; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === k) break; [heap[m], heap[k]] = [heap[k], heap[m]]; k = m; } } return top; };
       g[s] = 0; push(0, s);
+      let best = s, bestH = Math.hypot(si - gi, sj - gj);   // closest reachable cell, if the goal itself is cut off
       while (heap.length) {
         const [, id] = pop(); if (closed[id]) continue; closed[id] = 1; if (id === goal) break;
         const i = id % W, j = (id / W) | 0;
+        const hh = Math.hypot(i - gi, j - gj); if (hh < bestH) { bestH = hh; best = id; }
         for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
           if (!di && !dj) continue; const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= W || b >= H) continue;
           const nid = b * W + a; if (blocked(nid) || closed[nid]) continue;
@@ -61,8 +63,9 @@ export function makeNav(scene) {
           if (ng < g[nid]) { g[nid] = ng; came[nid] = id; push(ng + Math.hypot(a - gi, b - gj), nid); }
         }
       }
-      if (came[goal] < 0 && goal !== s) return null;
-      const pts = []; for (let cur = goal; cur >= 0; cur = came[cur]) pts.push(centre(cur % W, (cur / W) | 0));
+      let end = goal;
+      if (came[goal] < 0 && goal !== s) { if (bestH * RES > 2.5 || best === s) return null; end = best; }
+      const pts = []; for (let cur = end; cur >= 0; cur = came[cur]) pts.push(centre(cur % W, (cur / W) | 0));
       pts.reverse();
       // string-pull: keep only the corners needed to stay in free space
       const out = [pts[0]];

@@ -195,6 +195,9 @@ export class SceneView {
     this.userMoved = false; this.fitCamera();
   }
 
+  // objects that appear mid-run (e.g. the lost item in the search task)
+  addObject(o) { if (this.world && o && o.cat !== 'door') this.world.add(objectMesh(o)); }
+
   setRobotPose(i, p) { const m = this.robots?.[i]; if (m) { m.position.copy(V(p.x, p.y)); m.rotation.y = -p.th; } }
   // highlight robot i's estimated trail while it is busy (optional; safe to never call)
   setActive(i, on) {

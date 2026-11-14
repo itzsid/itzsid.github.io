@@ -115,7 +115,7 @@ function syncLegend() {
 const SCENE_NOTES = { office: 'Lab, offices, hall, kitchen and lounge.', warehouse: 'Racks block the view; many identical pallets.', home: 'Five rooms full of small objects.', hospital: 'Ten look-alike patient rooms.' };
 function renderScenes() {
   $('#scenes').innerHTML = SCENES.map((s, i) => `<button type="button" role="radio" aria-checked="${i === sceneIdx}" class="card-opt ${i === sceneIdx ? 'on' : ''}" data-i="${i}">
-    <b>${esc(s.name)}</b><small>${SCENE_NOTES[s.id] || ''}</small><em>${s.rooms.length} rooms</em></button>`).join('');
+    <b>${esc(s.name)}</b><small>${esc(s.note || SCENE_NOTES[s.id] || '')}</small><em>${s.rooms.length} rooms</em></button>`).join('');
   $$('#scenes button').forEach((b) => (b.onclick = () => { if (worldBusy || +b.dataset.i === sceneIdx) return; sceneIdx = +b.dataset.i; renderScenes(); buildWorld(); }));
 }
 renderScenes();
@@ -170,6 +170,7 @@ async function buildWorld({ shared = true, prior = $('#prior').checked, replay =
   T.animated = true; team = T;
   T.on((ev) => {
     if (T !== team) return;
+    if (ev.type === 'objectadded' && ev.object && view.addObject) view.addObject(ev.object);
     if (ev.type === 'navplan') view.setNavPath(ev.r, ev.points, T.robots[ev.r].color);
     if (ev.type === 'jobdone') { const r = ev.r; setTimeout(() => { if (!T.jobs[r] && T === team) view.setNavPath(r, null); }, 1500); }
     if (['merged', 'optimized', 'jobdone', 'job'].includes(ev.type)) { dirtyLinks = true; refreshStats(); updateRoster(); }

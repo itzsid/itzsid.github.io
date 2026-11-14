@@ -299,9 +299,12 @@ export function buildScene(def, seed) {
     const newly = cellsOf(W, H, RES, o, CLEAR.obj).filter((c) => !occ[c]);
     for (const c of newly) occ[c] = 1;
     const fl = flood(), ok = mustReach.every((c) => fl.seen[c] || occ[c] && !newly.includes(c)) && reach - fl.n <= newly.length + 10;
+    // ... and the object itself must be reachable: a robot can stop within ~0.8 m of it
+    let near = false;
+    if (ok) for (const c of cellsOf(W, H, RES, o, 0.8)) if (fl.seen[c]) { near = true; break; }
     for (const c of newly) occ[c] = 0;
-    if (ok) reach = fl.n;
-    return ok;
+    if (ok && near) reach = fl.n;
+    return ok && near;
   };
   const placedAt = [];   // per template entry: placed object or null
   const facingTh = (fx, fy, x, y) => Math.atan2(fy - y, fx - x) - Math.PI / 2;   // object front (+z) points at (fx, fy)

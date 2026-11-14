@@ -143,6 +143,13 @@ export function mergeMaps(sims, locals, encounters = []) {
   const links = [], encUsed = [], via = {};
   let rejectedTotal = 0;
   const origin0 = sims[0].robot.start, walls = sims[0].scene.walls;
+  const wallCrossings = (r, Tr) => {
+    const P = locals[r].poses, pts = [];
+    for (let k = 0; k < P.length; k += 3) { const q = compose(Tr, between(sims[r].robot.start, P[k])); pts.push(compose(origin0, { x: q.x, y: q.y, th: 0 })); }
+    let bad = 0;
+    for (let k = 1; k < pts.length; k++) if (walls.some((w) => segIntersect(pts[k - 1], pts[k], { x: w[0], y: w[1] }, { x: w[2], y: w[3] }))) bad++;
+    return pts.length > 1 ? bad / (pts.length - 1) : 0;
+  };
   const teamObjects = () => joined.flatMap((r) => shared[r].map((s) => { const q = compose(T[r], { x: s.x, y: s.y, th: 0 }); return { ...s, x: q.x, y: q.y }; }));
   while (pending.size) {
     let pick = null;
@@ -166,7 +173,8 @@ export function mergeMaps(sims, locals, encounters = []) {
         const n = a.inliers.length, unique = n - a.second >= 2 && a.second <= n * 0.6;
         const strong = n >= 5 && cats.size >= 3;
         const geometric = n >= 4 && cats.size >= 2 && a.rms < 0.3 && a.spread > 2.5;   // e.g. doorways seen from both sides + furniture
-        if (a.T && unique && (strong || geometric) && (!pick || n > pick.n)) pick = { r, T: a.T, how: 'objects', n };
+        // floor-plan check: the robot's whole trajectory, moved by the candidate alignment, must not pass through walls
+        if (a.T && unique && (strong || geometric) && (!pick || n > pick.n) && wallCrossings(r, a.T) <= 0.02) pick = { r, T: a.T, how: 'objects', n };
       }
     }
     if (!pick) break;
