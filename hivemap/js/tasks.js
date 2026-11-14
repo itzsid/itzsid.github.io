@@ -150,6 +150,7 @@ function meetingSlots(T, c, n, minR) {
 // ---------- policies
 export async function runTask(T, task, log = () => {}) {
   const t0 = T.time, d0 = T.sims.map((s) => s.distance), b0 = T.bytes.objects + T.bytes.dgs;
+  const k0 = T.sims.map((s) => s.k);
   const shared = T.shared;
   const say = (msg) => log(`[t=${Math.round(T.time - t0)}s] ${msg}`);
   let out = {};
@@ -171,6 +172,15 @@ export async function runTask(T, task, log = () => {}) {
     say(`team map optimized: disagreement ${op.map_disagreement_before_m} -> ${op.map_disagreement_after_m} m`);
   };
   if (shared) await syncMap();
+  // snapshot of what Robot 1 knows when the task is decided (for the comparison view)
+  const relevant = (o) => (task.kind === 'fetch' || task.kind === 'rendezvous') ? matchesTarget(o, task)
+    : (task.kind === 'inventory' || task.kind === 'dispatch') ? matchesCat(o, task.cat) : false;
+  const knownNow = T.objectsFor(0);
+  const viz = {
+    known: knownNow.map((o) => ({ x: +o.x.toFixed(2), y: +o.y.toFixed(2), rel: relevant(o) })),
+    known_count: knownNow.length, relevant_known: knownNow.filter(relevant).length,
+    rooms_known: [...new Set(T.robots.flatMap((_, r) => (shared || r === 0 ? [...T.sims[r].explored] : [])))],
+  };
 
   if (task.kind === 'fetch') {
     const find = () => T.objectsFor(0).find((o) => matchesTarget(o, task));
@@ -266,6 +276,11 @@ export async function runTask(T, task, log = () => {}) {
     out = { visited: v, total: gt.length }; out.success = v === gt.length; out.score = v / gt.length;
     say(`${v}/${gt.length} ${task.cat} visited`);
   }
+  // every robot's actual route during the task (downsampled)
+  viz.paths = T.sims.map((sim, r) => sim.gt.slice(k0[r]).filter((_, i, a) => i % 2 === 0 || i === a.length - 1).map((p) => ({ x: +p.x.toFixed(2), y: +p.y.toFixed(2) })));
+  viz.target = task.target ? { x: task.target.x, y: task.target.y } : null;
+  viz.targets = (task.kind === 'inventory' || task.kind === 'dispatch') ? instances(T, task.cat).map((o) => ({ x: o.x, y: o.y })) : null;
+  out.viz = viz;
   out.time_s = Math.round(T.time - t0);
   out.distance_m = +T.sims.reduce((a, s, r) => a + s.distance - d0[r], 0).toFixed(1);
   out.bytes = T.bytes.objects + T.bytes.dgs - b0;
@@ -283,6 +298,7 @@ export async function compare(TeamCls, sceneDef, n, seed, kind) {
     const t = { ...task, target: task.target && (T.scene.objects.find((o) => o.id === task.target.id) || task.target) };
     const logs = [];
     results[shared ? 'shared' : 'independent'] = { ...(await T.runHeadless((TT) => runTask(TT, t, (m) => logs.push(m)))), logs };
+    results.scene ||= { w: T.scene.w, h: T.scene.h, walls: T.scene.walls, rooms: T.scene.rooms.map((q) => ({ name: q.name, x0: q.x0, y0: q.y0, x1: q.x1, y1: q.y1 })), colors: T.robots.map((rb) => rb.css) };
   }
-  return { task, results };
+  return { task, results, scene: results.scene };
 }

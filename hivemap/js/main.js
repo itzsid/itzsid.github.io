@@ -491,35 +491,94 @@ $('#b-compare').onclick = async () => {
   } catch (e) { $('#cmp').innerHTML = `<p class="n-err">Could not run the comparison: ${esc(e.message)}</p>`; }
   $('#cmp-prog').hidden = true; btn.disabled = false; btn.textContent = 'Run again';
 };
-function renderCompare(c) {
-  const S = c.results.shared, I = c.results.independent;
+// Mini floor plan of one run: rooms Robot 1 knew about (tinted) vs unknown (hatched),
+// objects Robot 1 knew (gold = relevant to the task), the target, and each robot's route.
+function planSVG(scene, r, cls) {
+  const W = 340, sc = W / scene.w, H = Math.round(scene.h * sc), X = (x) => (x * sc).toFixed(1), Y = (y) => (y * sc).toFixed(1);   // same orientation as the 3D view
+  const v = r.viz, known = new Set(v.rooms_known);
+  const rooms = scene.rooms.map((q) => `<rect x="${X(q.x0)}" y="${Y(q.y0)}" width="${((q.x1 - q.x0) * sc).toFixed(1)}" height="${((q.y1 - q.y0) * sc).toFixed(1)}" fill="${known.has(q.name) ? 'var(--known)' : 'url(#hatch)'}"/>`).join('');
+  const walls = scene.walls.map(([x1, y1, x2, y2]) => `<line x1="${X(x1)}" y1="${Y(y1)}" x2="${X(x2)}" y2="${Y(y2)}"/>`).join('');
+  const objs = v.known.map((o) => `<circle cx="${X(o.x)}" cy="${Y(o.y)}" r="${o.rel ? 3.4 : 1.8}" class="${o.rel ? 'rel' : 'obj'}"/>`).join('');
+  const star = (p) => { const cx = +X(p.x), cy = +Y(p.y), pts = []; for (let k = 0; k < 10; k++) { const rr = k % 2 ? 3.2 : 7.5, a = -Math.PI / 2 + (k * Math.PI) / 5; pts.push(`${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`); } return `<polygon points="${pts.join(' ')}" class="star"/>`; };
+  const targets = v.target ? star(v.target) : (v.targets || []).map(star).join('');
+  const paths = v.paths.map((pts, i) => pts.length > 1 ? `<polyline points="${pts.map((p) => `${X(p.x)},${Y(p.y)}`).join(' ')}" stroke="${scene.colors[i]}" class="route"/><circle cx="${X(pts[pts.length - 1].x)}" cy="${Y(pts[pts.length - 1].y)}" r="3.2" fill="${scene.colors[i]}" class="end"/>` : '').join('');
+  return `<svg class="plan ${cls}" viewBox="0 0 ${W} ${H}" role="img"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f1f2f5"/><line x1="0" y1="0" x2="0" y2="6" stroke="#dcdfe5" stroke-width="2"/></pattern></defs>
+    <g>${rooms}</g><g class="walls">${walls}</g><g>${objs}</g><g>${paths}</g><g>${targets}</g></svg>`;
+}
+function knowledgeLine(c, r, shared) {
+  const v = r.viz, k = c.task.kind, rooms = `${v.rooms_known.length} of ${c.scene.rooms.length} rooms`;
+  if (k === 'fetch' || k === 'rendezvous') return v.relevant_known
+    ? `Robot 1 knew <b>${v.known_count} objects</b> in ${rooms}, <b>including the target</b>, so it ${k === 'fetch' ? 'drove straight there' : 'could send everyone straight there'}.`
+    : `Robot 1 knew <b>${v.known_count} objects</b> in ${rooms}, <b>but not the target</b>, so ${k === 'fetch' ? 'it had to search room by room' : 'robots had to search for it themselves'}.`;
+  if (k === 'inventory' || k === 'dispatch') return `Robot 1 knew <b>${v.relevant_known} of ${(v.targets || []).length}</b> ${esc(c.task.cat)}s in ${rooms}${v.relevant_known < (v.targets || []).length ? `, so ${k === 'inventory' ? 'it had to survey the rest itself' : 'the rest stayed unknown to it'}` : ''}.`;
+  if (k === 'search') return shared ? 'Nobody knew where the item was, so the team <b>split the rooms</b> and stopped as soon as anyone saw it.' : 'Nobody knew where the item was, and Robot 1 <b>searched alone</b>: the others could not tell it what they saw.';
+  return `Robot 1 knew ${v.known_count} objects in ${rooms}.`;
+}
+function verdictFor(S, I) {
   const speedup = S.time_s > 0 ? I.time_s / S.time_s : Infinity;
-  let verdict, meh = false;
-  if (S.score > I.score) verdict = 'Only the team with the shared map finished the task.';
-  else if (I.score > S.score) { verdict = 'Here the robots on their own did better.'; meh = true; }
-  else if (I.time_s > S.time_s * 1.15) verdict = `Sharing the map made the team <b>${Number.isFinite(speedup) ? `${speedup.toFixed(1)}× faster` : 'finish instantly'}</b>${I.distance_m > S.distance_m * 1.15 ? `, with <b>${(I.distance_m / Math.max(1, S.distance_m)).toFixed(1)}× less driving</b>` : ''}.`;
-  else { verdict = 'Here sharing did not pay off: the robots already knew what they needed, and merging maps costs time.'; meh = true; }
-  const sWin = S.score > I.score || (S.score >= I.score && S.time_s < I.time_s);
+  if (S.score > I.score) return { text: 'Only the team with the shared map finished the task.', good: true };
+  if (I.score > S.score) return { text: 'Here the robots on their own did better.', good: false };
+  if (I.time_s > S.time_s * 1.15) return { text: `With the shared map the team finished <b>${Number.isFinite(speedup) ? `${speedup.toFixed(1)}× faster` : 'instantly'}</b>${I.distance_m > S.distance_m * 1.15 ? ` and drove <b>${(I.distance_m / Math.max(1, S.distance_m)).toFixed(1)}× less</b>` : ''}.`, good: true };
+  if (S.time_s > I.time_s * 1.15) return { text: 'Here sharing cost more than it saved: the robots already knew what they needed, and linking maps takes time.', good: false };
+  return { text: 'About the same: the robots already knew what they needed.', good: false };
+}
+function renderCompare(c) {
+  const S = c.results.shared, I = c.results.independent, n = S.viz.paths.length;
+  const vd = verdictFor(S, I);
   const bars = (label, a, b, fmt) => {
     const m = Math.max(a, b, 1e-9);
     return `<div class="bars"><div class="bl">${label}</div>
       <div class="bt"><span class="b s-shared" style="width:${Math.max(2, (a / m) * 100)}%"></span><em>${fmt(a)}</em></div>
       <div class="bt"><span class="b s-alone" style="width:${Math.max(2, (b / m) * 100)}%"></span><em>${fmt(b)}</em></div></div>`;
   };
-  const pct = (r) => (r.success ? 'Done' : `${Math.round(r.score * 100)}% done`);
-  const side = (title, r, win, id, cls) => `<div class="side ${win ? 'win' : ''}"><div class="side-h"><span class="swatch ${cls}"></span><h4>${title}</h4>${win ? '<span class="won">Better</span>' : ''}</div>
-    <div class="big">${clock(r.time_s)}</div><div class="sub">${pct(r)} · ${r.distance_m} m · ${kb(r.bytes)}</div>
-    <button class="btn" type="button" id="${id}"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg> Watch</button></div>`;
-  $('#cmp').innerHTML = `<div class="cmp"><div class="q">“${esc(c.task.text)}”</div><div class="verdict ${meh ? 'meh' : ''}">${verdict}</div>
+  const pct = (r) => (r.success ? 'done' : `${Math.round(r.score * 100)}% done`);
+  const run = (title, r, cls, id, shared) => `<div class="runcard">
+      <div class="run-h"><span class="swatch ${cls}"></span><b>${title}</b><span class="run-stat">${clock(r.time_s)} · ${(+r.distance_m).toFixed(0)} m · ${pct(r)}</span></div>
+      ${planSVG(c.scene, r, cls)}
+      <p class="run-k">${knowledgeLine(c, r, shared)}</p>
+      <button class="btn small" type="button" id="${id}"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg> Watch in 3D</button>
+    </div>`;
+  $('#cmp').innerHTML = `<div class="cmp">
+    <p class="setup">${n} robot${n > 1 ? 's' : ''} each explored a share of the building on their own. Then: <b>“${esc(c.task.text)}”</b></p>
+    <div class="verdict ${vd.good ? '' : 'meh'}">${vd.text}</div>
     <div class="chart" aria-label="Comparison chart">
-      ${bars('Time', S.time_s, I.time_s, (v) => `${clock(v)}`)}
-      ${bars('Driving', S.distance_m, I.distance_m, (v) => `${(+v).toFixed(0)} m`)}
-      ${bars('Data sent', S.bytes, I.bytes, kb)}
-      <div class="chart-key"><span><i class="swatch s-shared"></i>Shared map</span><span><i class="swatch s-alone"></i>Robots alone</span><span class="mute">shorter time and driving is better</span></div>
+      ${bars('Time to finish', S.time_s, I.time_s, (v) => clock(v))}
+      ${bars('Distance driven', S.distance_m, I.distance_m, (v) => `${(+v).toFixed(0)} m`)}
+      <div class="chart-key"><span><i class="swatch s-shared"></i>Shared map</span><span><i class="swatch s-alone"></i>Robots alone</span><span class="mute">shorter is better</span></div>
     </div>
-    <div class="versus">${side('Shared map', S, sWin, 'w-s', 's-shared')}${side('Robots alone', I, !sWin, 'w-i', 's-alone')}</div>
+    ${run('With the shared map', S, 's-shared', 'w-s', true)}
+    ${run('Each robot alone', I, 's-alone', 'w-i', false)}
+    <p class="plan-key"><span><i class="k-known"></i>rooms Robot 1 knew</span><span><i class="k-unknown"></i>unknown to Robot 1</span><span><i class="k-obj"></i>objects it knew</span><span><i class="k-rel"></i>relevant</span><span>★ target</span><span>lines: routes during the task</span></p>
+    <p class="cost">Sharing cost ${kb(S.bytes)} of radio traffic (object descriptions, not camera images).</p>
+    <button class="btn wide" type="button" id="b-all">Run every task in this building</button>
+    <div id="cmp-all"></div>
     <details class="runlog"><summary>Run log</summary><pre>${[...S.logs.map((l) => `shared  ${l}`), ...I.logs.map((l) => `alone   ${l}`)].map(esc).join('\n')}</pre></details></div>`;
   $('#w-s').onclick = () => watch(true); $('#w-i').onclick = () => watch(false);
+  $('#b-all').onclick = runAll;
+}
+// Run every task kind on the same building and summarize: evidence beyond one example.
+async function runAll() {
+  const btn = $('#b-all'); if (!btn || worldBusy) return;
+  btn.disabled = true; const box = $('#cmp-all'); const rows = [];
+  const def = SCENES[sceneIdx], n = +$('#nrob').value;
+  for (const t of TASKS) {
+    btn.textContent = `Running ${t.name.toLowerCase()}…`; await tick();
+    try { const c = await compare(Team, def, n, seed, t.id); rows.push({ t, S: c.results.shared, I: c.results.independent }); }
+    catch (e) { rows.push({ t, err: e.message }); }
+    draw();
+  }
+  btn.textContent = 'Run every task again'; btn.disabled = false;
+  function draw() {
+    const ok = rows.filter((x) => !x.err);
+    const wins = ok.filter((x) => verdictFor(x.S, x.I).good).length;
+    const ratios = ok.map((x) => x.I.time_s / Math.max(1, x.S.time_s)).sort((a, b) => a - b);
+    const med = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 0;
+    const maxT = Math.max(1, ...ok.flatMap((x) => [x.S.time_s, x.I.time_s]));
+    box.innerHTML = `<div class="allsum">${ok.length === TASKS.length ? `<div class="verdict ${wins >= ok.length / 2 ? '' : 'meh'}">Sharing helped in <b>${wins} of ${ok.length}</b> tasks; typical speed-up <b>${med.toFixed(1)}×</b>.</div>` : ''}
+      ${rows.map((x) => x.err ? `<div class="allrow"><b>${esc(x.t.name)}</b><span class="n-err">${esc(x.err)}</span></div>` : `<div class="allrow"><b>${esc(x.t.name)}</b>
+        <div class="bt"><span class="b s-shared" style="width:${Math.max(2, (x.S.time_s / maxT) * 100)}%"></span><em>${clock(x.S.time_s)}${x.S.success ? '' : ` (${Math.round(x.S.score * 100)}%)`}</em></div>
+        <div class="bt"><span class="b s-alone" style="width:${Math.max(2, (x.I.time_s / maxT) * 100)}%"></span><em>${clock(x.I.time_s)}${x.I.success ? '' : ` (${Math.round(x.I.score * 100)}%)`}</em></div></div>`).join('')}</div>`;
+  }
 }
 
 // ---------- replay of a compared run, with a banner and an exit
