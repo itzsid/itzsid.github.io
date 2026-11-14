@@ -221,7 +221,7 @@ export class Team {
     if (!plan) throw new Error('No path found.');
     // stop short of the target: in front of an object, or next to a robot standing there
     const cat = target.gt && CATS[target.gt.cat];
-    let standoff = target.standoff ?? (target.gt ? Math.min(1.0, (cat?.r ?? 0.4) + 0.45) : 0.05);
+    let standoff = target.standoff ?? (target.gt ? Math.max(0.6, Math.min(1.0, (cat?.r ?? 0.4) + 0.38)) : 0.05);
     if (this.robots.some((_, j) => j !== r && dist(this.pose[j], target) < 0.7)) standoff = Math.max(standoff, 0.9);
     const pts = truncate(plan.points, target, standoff);
     this.emit({ type: 'navplan', r, points: [{ x: cur.x, y: cur.y }, ...pts.slice(1)] });
@@ -397,6 +397,7 @@ export class Team {
     if (seg.skippable && m.stall > 6) { m.cur = null; m.si++; return; }                        // coverage waypoint: skip it
     if (m.nudge && m.stall > 4) { m.cur = null; m.si = m.segs.length; return; }               // making way failed: stay put
     if (seg.tol && m.stall > 8 && dist(p, goal) <= seg.tol + 1.5) { m.cur = null; m.si++; return; }   // stuck right next to the goal
+    if (m.stall > 30) { m.cur = null; m.si++; return; }                                        // hopelessly blocked: give up this leg
     let target = goal;
     if (goalTaken) target = this.spotNear(goal, r, 3) || goal;
     const again = m.lastReplanBlocker === j && dist(p, m.lastReplanAt) < 0.5 && this.time - m.lastReplanT < 6;

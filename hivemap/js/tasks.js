@@ -232,6 +232,7 @@ export async function runTask(T, task, log = () => {}) {
       if (Math.hypot(T.pose[r].x - o.x, T.pose[r].y - o.y) > 3.5) await T.goTo(r, { x: o.x, y: o.y, standoff: 3.0 }, o.label);
       const free = slots.filter((q) => !claims.has(q)).sort((a, b) => Math.hypot(a.x - T.pose[r].x, a.y - T.pose[r].y) - Math.hypot(b.x - T.pose[r].x, b.y - T.pose[r].y));
       const s = free[0] || o; if (free[0]) claims.add(free[0]);
+      if (process?.env?.DBG_MEET) console.log('meet', r, JSON.stringify(T.pose[r]), JSON.stringify(s), slots.length);
       await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(free[0] ? {} : { gt: task.target }) }, o.label);
       const p = T.pose[r];
       // at the meeting point = close to the real object, allowing for the ring of teammates around it

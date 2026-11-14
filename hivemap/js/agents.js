@@ -163,7 +163,10 @@ ${shown.map((o) => `${o.id} | ${o.label} | ${o.room} | ${fmt(o.x)},${fmt(o.y)} |
     const t = body.trim();
     let m = t.match(/^go to the (.+?) \(((?:T\d+)|(?:R\d+\.\d+))\)(?: at \((-?[\d.]+), (-?[\d.]+)\))?/i);
     if (m) {
-      const nav = await this.call('navigate_to', { object_id: m[2], ...(m[3] ? { x: +m[3], y: +m[4], label: m[1] } : {}) }, depth, 'Dispatcher assignment');
+      // the position hint is non-enumerable: used if the id changed, but not shown in the feed
+      const input = { object_id: m[2] };
+      if (m[3]) Object.defineProperties(input, { x: { value: +m[3] }, y: { value: +m[4] }, label: { value: m[1] } });
+      const nav = await this.call('navigate_to', input, depth, 'Dispatcher assignment');
       if (nav.error) return `Could not go to the ${m[1]}: ${nav.error}`;
       return `Reached the ${nav.object} in the ${nav.room}: drove ${nav.driven_m} m, now ${nav.distance_to_real_object_m ?? '?'} m from it.`;
     }
@@ -313,7 +316,7 @@ ${shown.map((o) => `${o.id} | ${o.label} | ${o.room} | ${fmt(o.x)},${fmt(o.y)} |
     if (!targets.length) return `I could not find ${what}.`;
     if (it.intent === 'answer') { const o = targets[0]; return `${o.label} ${o.id} is in the ${o.room} at (${fmt(o.x)}, ${fmt(o.y)}), seen by ${o.seen_by.join('+')}.`; }
     if (it.intent === 'visit_all') {
-      let n = 0; for (const o of targets) { const nav = await call('navigate_to', { object_id: o.id, x: o.x, y: o.y, label: o.label }); if (!nav.error) n++; }
+      let n = 0; for (const o of targets) { const nav = await call('navigate_to', { object_id: o.id }); if (!nav.error) n++; }
       return `Visited ${n}/${targets.length} × ${q.text}.`;
     }
     const target = targets[0];
