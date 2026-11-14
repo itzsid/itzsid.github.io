@@ -431,6 +431,14 @@ function finishCard(e) {
   const res = document.createElement('div'); res.className = `c-res ${bad ? 'warn' : 'ok'}`;
   res.innerHTML = `<p>${esc(e.text)}</p>${meta.length ? `<div class="chips">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}`;
   c.append(res);
+  // what the shared map changed for this task (computed by the dispatcher from who saw what)
+  if (e.alt) {
+    const neutral = /didn't change|already knew all/.test(e.alt);
+    const alt = document.createElement('div'); alt.className = `c-alt ${neutral ? 'neutral' : ''}`;
+    alt.innerHTML = `<span class="alt-tag">${neutral ? 'Shared map' : 'Shared map helped'}</span><p>${esc(e.alt)}</p><button type="button" class="linkbtn">See a full side-by-side run</button>`;
+    $('button', alt).onclick = () => { openDrawer('compare'); };
+    c.append(alt);
+  }
   c.classList.remove('running'); c.classList.add(bad ? 'warn' : 'done');
   $('.c-st', c).innerHTML = `${bad ? 'Needs attention' : 'Done'} <time>${clock(team?.time)}</time>`;
   const st = $('.c-steps', c); if (!c._userToggled) st.open = false;

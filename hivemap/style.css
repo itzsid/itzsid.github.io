@@ -349,3 +349,10 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .allrow .bt { display: flex; align-items: center; gap: 6px; }
 .allrow .b { display: block; height: 8px; border-radius: 99px; }
 .allrow em { font-style: normal; font-size: 11px; color: var(--soft, #4a4f59); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* "what the shared map changed" note on each result */
+.c-alt { margin-top: 6px; padding: 8px 10px 9px; border-radius: 10px; background: #eef4ff; border: 1px solid #d6e4ff; font-size: 12.5px; color: #1e3a8a; }
+.c-alt.neutral { background: #f4f5f7; border-color: #e6e8ec; color: #4a4f59; }
+.c-alt p { margin: 3px 0 4px; line-height: 1.45; }
+.c-alt .alt-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
+.c-alt .linkbtn { border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: #2563eb; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
