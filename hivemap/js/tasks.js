@@ -78,7 +78,10 @@ export function makeTask(T, kind) {
     if (!pool.length) pool = objs.filter((o) => T.robots.some((_, r) => seenBy(T, r, o.id)) && nameable(o));
     if (!pool.length) pool = objs.filter(nameable);
     // prefer targets the robots recognised correctly, and recognisable things over tiny clutter
-    const readOk = (o) => T.robots.some((_, r) => seenBy(T, r, o.id) && T.labelOf(r, o.id) === `${o.color} ${o.cat}`);
+    // what the robots think each object is: a good target is one whose description picks out only it
+    const perceived = {};
+    T.robots.forEach((_, r) => { for (const id of Object.keys(T.local(r).lms)) { const lab = T.labelOf(r, id); (perceived[lab] ||= new Set()).add(id); } });
+    const readOk = (o) => { const ids = perceived[`${o.color} ${o.cat}`]; if (!ids || !ids.has(o.id)) return false; return unique(o) ? ids.size === 1 : [...ids].every((id) => { const q = T.scene.objects.find((x) => x.id === id); return id === o.id || !q || roomAt(T.scene, q.x, q.y) !== roomAt(T.scene, o.x, o.y); }); };
     if (pool.some(readOk)) pool = pool.filter(readOk);
     const big = pool.filter((o) => !CATS[o.cat]?.small);
     const o = pickBy(big.length >= 3 ? big : pool, K);

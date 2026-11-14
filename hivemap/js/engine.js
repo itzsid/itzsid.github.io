@@ -336,7 +336,8 @@ export class Team {
       if (vj > 0.05) { const toMe = (Math.cos(q.th) * (p.x - q.x) + Math.sin(q.th) * (p.y - q.y)) / (d0 || 1); if (toMe > 0.3) C += (vj * vj) / (2 * M.decHard) + 0.1; }
       for (let m = c.k + 1; m < tr.X.length && tr.S[m] - c.s <= look; m++) {
         const dm = Math.hypot(tr.X[m] - q.x, tr.Y[m] - q.y);
-        if (dm < C && dm < d0 - 0.005) { const fj = tr.S[m] - c.s; if (fj < f) { f = fj; who = j; } break; }
+        // conflict = getting closer than the clearance (small sidesteps allowed when already near)
+        if (dm < C && (dm < d0 - 0.1 || dm < 0.6)) { const fj = tr.S[m] - c.s; if (fj < f) { f = fj; who = j; } break; }
       }
     }
     return { f, who };
@@ -360,7 +361,7 @@ export class Team {
     if (limited) vt = vf;
     let v = this.vel[r].v;
     v = v < vt ? Math.min(vt, v + M.acc * dt) : Math.max(vt, v - M.decHard * dt);
-    if (limited && vf < 0.02) v = 0;
+    if (limited && vf < 0.02) v = Math.max(0, v - 3.0 * dt);   // emergency braking right at the conflict point
     let s = Math.min(c.s + v * dt, sStop);
     if (s >= sStop - 1e-9 && sStop - c.s > 0) { s = sStop; }
     c.s = s;
@@ -394,6 +395,8 @@ export class Team {
     const goalTaken = blocks.some((b) => dist(b, goal) < 0.8 + (seg.standoff || 0) * 0.5);
     if (goalTaken && dist(p, goal) <= (seg.tol ?? 2.2)) { m.cur = null; m.si++; return; }   // close enough: stop here
     if (seg.skippable && m.stall > 6) { m.cur = null; m.si++; return; }                        // coverage waypoint: skip it
+    if (m.nudge && m.stall > 4) { m.cur = null; m.si = m.segs.length; return; }               // making way failed: stay put
+    if (seg.tol && m.stall > 8 && dist(p, goal) <= seg.tol + 1.5) { m.cur = null; m.si++; return; }   // stuck right next to the goal
     let target = goal;
     if (goalTaken) target = this.spotNear(goal, r, 3) || goal;
     const again = m.lastReplanBlocker === j && dist(p, m.lastReplanAt) < 0.5 && this.time - m.lastReplanT < 6;
@@ -401,7 +404,7 @@ export class Team {
     if (!again) { m.lastReplanBlocker = j; m.lastReplanAt = { x: p.x, y: p.y }; m.lastReplanT = this.time; }
     if (plan && plan.length < remaining + 12 && plan.points.length > 1) {
       const tr = compileTrack(this.nav, p, truncate(plan.points, target, target === goal ? (seg.standoff || 0) : 0).slice(1));
-      if (tr) { m.cur = { type: 'track', tr, s: 0, k: 0, pivotDone: -1, pivot: null, w: 0, seg }; m.stall = 0; return; }
+      if (tr) { m.cur = { type: "track", tr, s: 0, k: 0, pivotDone: -1, pivot: null, w: 0, seg }; return; }
     }
     if (j < 0) return;
     const other = this.mover(j);
@@ -412,7 +415,7 @@ export class Team {
     }
     // two working robots blocking each other: the lower-priority one (or the one stuck longest) pulls aside
     const otherStuck = other && (other.stall > 0.5 || (other.cur && other.cur.type === 'wait'));
-    if (otherStuck && (r > j || m.stall > 8) && this.time - (m.asideAt ?? -99) > 10) {
+    if (!m.nudge && otherStuck && (r > j || m.stall > 8) && this.time - (m.asideAt ?? -99) > 10) {
       const spot = this.asideSpot(r, j, other.cur && other.cur.type === 'track' ? other.cur : null);
       if (spot) {
         m.asideAt = this.time;
@@ -447,6 +450,7 @@ export class Team {
     if (c && c.tr) for (let k = c.k; k < c.tr.X.length && c.tr.S[k] - c.s < 6; k += 4) future.push({ x: c.tr.X[k], y: c.tr.Y[k] });
     const start = Math.floor(pa.y / RES) * W + Math.floor(pa.x / RES);
     const seen = new Uint8Array(W * H), q = [start]; seen[start] = 1;
+    const keep = Math.min(MOTION.clear + 0.1, dist(pa, pb) - 0.02);
     for (let h = 0; h < q.length && h < 4000; h++) {
       const id = q[h], i = id % W, j = (id / W) | 0, p = { x: (i + 0.5) * RES, y: (j + 0.5) * RES };
       if (dist(p, pa) > 7) continue;
@@ -456,7 +460,7 @@ export class Team {
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const x = i + di, y = j + dj, nid = y * W + x;
         if (x < 0 || y < 0 || x >= W || y >= H || seen[nid] || occ[nid]) continue;
-        if (dist({ x: (x + 0.5) * RES, y: (y + 0.5) * RES }, pb) < 0.55) continue;   // cannot drive through b
+        if (dist({ x: (x + 0.5) * RES, y: (y + 0.5) * RES }, pb) < keep) continue;   // cannot drive through (or brush past) b
         seen[nid] = 1; q.push(nid);
       }
     }
