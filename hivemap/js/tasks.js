@@ -230,9 +230,10 @@ export async function runTask(T, task, log = () => {}) {
       // approach, then claim the nearest free spot of the ring around the meeting point (claims go over the radio)
       const slots = meetingSlots(T, o, T.n + 4, (CATS[task.target.cat]?.r ?? 0.4) + 0.75);
       if (Math.hypot(T.pose[r].x - o.x, T.pose[r].y - o.y) > 3.5) await T.goTo(r, { x: o.x, y: o.y, standoff: 3.0 }, o.label);
-      const free = slots.filter((q) => !claims.has(q)).sort((a, b) => Math.hypot(a.x - T.pose[r].x, a.y - T.pose[r].y) - Math.hypot(b.x - T.pose[r].x, b.y - T.pose[r].y));
-      const s = free[0] || o; if (free[0]) claims.add(free[0]);
-      if (process?.env?.DBG_MEET) console.log('meet', r, JSON.stringify(T.pose[r]), JSON.stringify(s), slots.length);
+      const key = (q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`;
+      const cost = (q) => Math.hypot(q.x - o.x, q.y - o.y) + 0.3 * Math.hypot(q.x - T.pose[r].x, q.y - T.pose[r].y);   // inner ring first
+      const free = slots.filter((q) => !claims.has(key(q)) && T.robots.every((_, j) => j === r || Math.hypot(T.pose[j].x - q.x, T.pose[j].y - q.y) > 0.6)).sort((a, b) => cost(a) - cost(b));
+      const s = free[0] || o; if (free[0]) claims.add(key(free[0]));
       await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(free[0] ? {} : { gt: task.target }) }, o.label);
       const p = T.pose[r];
       // at the meeting point = close to the real object, allowing for the ring of teammates around it
