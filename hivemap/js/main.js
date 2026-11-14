@@ -300,7 +300,10 @@ function renderSuggestions() {
   const known = new Set(); T.robots.forEach((_, r) => Object.keys(T.locals[r]?.lms || {}).forEach((id) => known.add(id)));
   const objs = T.scene.objects.filter((o) => known.has(o.id) && o.cat !== 'door' && o.cat !== 'rack');
   const unique = objs.filter((o) => T.scene.objects.filter((q) => q.cat === o.cat && q.color === o.color).length === 1);
-  const f = unique.length ? unique[(T.seed * 13 + usedSuggestions.size) % unique.length] : null;
+  // prefer objects no robot is standing next to, so "go to" means a real trip
+  const away = (o) => Math.min(...T.pose.map((p) => Math.hypot(p.x - o.x, p.y - o.y)));
+  unique.sort((a, b) => away(b) - away(a));
+  const f = unique.length ? unique[(T.seed + usedSuggestions.size) % Math.min(4, unique.length)] : null;
   const counts = {}; for (const o of objs) counts[o.cat] = (counts[o.cat] || 0) + 1;
   const cat = Object.keys(counts).filter((c) => counts[c] >= 2).sort((a, b) => counts[b] - counts[a])[0];
   const plural = (c) => (/(s|x|ch|sh)$/.test(c) ? `${c}es` : `${c}s`);

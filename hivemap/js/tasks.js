@@ -222,13 +222,17 @@ export async function runTask(T, task, log = () => {}) {
   if (task.kind === 'rendezvous') {
     // everyone heads for its own slot around the meeting point (slots are ranked the same way by every robot)
     const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.5;
+    const claims = new Set();
     const arrivals = await Promise.all(T.robots.map((_, r) => (async () => {
       const find = () => T.objectsFor(r).find((o) => matchesTarget(o, task));
       if (!find()) await exploreUntil(T, r, () => !!find(), { cheap: () => quickKnows(T, r, task) });
       const o = find(); if (!o) return null;
-      const slots = meetingSlots(T, o, T.n, (CATS[task.target.cat]?.r ?? 0.4) + 0.75);
-      const s = slots[r] || o;
-      await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(slots[r] ? {} : { gt: task.target }) }, o.label);
+      // approach, then claim the nearest free spot of the ring around the meeting point (claims go over the radio)
+      const slots = meetingSlots(T, o, T.n + 4, (CATS[task.target.cat]?.r ?? 0.4) + 0.75);
+      if (Math.hypot(T.pose[r].x - o.x, T.pose[r].y - o.y) > 3.5) await T.goTo(r, { x: o.x, y: o.y, standoff: 3.0 }, o.label);
+      const free = slots.filter((q) => !claims.has(q)).sort((a, b) => Math.hypot(a.x - T.pose[r].x, a.y - T.pose[r].y) - Math.hypot(b.x - T.pose[r].x, b.y - T.pose[r].y));
+      const s = free[0] || o; if (free[0]) claims.add(free[0]);
+      await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(free[0] ? {} : { gt: task.target }) }, o.label);
       const p = T.pose[r];
       // at the meeting point = close to the real object, allowing for the ring of teammates around it
       return { d: Math.hypot(task.target.x - p.x, task.target.y - p.y), allow: Math.max(near, Math.hypot(s.x - o.x, s.y - o.y) + 1.3) };
