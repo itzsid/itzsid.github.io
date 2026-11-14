@@ -103,7 +103,7 @@
       <div class="h3row"><h3><label for="nrob">Robots</label></h3><output class="val" id="nval" for="nrob">4</output></div>
       <input type="range" id="nrob" min="1" max="10" value="4">
       <div class="ticks" aria-hidden="true"><span>1</span><span>5</span><span>10</span></div>
-      <label class="switch"><input type="checkbox" id="prior" checked><span class="sw" aria-hidden="true"></span><span>Robots start having explored their own rooms</span></label>
+      <label class="switch"><input type="checkbox" id="prior"><span class="sw" aria-hidden="true"></span><span>Robots start having explored their own rooms</span></label>
       <div class="row"><button class="btn ghost" type="button" id="b-seed">Shuffle objects</button><button class="btn ghost" type="button" id="b-apply">Restart</button></div>
       <p class="hint" id="world-status"></p>
     </section>
@@ -133,7 +133,7 @@
   <!-- Compare drawer -->
   <aside class="drawer" id="compare" role="dialog" aria-modal="true" aria-labelledby="compare-h" hidden tabindex="-1">
     <div class="drawer-h"><h2 id="compare-h">Does sharing the map help?</h2><button class="x" type="button" data-close aria-label="Close compare">✕</button></div>
-    <p class="lead">Run one task twice on identical copies of the building, off-screen and at full speed.</p>
+    <p class="lead">Run one task twice on identical copies of the building, off-screen and at full speed. In both runs each robot first explores a share of the rooms on its own, then gets the task.</p>
     <div class="howto">
       <div><span class="swatch s-shared"></span><b>Shared map</b><small>Robots merge what they've seen into one team map before acting.</small></div>
       <div><span class="swatch s-alone"></span><b>Robots alone</b><small>Each robot only knows its own rooms and must explore the rest.</small></div>

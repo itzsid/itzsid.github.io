@@ -144,7 +144,11 @@ export function mergeMaps(sims, locals, encounters = []) {
         const a = associate(team, shared[r], { inlierDist: 0.8 });
         const cats = new Set(a.inliers.map((c) => labelFor(c.b.emb).cat));
         rejectedTotal += a.outliers.length;
-        if (a.T && a.inliers.length >= 5 && cats.size >= 3 && (!pick || a.inliers.length > pick.n)) pick = { r, T: a.T, how: 'objects', n: a.inliers.length };
+        // accept only unambiguous alignments: clearly better than any look-alike placement (repeated rooms, rack rows)
+        const n = a.inliers.length, unique = n - a.second >= 2 && a.second <= n * 0.6;
+        const strong = n >= 5 && cats.size >= 3;
+        const geometric = n >= 4 && cats.size >= 2 && a.rms < 0.3 && a.spread > 2.5;   // e.g. doorways seen from both sides + furniture
+        if (a.T && unique && (strong || geometric) && (!pick || n > pick.n)) pick = { r, T: a.T, how: 'objects', n };
       }
     }
     if (!pick) break;
@@ -190,7 +194,7 @@ export function mergeMaps(sims, locals, encounters = []) {
     return s2 / links.length;
   };
   return {
-    joined, missing: [...pending], links, encounters: encUsed, via, rejectedTotal, g, init, poseIndices, lmIndices,
+    joined, missing: [...pending], links, encounters: encUsed, via, frames: T, rejectedTotal, g, init, poseIndices, lmIndices,
     teamAte: (src) => ateAligned(est(src), gtAll), teamAlign: (src) => rigidAlign(est(src), gtAll), disagreement,
     versions: sims.map((s2) => s2.version), bytes: shared.reduce((a2, s2) => a2 + s2.length, 0) * BYTES.objectDescriptor * Math.max(1, joined.length - 1),
   };

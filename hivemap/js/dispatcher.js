@@ -242,7 +242,6 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
   }
   unexplored() { const T = this.T; return T.scene.rooms.map((q) => q.name).filter((n) => !T.robots.some((_, i) => T.sims[i].explored.has(n))); }
   fairCost(r, d) { return d + Math.min(FAIR_CAP, FAIR * this.load[r]); }
-  objText(g) { return `${g.label} ${g.refs[Object.keys(g.refs)[0]]}`; }
   instr(g, r) { return `Go to the ${g.label} (${g.refs[r]}) at (${fmt(g.x)}, ${fmt(g.y)}).`; }
 
   // candidate robots for a task: explicit robots, robots in a named room, else idle ones

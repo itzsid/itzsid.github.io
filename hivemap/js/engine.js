@@ -116,8 +116,9 @@ export class Team {
     this.nav = makeNav(this.scene); this.detect = makeSensor(this.scene);
     const R = rng(seed + 101);
     this.robots = Array.from({ length: nRobots }, (_, i) => {
-      const [x, y] = sceneDef.spawns[i % sceneDef.spawns.length];
-      return { i, id: `R${i + 1}`, name: `Robot ${i + 1}`, css: ROBOT_COLORS[i], color: parseInt(ROBOT_COLORS[i].slice(1), 16), start: { x, y, th: (R.next() * 2 - 1) * Math.PI } };
+      // every robot starts in its own slot of the dock formation; that pose is its map frame origin
+      const st = this.scene.starts[i % this.scene.starts.length], jitter = (R.next() * 2 - 1) * 0.05;
+      return { i, id: `R${i + 1}`, name: `Robot ${i + 1}`, css: ROBOT_COLORS[i], color: parseInt(ROBOT_COLORS[i].slice(1), 16), start: { x: st.x, y: st.y, th: wrap(st.th + jitter) } };
     });
     this.sims = this.robots.map((rb, i) => new RobotSim(this.scene, rb, seed * 31 + i * 977 + 5, this.detect));
     this.locals = this.robots.map(() => null);

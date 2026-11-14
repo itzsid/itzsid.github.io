@@ -69,6 +69,7 @@ function grp(anchor, ...kids) { return [anchor, ...kids.map(([cat, color, rel], 
 // --- scene definitions
 const OFFICE = {
   id: 'office', name: 'Office floor', note: 'Lab, offices, hall, kitchen and lounge.', w: 24, h: 16,
+  dock: { x: 12, y: 8, th: Math.PI / 2 },
   walls: [...box(24, 16), ...wallV(8, 0, 16, [[6, 9]]), ...wallV(16, 0, 16, [[5, 8]]), ...wallH(8, 0, 8, [[3, 5]]), ...wallH(8, 16, 24, [[19, 21]])],
   rooms: [{ name: 'Lab', x0: 0, y0: 0, x1: 8, y1: 8 }, { name: 'Office', x0: 0, y0: 8, x1: 8, y1: 16 }, { name: 'Hall', x0: 8, y0: 0, x1: 16, y1: 16 },
     { name: 'Kitchen', x0: 16, y0: 0, x1: 24, y1: 8 }, { name: 'Lounge', x0: 16, y0: 8, x1: 24, y1: 16 }],
@@ -88,6 +89,7 @@ const OFFICE = {
 
 const WAREHOUSE = {
   id: 'warehouse', name: 'Warehouse', note: 'Racks block the view; many identical pallets.', w: 36, h: 22,
+  dock: { x: 22, y: 11, th: Math.PI },
   walls: [...box(36, 22), ...wallV(26, 0, 22, [[3, 6], [15, 18]]), ...wallH(11, 26, 36, [[30, 32]])],
   rooms: [{ name: 'Storage', x0: 0, y0: 0, x1: 26, y1: 22 }, { name: 'Loading dock', x0: 26, y0: 0, x1: 36, y1: 11 }, { name: 'Control room', x0: 26, y0: 11, x1: 36, y1: 22 }],
   doors: [[26, 4.5], [26, 16.5], [31, 11]],
@@ -107,6 +109,7 @@ const WAREHOUSE = {
 
 const HOME = {
   id: 'home', name: 'Apartment', note: 'Five rooms full of small objects.', w: 20, h: 14,
+  dock: { x: 11, y: 7, th: Math.PI / 2 },
   walls: [...box(20, 14), ...wallV(8, 0, 14, [[3, 5], [9, 11]]), ...wallH(7, 0, 8, [[6, 7.6]]), ...wallV(14, 0, 14, [[2, 4], [10, 12]]), ...wallH(7, 14, 20, [[16, 17.6]])],
   rooms: [{ name: 'Living room', x0: 0, y0: 0, x1: 8, y1: 7 }, { name: 'Kitchen', x0: 0, y0: 7, x1: 8, y1: 14 }, { name: 'Hallway', x0: 8, y0: 0, x1: 14, y1: 14 },
     { name: 'Bedroom', x0: 14, y0: 0, x1: 20, y1: 7 }, { name: 'Kids room', x0: 14, y0: 7, x1: 20, y1: 14 }],
@@ -124,6 +127,7 @@ const HOME = {
 const PATIENT_ROOMS = ['Room 101', 'Room 102', 'Room 103', 'Room 104', 'Room 105', 'Room 201', 'Room 202', 'Room 204', 'Room 205'];
 const HOSPITAL = {
   id: 'hospital', name: 'Hospital wing', note: 'Ten look-alike patient rooms.', w: 36, h: 18,
+  dock: { x: 16, y: 9, th: Math.PI / 2 },
   walls: [...box(36, 18),
     ...wallH(6.5, 0, 36, [[3, 5], [10, 12], [17, 19], [24, 26], [31, 33]]), ...wallH(11.5, 0, 36, [[3, 5], [10, 12], [17, 19], [24, 26], [31, 33]]),
     ...wallV(7, 0, 6.5), ...wallV(14, 0, 6.5), ...wallV(21, 0, 6.5), ...wallV(28, 0, 6.5), ...wallV(7, 11.5, 18), ...wallV(14, 11.5, 18), ...wallV(21, 11.5, 18), ...wallV(28, 11.5, 18)],
@@ -147,6 +151,7 @@ const HOSPITAL = {
 // Retail store: shelf aisles, freezers along the back wall, checkout lanes, stockroom and office.
 const RETAIL = {
   id: 'retail', name: 'Retail store', note: 'Shelf aisles block the view; checkout lanes.', w: 30, h: 20,
+  dock: { x: 10, y: 12.4, th: -Math.PI / 2 },
   walls: [...box(30, 20), ...wallV(22, 0, 20, [[4, 6], [14.5, 16.5]]), ...wallH(12, 22, 30, [[25, 27]])],
   rooms: [{ name: 'Sales floor', x0: 0, y0: 0, x1: 22, y1: 13 }, { name: 'Checkout', x0: 0, y0: 13, x1: 22, y1: 20 },
     { name: 'Stockroom', x0: 22, y0: 0, x1: 30, y1: 12 }, { name: 'Office', x0: 22, y0: 12, x1: 30, y1: 20 }],
@@ -173,6 +178,7 @@ const RETAIL = {
 // Research lab building: central corridor with labs, storage, seminar room, offices and a break room.
 const LABS = {
   id: 'labs', name: 'Lab building', note: 'Wet lab, robotics lab, seminar room and offices off one corridor.', w: 32, h: 18,
+  dock: { x: 16.5, y: 3.6, th: Math.PI / 2 },
   walls: [...box(32, 18),
     ...wallH(7.5, 0, 32, [[4, 6], [15.5, 17.5], [26, 28]]), ...wallH(10.5, 0, 32, [[5, 7], [16, 18], [26, 28]]),
     ...wallV(11, 0, 7.5), ...wallV(22, 0, 7.5, [[3, 4.6]]), ...wallV(12, 10.5, 18), ...wallV(22, 10.5, 18)],
@@ -196,6 +202,17 @@ const LABS = {
     cn('plant', 'green', 'Corridor'), wl('fire extinguisher', 'red', 'Corridor'), wl('defibrillator', 'green', 'Corridor'), wl('trash can', 'gray', 'Corridor'), wl('bench', 'gray', 'Corridor'), wl('fire extinguisher', 'red', 'Corridor')],
   spawns: [[1.5, 9], [30.5, 9], [10, 9], [22, 9], [16, 9], [2, 1.5], [20, 1.5], [2, 16.5], [20, 16.5], [30, 16.5]],
 };
+
+// All robots start from one dock: two rows (0.85 m apart) of up to five robots (0.8 m apart),
+// facing into the building. Slot order keeps small teams compact around the dock centre.
+export const DOCK_ROWS = 0.85, DOCK_LANE = 0.8;
+export function dockFormation(def, n = 10) {
+  const { x, y, th } = def.dock, fx = Math.cos(th), fy = Math.sin(th), lx = -fy, ly = fx, out = [];
+  for (const lane of [0, 1, -1, 2, -2]) for (const row of [0.5, -0.5]) {
+    out.push({ x: x + fx * row * DOCK_ROWS + lx * lane * DOCK_LANE, y: y + fy * row * DOCK_ROWS + ly * lane * DOCK_LANE, th });
+  }
+  return out.slice(0, n);
+}
 
 export const SCENES = [OFFICE, WAREHOUSE, HOME, HOSPITAL, RETAIL, LABS];
 
@@ -234,7 +251,7 @@ export function buildScene(def, seed) {
   const R = rng(seed * 7919 + def.id.length);
   const walls = def.walls.slice();
   const objects = []; let id = 0;
-  const spawnPts = def.spawns.map(([x, y]) => ({ x, y }));
+  const spawnPts = def.dock ? dockFormation(def) : def.spawns.map(([x, y]) => ({ x, y }));
   const doorPts = def.doors.map(([x, y]) => ({ x, y }));
   // fine grid (0.1 m) for overlap tests, coarse grid (nav resolution) for reachability
   const FR = 0.1, FW = Math.round(def.w / FR), FH = Math.round(def.h / FR);
@@ -347,6 +364,11 @@ export function buildScene(def, seed) {
     if (placed) { placed.id = `o${id++}`; addObject(placed); }
     placedAt.push(placed);
   });
+  if (def.dock) {   // charging station behind the dock formation, if there is room
+    const { x, y, th } = def.dock, d = DOCK_ROWS / 2 + 0.95;
+    const o = { id: '', cat: 'charging station', color: 'green', x: x - Math.cos(th) * d, y: y - Math.sin(th) * d, th: th - Math.PI / 2, room: roomAt(def, x, y) };
+    if (fits(o, def.rooms.find((q) => q.name === o.room) || def.rooms[0], 0.3)) { o.id = `o${id++}`; o.dock = true; addObject(o); }
+  }
   for (const [x, y] of def.doors) objects.push({ id: `o${id++}`, cat: 'door', color: 'white', x, y, th: 0 });
   // coverage waypoints per room: a coarse lawnmower grid snapped to reachable free cells
   const fl = flood();
@@ -374,7 +396,7 @@ export function buildScene(def, seed) {
     if (!pts.length) pts.push({ x: (room.x0 + room.x1) / 2, y: (room.y0 + room.y1) / 2 });
     coverage[room.name] = pts;
   }
-  return { ...def, walls, objects, coverage, seed };
+  return { ...def, walls, objects, coverage, seed, starts: spawnPts.map((p) => ({ x: p.x, y: p.y, th: p.th ?? 0 })), spawns: spawnPts.map((p) => [p.x, p.y]) };
 }
 
 export function roomAt(scene, x, y) {

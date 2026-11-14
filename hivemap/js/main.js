@@ -288,17 +288,25 @@ function refreshStats() {
 const usedSuggestions = new Set();
 function renderSuggestions() {
   const T = team; if (!T) return;
-  const pick = (k) => { try { return makeTask(T, k); } catch { return null; } };
-  const f = pick('fetch'), inv = pick('inventory');
+  // only suggest objects the team has actually mapped
+  const known = new Set(); T.robots.forEach((_, r) => Object.keys(T.locals[r]?.lms || {}).forEach((id) => known.add(id)));
+  const objs = T.scene.objects.filter((o) => known.has(o.id) && o.cat !== 'door' && o.cat !== 'rack');
+  const unique = objs.filter((o) => T.scene.objects.filter((q) => q.cat === o.cat && q.color === o.color).length === 1);
+  const f = unique.length ? unique[(T.seed * 13 + usedSuggestions.size) % unique.length] : null;
+  const counts = {}; for (const o of objs) counts[o.cat] = (counts[o.cat] || 0) + 1;
+  const cat = Object.keys(counts).filter((c) => counts[c] >= 2).sort((a, b) => counts[b] - counts[a])[0];
+  const plural = (c) => (/(s|x|ch|sh)$/.test(c) ? `${c}es` : `${c}s`);
   const unexplored = T.scene.rooms.filter((q) => !T.robots.some((_, i) => T.sims[i].explored.has(q.name))).map((q) => q.name);
   const idleR = T.robots.findIndex((_, r) => !robotState(T, r).busy);
   const s = [
-    f && `Go to the ${f.query}`,
-    inv && `Where are the ${inv.cat}s?`,
+    unexplored.length > 1 && !objs.length && 'Explore the building',
+    f && `Go to the ${f.color} ${f.cat}`,
+    cat && `Where are the ${plural(cat)}?`,
+    unexplored.length > 1 && objs.length && 'Explore the rest of the building',
     unexplored[0] && `Explore the ${unexplored[0]}`,
-    inv && `Check every ${inv.cat}`,
-    f && T.n > 1 && `Everyone meet at the ${f.query}`,
-    idleR >= 0 && T.n > 1 && `Robot ${idleR + 1}, explore the ${T.scene.rooms[(idleR * 3 + usedSuggestions.size) % T.scene.rooms.length].name}`,
+    cat && `Check every ${cat}`,
+    f && T.n > 1 && `Everyone meet at the ${f.color} ${f.cat}`,
+    idleR >= 0 && T.n > 1 && unexplored.length && `Robot ${idleR + 1}, explore the ${unexplored[unexplored.length - 1]}`,
   ].filter((x) => x && !usedSuggestions.has(x)).slice(0, 3);
   $('#chips').innerHTML = s.map((c) => `<button type="button" ${taskRunning ? 'disabled' : ''}>${esc(c)}</button>`).join('');
   $$('#chips button').forEach((b) => (b.onclick = () => send(b.textContent)));
@@ -322,8 +330,8 @@ function renderFeedEmpty() {
     const d = document.createElement('div'); d.className = 'intro';
     d.innerHTML = `<button type="button" class="x" aria-label="Dismiss intro">✕</button>
       <b>A robot team that shares one map</b>
-      <p>Each robot maps the rooms it drives through. Hivemap merges those maps so any robot can use what the others have seen.</p>
-      <ol><li><span>Type a task, like “go to the red toolbox”.</span></li><li><span>The dispatcher picks the best robot and says why.</span></li><li><span>Watch it drive, then open <em>Compare</em> to see what sharing saves.</span></li></ol>
+      <p>The robots wait at their dock with empty maps. Each one maps the rooms it drives through, and Hivemap merges those maps so any robot can use what the others have seen.</p>
+      <ol><li><span>Start with “Explore the building”: the team splits up the rooms.</span></li><li><span>Then ask for something they saw, like “go to the red toolbox”. The dispatcher picks a robot and says why.</span></li><li><span>Open <em>Compare</em> to see what sharing the map saves.</span></li></ol>
       <div class="row"><button type="button" class="btn primary" data-try>Try a task</button><button type="button" class="btn ghost" data-dismiss>Got it</button></div>`;
     const dismiss = () => { introOpen = false; store.set('intro', 'seen'); renderFeedEmpty(); };
     $('.x', d).onclick = dismiss; $('[data-dismiss]', d).onclick = dismiss;
