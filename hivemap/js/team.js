@@ -19,7 +19,7 @@ export class RobotSim {
     this.scene = scene; this.robot = def; this.R = rng(seed); this.detectProb = detectProb;
     this.yawBias = (this.R.next() * 2 - 1) * 0.014;     // rad per meter, differs per robot
     this.gt = [{ ...def.start }]; this.dr = [{ ...def.start }]; this.odom = []; this.obs = [];
-    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0;
+    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0; this.sightings = {};
     this.observe(0);
   }
   get k() { return this.gt.length - 1; }
@@ -29,6 +29,7 @@ export class RobotSim {
       const pd = this.detectProb(p, o);
       if (pd <= 0 || R.next() > pd) continue;
       const rel = between(p, o), far = Math.hypot(rel.x, rel.y) / SENSOR.range;
+      this.sightings[o.id] = (this.sightings[o.id] || 0) + 1;
       this.obs.push({ k, obj: o.id, z: { x: rel.x + R.gauss() * NOISE.obsPos * (1 + far), y: rel.y + R.gauss() * NOISE.obsPos * (1 + far), th: wrap(rel.th + R.gauss() * NOISE.obsRot) }, emb: embedObject(o, R, 0.14 + 0.08 * far) });
     }
     if (R.next() < NOISE.falseRate) {   // spurious detection (never re-observed -> filtered)
@@ -107,7 +108,10 @@ export function solveLocal(rs, prev) {
     const m = es[0].map((_, d) => es.reduce((a, e) => a + e[d], 0) / es.length); const n = Math.hypot(...m); return [id, m.map((x) => x / n)];
   }));
   const lastSeen = {}; for (const o of rs.obs) if (o.obj in lmIdx) lastSeen[o.obj] = o.k;
-  return { version: rs.version, g, poseIdx, lmIdx, poses, lms, meanEmb, lastSeen, count,
+  // odometry distance driven before an object was first seen: drift (and position uncertainty) grows with it
+  const cum = [0]; for (const f of rs.odom) cum.push(cum[cum.length - 1] + Math.hypot(f.z.x, f.z.y));
+  const travel = {}; for (const o of rs.obs) if (o.obj in lmIdx && !(o.obj in travel)) travel[o.obj] = cum[o.k];
+  return { version: rs.version, g, poseIdx, lmIdx, poses, lms, meanEmb, lastSeen, count, travel,
     align: rigidAlign(poses, rs.gt), ate: rs.gt.length > 2 ? ateAligned(poses, rs.gt) : 0 };
 }
 
@@ -125,6 +129,7 @@ export function mergeMaps(sims, locals, encounters = []) {
   const joined = [0], pending = new Set([...Array(n).keys()].slice(1));
   const links = [], encUsed = [], via = {};
   let rejectedTotal = 0;
+  const origin0 = sims[0].robot.start, walls = sims[0].scene.walls;
   const teamObjects = () => joined.flatMap((r) => shared[r].map((s) => { const q = compose(T[r], { x: s.x, y: s.y, th: 0 }); return { ...s, x: q.x, y: q.y }; }));
   while (pending.size) {
     let pick = null;
@@ -154,13 +159,23 @@ export function mergeMaps(sims, locals, encounters = []) {
     if (!pick) break;
     T[pick.r] = pick.T; via[pick.r] = pick.how; joined.push(pick.r); pending.delete(pick.r);
     // gated object association given the frame link (one-to-one, by similarity)
+    // A link needs a close match AND no look-alike nearby on either side, within a radius that
+    // grows with how far each robot had driven before seeing the object (odometry drift).
     const team = teamObjects().filter((o) => o.r !== pick.r);
+    const mineT = shared[pick.r].map((s2) => ({ ...s2, ...compose(pick.T, { x: s2.x, y: s2.y, th: 0 }) }));
+    const sig = (r, obj) => 0.1 + 0.04 * (locals[r].travel?.[obj] ?? 0);
     const used = new Set(), cand = [];
-    for (const s2 of shared[pick.r]) {
-      const q = compose(pick.T, { x: s2.x, y: s2.y, th: 0 });
+    for (const q of mineT) {
       for (const o of team) {
-        const d = Math.hypot(o.x - q.x, o.y - q.y), sim = cosine(o.emb, s2.emb);
-        if (d < 1.0 && sim > 0.8) cand.push({ o, s2, score: sim - d * 0.2 });
+        const d = Math.hypot(o.x - q.x, o.y - q.y), sim = cosine(o.emb, q.emb);
+        if (d >= 1.0 || sim <= 0.8) continue;
+        const A = Math.max(1.5, 2.5 * (sig(o.r, o.obj) + sig(pick.r, q.obj)));
+        const alike = (list, self) => list.some((x) => x.key !== self.key && cosine(x.emb, q.emb) > 0.8 && (Math.hypot(x.x - q.x, x.y - q.y) < A || Math.hypot(x.x - o.x, x.y - o.y) < A));
+        if (alike(team, o) || alike(mineT, q)) continue;
+        // the floor plan is known: two sightings on opposite sides of a wall are different objects
+        const wa = compose(origin0, { x: o.x, y: o.y, th: 0 }), wb = compose(origin0, { x: q.x, y: q.y, th: 0 });
+        if (walls.some((w) => segIntersect(wa, wb, { x: w[0], y: w[1] }, { x: w[2], y: w[3] }))) continue;
+        cand.push({ o, s2: q, score: sim - d * 0.2 });
       }
     }
     cand.sort((x, y) => y.score - x.score);
@@ -171,7 +186,6 @@ export function mergeMaps(sims, locals, encounters = []) {
     }
   }
   const g = new PoseGraph(), idx = sims.map(() => ({}));
-  const origin0 = sims[0].robot.start;
   for (const r of joined) {
     const toTeam = (p) => compose(origin0, compose(T[r], between(sims[r].robot.start, p)));
     locals[r].g.vars.forEach((v, i) => { idx[r][i] = g.addVar({ ...toTeam(v), owner: v.owner, kind: v.kind, key: v.key, fixed: r === 0 && v.key.endsWith(':p0') }); });

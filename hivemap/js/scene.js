@@ -37,7 +37,7 @@ function getMarkerTex() {
   markerTex = new THREE.CanvasTexture(c); markerTex.colorSpace = THREE.SRGBColorSpace; markerTex.anisotropy = 4;
   return markerTex;
 }
-const markerGeo = Object.assign(new THREE.PlaneGeometry(0.4, 0.4).rotateX(-Math.PI / 2), { _shared: true });
+const markerGeo = Object.assign(new THREE.PlaneGeometry(0.34, 0.34).rotateX(-Math.PI / 2), { _shared: true });
 const targetGeo = Object.assign(new THREE.PlaneGeometry(0.7, 0.7).rotateX(-Math.PI / 2), { _shared: true });
 
 // find the gap a door marker sits in: {vertical, lo, hi, at}
@@ -64,7 +64,7 @@ export class SceneView {
     const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio, this.useAO ? 1.5 : 2));
     r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.95;
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(r.domElement); this.renderer = r;
     this.labels = new CSS2DRenderer(); this.labels.domElement.className = 'labels-layer'; container.appendChild(this.labels.domElement);
@@ -190,7 +190,7 @@ export class SceneView {
       const trail = new Line2(new LineGeometry(), lm); trail.visible = false; trail.renderOrder = 2; this.estGroup.add(trail);
       const gtl = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0x64748b, dashSize: 0.18, gapSize: 0.14, transparent: true, opacity: 0.6 })); this.gtGroup.add(gtl);
       this.trails[rb.i] = { trail, gtl, lm, n: -1 }; this.rings[rb.i] = {};
-      this.ringMats[rb.i] = new THREE.MeshBasicMaterial({ color: rb.color, map: getMarkerTex(), transparent: true, opacity: 0.9, depthWrite: false, depthTest: false });
+      this.ringMats[rb.i] = new THREE.MeshBasicMaterial({ color: rb.color, map: getMarkerTex(), transparent: true, opacity: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
     }
     this.userMoved = false; this.fitCamera();
   }

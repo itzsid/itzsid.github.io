@@ -394,10 +394,10 @@ B.lamp = (k, c, R) => {
   for (let i = 0; i < 3; i++) { const a = i * 2.094; k.rod([0, 1.45, 0], [Math.sin(a) * 0.185, 1.58, Math.cos(a) * 0.185], 0.003, brass, 4); }
 };
 
-B.rack = (k, c, R) => {
+B.rack = (k, c, R, o) => {
   const up = mats.paint('#1f4fa0', 0.45), beam = mats.paint('#e46f1f', 0.4), deck = mats.paint('#9aa3ad', 0.5), brace = mats.paint('#1f4fa0', 0.5);
-  const L = 4.4, W = 1.0, Ht = 2.3, levels = [0.14, 0.95, 1.75];
-  for (const z of [-L / 2 + 0.04, 0, L / 2 - 0.04]) {
+  const L = o.l || 4.4, Ht = 2.3, levels = [0.14, 0.95, 1.75], nb = Math.max(1, Math.round(L / 2.2));
+  for (let bi = 0; bi <= nb; bi++) { const z = -L / 2 + 0.04 + (bi * (L - 0.08)) / nb;
     for (const sx of [-1, 1]) { k.box(0.07, Ht, 0.07, up, sx * 0.45, Ht / 2, z, 0.004); k.box(0.14, 0.01, 0.12, mats.metal('#6b7280'), sx * 0.45, 0.005, z, 0); }
     for (let i = 0; i < 4; i++) { const y0 = 0.2 + i * 0.52; k.bar([-0.44, y0, z], [0.44, y0 + 0.5, z], 0.025, brace); k.box(0.86, 0.025, 0.025, brace, 0, y0, z, 0); }
   }
@@ -406,7 +406,7 @@ B.rack = (k, c, R) => {
     k.box(0.9, 0.02, L - 0.1, deck, 0, y + 0.06, 0, 0);
   }
   // stock: wrapped pallet loads, loose cartons and coloured totes per bay
-  const bays = [-L / 4, L / 4], toteM = ['#2f5fb8', '#2e7d32', '#e8742a', '#c62828'].map((h) => mats.plastic(h));
+  const bays = Array.from({ length: nb }, (_, i) => -L / 2 + (i + 0.5) * (L / nb)), toteM = ['#2f5fb8', '#2e7d32', '#e8742a', '#c62828'].map((h) => mats.plastic(h));
   const palletM = mats.wood('#c9a876');
   for (const y of levels) for (const bz of bays) {
     const r = R(), base = y + 0.07, maxH = 0.62;
@@ -716,13 +716,154 @@ B['reception desk'] = (k, c, R) => {
   for (let i = 0; i < 7; i++) { const a = i * 0.9; k.sph(1, mats.leaf('#3f7d3a'), 0.95 + Math.sin(a) * 0.05, 1.24, 0.3 + Math.cos(a) * 0.05, 0.07, 0.01, 0.03, 0, a - H, -0.4, 8, 5); }
 };
 
+
+B.whiteboard = (k, c, R) => {
+  const al = mats.brushed('#c9ced4'), dk = mats.paint('#2f3338', 0.5);
+  for (const sx of [-1, 1]) { k.box(0.04, 1.75, 0.04, al, sx * 0.8, 0.9, 0, 0.008); k.box(0.06, 0.04, 0.55, dk, sx * 0.8, 0.07, 0, 0.01); for (const sz of [-1, 1]) k.cylX(0.03, 0.02, mats.rubber(), sx * 0.8, 0.03, sz * 0.24, 10); }
+  k.box(1.6, 1.0, 0.04, al, 0, 1.25, 0, 0.012);
+  k.box(1.54, 0.94, 0.006, mats.paint('#fbfbfb', 0.25), 0, 1.25, 0.022, 0);
+  k.box(1.5, 0.025, 0.07, al, 0, 0.74, 0.04, 0.006);
+  const ink = [mats.paint('#1d4ed8', 0.5), mats.paint('#b91c1c', 0.5), mats.paint('#111827', 0.5)];
+  for (let i = 0; i < 9; i++) k.box(0.15 + R() * 0.45, 0.012, 0.002, ink[i % 3], -0.45 + R() * 0.6, 1.6 - i * 0.08, 0.026, 0, 0, 0, (R() - 0.5) * 0.15);
+  k.box(0.32, 0.22, 0.002, ink[0], 0.45, 1.3, 0.026, 0); k.box(0.3, 0.2, 0.003, mats.paint('#fbfbfb', 0.25), 0.45, 1.3, 0.027, 0);
+  for (let i = 0; i < 3; i++) k.cylX(0.008, 0.12, ink[i], -0.5 + i * 0.15, 0.765, 0.05, 6);
+};
+
+B.cabinet = (k, c, R) => {   // lateral filing cabinet
+  const p = c === 'gray' || c === 'white' ? mats.paint(c === 'white' ? '#eef0f2' : '#9aa1a9', 0.4) : mats.paint(tone(c), 0.4), ch = mats.chrome();
+  k.box(0.9, 1.1, 0.5, p, 0, 0.58, 0, 0.01);
+  k.box(0.86, 0.05, 0.46, mats.paint('#2b2f36', 0.6), 0, 0.025, -0.01, 0.003);
+  for (let i = 0; i < 3; i++) { const y = 0.25 + i * 0.35; k.box(0.86, 0.32, 0.015, p, 0, y, 0.252, 0.006); k.box(0.3, 0.02, 0.025, ch, 0, y + 0.1, 0.265, 0.006); k.box(0.1, 0.05, 0.004, mats.paint('#f8fafc', 0.6), 0, y + 0.03, 0.261, 0); }
+  k.box(0.25, 0.3, 0.2, mats.cardboard(), -0.2, 1.28, 0, 0.003); k.lathe([[0, 0], [0.06, 0], [0.07, 0.12], [0, 0.12]], mats.ceramic('#cbd5e1'), 0.25, 1.13, 0, 12);
+};
+
+B.nightstand = (k, c, R) => {
+  const w = woodOf(c), ch = mats.metal('#b08d57', 0.35);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.box(0.035, 0.12, 0.035, w, sx * 0.19, 0.06, sz * 0.16, 0.004);
+  k.box(0.45, 0.42, 0.4, w, 0, 0.33, 0, 0.012);
+  for (const y of [0.24, 0.43]) { k.box(0.41, 0.17, 0.012, w, 0, y, 0.202, 0.005); k.sph(0.013, ch, 0, y, 0.215, 1, 1, 1); }
+  k.cyl(0.06, 0.07, 0.03, mats.ceramic('#e7e5e4'), 0.08, 0.555, -0.05, 16); k.cyl(0.008, 0.008, 0.2, ch, 0.08, 0.66, -0.05, 6);
+  k.cyl(0.08, 0.11, 0.14, mats.sharedMat('nsshade', () => new THREE.MeshStandardMaterial({ color: '#f3e6c8', emissive: '#ffcf7a', emissiveIntensity: 0.45, roughness: 0.9, side: THREE.DoubleSide })), 0.08, 0.8, -0.05, 18, 0, 0, 0, true);
+  k.box(0.14, 0.03, 0.2, mats.paint('#8c2f39', 0.7), -0.1, 0.555, 0.04, 0.003, 0, 0.3, 0);
+};
+
+B['display shelf'] = (k, c, R, o) => {   // double-sided supermarket gondola along local z
+  const L = o.l || 6.4, W = o.w || 0.9, body = mats.paint(c === 'white' ? '#eef0f2' : tone(c), 0.45), edge = mats.paint('#2f5fb8', 0.4);
+  const prod = ['#c62828', '#2f5fb8', '#e8b923', '#2e7d32', '#e8742a', '#f5f5f4', '#7c3aed', '#0e7490', '#b45309'].map((h) => mats.plastic(h));
+  k.box(W, 0.12, L, mats.paint('#3f444b', 0.6), 0, 0.06, 0, 0.01);
+  k.box(0.06, 1.55, L, body, 0, 0.12 + 0.775, 0, 0.006);
+  for (const z of [-L / 2, L / 2]) k.box(W, 1.6, 0.04, body, 0, 0.8, z, 0.008);
+  const levels = [0.14, 0.5, 0.86, 1.22];
+  for (const sx of [-1, 1]) for (const y of levels) {
+    k.box(W / 2 - 0.05, 0.025, L - 0.06, body, sx * W / 4 + sx * 0.0, y, 0, 0.004);
+    k.box(0.012, 0.04, L - 0.06, edge, sx * (W / 2 - 0.02), y + 0.005, 0, 0.003);
+    let z = -L / 2 + 0.06;
+    while (z < L / 2 - 0.12) {
+      const run = 0.25 + R() * 0.45, m = prod[Math.floor(R() * prod.length)], kind = R(), h = 0.12 + R() * 0.16;
+      const n = Math.max(1, Math.floor(run / 0.09)), wz = run / n;
+      for (let i = 0; i < n; i++) {
+        const zz = z + wz * (i + 0.5);
+        if (kind < 0.35) k.cyl(wz * 0.4, wz * 0.4, h, m, sx * (W / 4 + 0.02), y + 0.0125 + h / 2, zz, 8);
+        else k.box(W / 2 - 0.12, h, wz - 0.012, m, sx * (W / 4 + 0.02), y + 0.0125 + h / 2, zz, 0);
+      }
+      z += run + 0.02;
+    }
+  }
+  k.box(0.02, 0.22, 0.9, mats.paint('#f8fafc', 0.5), 0, 1.85, 0, 0.004); k.box(0.024, 0.12, 0.84, edge, 0, 1.85, 0, 0.004);
+};
+
+B['checkout counter'] = (k, c, R) => {   // along local z
+  const body = mats.paint(c === 'gray' ? '#9aa1a9' : tone(c), 0.45), top = mats.brushed('#c3c8ce'), dk = darkPlastic();
+  k.box(0.8, 0.86, 1.8, body, 0, 0.43, 0, 0.012);
+  k.box(0.82, 0.03, 1.82, top, 0, 0.875, 0, 0.006);
+  k.box(0.42, 0.012, 1.1, mats.rubber(), -0.1, 0.896, -0.3, 0.004);
+  k.box(0.02, 0.06, 1.1, mats.metal('#9ca3af'), 0.13, 0.92, -0.3, 0.003);
+  k.box(0.36, 0.008, 0.3, mats.glass(), -0.1, 0.895, 0.42, 0.003);
+  k.cyl(0.02, 0.02, 0.2, dk, 0.25, 0.99, 0.55, 8); k.box(0.3, 0.2, 0.03, dk, 0.25, 1.15, 0.55, 0.008, -0.2, -H, 0); k.box(0.27, 0.17, 0.003, mats.screen('pc'), 0.234, 1.15, 0.55, 0, -0.2, -H, 0);
+  k.box(0.1, 0.04, 0.16, dk, 0.0, 0.91, 0.75, 0.008, 0.25, 0, 0);
+  k.box(0.35, 0.12, 0.45, mats.paint('#2b2f36', 0.5), 0.15, 0.95, 0.2, 0.01);
+  k.cyl(0.02, 0.02, 1.1, mats.metal('#9ca3af'), 0.36, 1.45, -0.85, 8);
+  k.cyl(0.09, 0.09, 0.14, mats.emissive('#22c55e', 0.7), 0.36, 2.05, -0.85, 18);
+};
+
+B['shopping cart'] = (k, c, R) => {
+  const wire = c === 'gray' ? mats.chrome() : mats.paint(tone(c), 0.35), red = mats.plastic('#c62828'), t = 0.006;
+  const y0 = 0.42, y1 = 0.9, zf = 0.42, zb = -0.4, wf = 0.21, wb = 0.26;
+  for (const sx of [-1, 1]) { k.rod([sx * wf, y0, zf], [sx * wb, y0, zb], 0.012, wire); k.rod([sx * wf, y1, zf + 0.06], [sx * wb, y1, zb], 0.01, wire); }
+  k.rod([-wf, y1, zf + 0.06], [wf, y1, zf + 0.06], 0.01, wire); k.rod([-wb, y1, zb], [wb, y1, zb], 0.01, wire);
+  for (let i = 0; i <= 12; i++) { const f = i / 12, z = zf + (zb - zf) * f, w = wf + (wb - wf) * f; for (const sx of [-1, 1]) k.rod([sx * w, y0, z], [sx * w, y1, z + 0.06 * (1 - f)], t, wire, 4); }
+  for (let i = 0; i <= 7; i++) { const x = -wf + (2 * wf * i) / 7; k.rod([x, y0, zf], [x, y1, zf + 0.06], t, wire, 4); k.rod([x * wb / wf, y0, zb], [x * wb / wf, y1, zb], t, wire, 4); k.rod([x, y0, zf], [x * wb / wf, y0, zb], t, wire, 4); }
+  k.rod([-0.27, 1.0, -0.5], [0.27, 1.0, -0.5], 0.018, red, 10);
+  for (const sx of [-1, 1]) k.rod([sx * 0.26, y1, zb], [sx * 0.27, 1.0, -0.5], 0.01, wire);
+  for (const sx of [-1, 1]) { k.rod([sx * 0.2, y0, zf - 0.02], [sx * 0.2, 0.1, zf], 0.012, wire); k.rod([sx * 0.24, y0, zb], [sx * 0.24, 0.1, zb], 0.012, wire); k.rod([sx * 0.2, 0.1, zf], [sx * 0.24, 0.1, zb], 0.012, wire); }
+  casters(k, [-0.2, 0.2], [zf, zb], 0.045);
+  k.box(0.44, 0.012, 0.75, wire, 0, 0.16, 0.0, 0.003);
+  k.box(0.4, 0.05, 0.06, red, 0, 0.905, zb + 0.02, 0.01);
+};
+
+B.freezer = (k, c, R) => {   // supermarket chest freezer, long side along local x
+  const body = c === 'white' ? mats.paint('#f1f3f5', 0.35) : mats.paint(tone(c), 0.35), dk = mats.paint('#2b2f36', 0.6);
+  k.box(1.8, 0.82, 0.8, body, 0, 0.43, 0, 0.03);
+  k.box(1.76, 0.08, 0.76, dk, 0, 0.04, 0, 0.004);
+  k.box(1.72, 0.02, 0.72, mats.paint('#cfe7f5', 0.3), 0, 0.72, 0, 0.004);
+  const prod = ['#2f5fb8', '#c62828', '#e8b923', '#f5f5f4', '#2e7d32', '#e8742a'].map((h) => mats.plastic(h));
+  for (let i = 0; i < 26; i++) k.box(0.14 + R() * 0.08, 0.04, 0.12 + R() * 0.08, prod[Math.floor(R() * prod.length)], -0.78 + R() * 1.56, 0.75 + R() * 0.03, -0.28 + R() * 0.56, 0.006, 0, R() * PI, 0);
+  k.box(1.76, 0.012, 0.76, mats.glass(), 0, 0.85, 0, 0.004);
+  for (const x of [-0.88, 0, 0.88]) k.box(0.025, 0.04, 0.78, mats.metal('#9ca3af', 0.35), x, 0.85, 0, 0.004);
+  k.box(1.8, 0.05, 0.02, mats.paint('#2f5fb8', 0.4), 0, 0.79, 0.405, 0.004);
+};
+
+B['fume hood'] = (k, c, R) => {
+  const p = mats.paint(c === 'gray' ? '#c8ccd1' : tone(c), 0.4), wk = mats.paint('#2b2f36', 0.4), glass = mats.glass();
+  k.box(1.5, 0.85, 0.75, p, 0, 0.425, 0, 0.008);
+  for (const x of [-0.375, 0.375]) { k.box(0.004, 0.75, 0.004, mats.paint('#9ca3af', 0.5), x, 0.44, 0.377, 0); k.box(0.12, 0.015, 0.02, mats.chrome(), x - 0.1, 0.75, 0.385, 0.004); k.box(0.12, 0.015, 0.02, mats.chrome(), x + 0.1, 0.75, 0.385, 0.004); }
+  k.box(1.52, 0.035, 0.78, wk, 0, 0.87, 0, 0.004);
+  for (const sx of [-1, 1]) k.box(0.08, 1.2, 0.75, p, sx * 0.71, 1.49, 0, 0.008);
+  k.box(1.5, 0.08, 0.75, p, 0, 2.13, 0, 0.008); k.box(1.42, 1.2, 0.03, p, 0, 1.49, -0.36, 0.004);
+  k.box(1.36, 0.6, 0.012, glass, 0, 1.55, 0.33, 0); k.box(1.38, 0.04, 0.04, mats.brushed(), 0, 1.24, 0.34, 0.006);
+  k.box(1.36, 0.25, 0.03, p, 0, 1.97, 0.34, 0.004);
+  k.box(0.1, 0.05, 0.005, mats.emissive('#22c55e', 0.7), 0.55, 1.97, 0.357, 0.002);
+  k.cyl(0.14, 0.14, 0.4, mats.brushed(), 0, 2.37, -0.1, 18);
+  k.lathe([[0, 0], [0.04, 0], [0.045, 0.12], [0.015, 0.2], [0.015, 0.24], [0, 0.24]], glass, -0.3, 0.89, 0.0, 12);
+  k.cyl(0.035, 0.035, 0.12, mats.plastic('#f5f5f4'), 0.2, 0.95, -0.1, 12); k.cyl(0.03, 0.03, 0.1, mats.plastic('#38bdf8'), 0.3, 0.94, 0.05, 12);
+};
+
+B.centrifuge = (k, c, R) => {
+  const w = mats.plastic(c === 'white' ? '#f1f3f5' : tone(c));
+  k.box(0.55, 0.7, 0.55, mats.paint('#d4d4d8', 0.5), 0, 0.35, 0, 0.01); casters(k, [-0.22, 0.22], [-0.22, 0.22], 0.03);
+  k.box(0.5, 0.3, 0.5, w, 0, 0.85, 0, 0.06);
+  k.cyl(0.18, 0.18, 0.03, mats.plastic('#cbd5e1'), 0, 1.0, -0.03, 24);
+  k.box(0.3, 0.1, 0.03, mats.plastic('#2b2f36'), 0, 0.84, 0.25, 0.01, -0.3); k.box(0.12, 0.05, 0.005, mats.screen('med'), -0.05, 0.85, 0.268, 0, -0.3);
+};
+
+B['gas cylinder'] = (k, c, R) => {
+  const m = mats.paint(tone(c), 0.3);
+  k.box(0.32, 0.02, 0.32, mats.paint('#374151', 0.5), 0, 0.01, 0, 0.006);
+  k.lathe([[0, 0.02], [0.1, 0.02], [0.11, 0.05], [0.11, 1.2], [0.09, 1.3], [0.04, 1.34], [0, 1.34]], m, 0, 0, 0, 20);
+  k.cyl(0.111, 0.111, 0.12, mats.paint('#f5f5f4', 0.5), 0, 1.15, 0, 20, 0, 0, 0, true);
+  k.cyl(0.025, 0.03, 0.08, mats.metal('#b08d57', 0.3), 0, 1.38, 0, 10); k.cylX(0.012, 0.08, mats.metal('#b08d57', 0.3), 0.03, 1.38, 0, 8);
+  k.cyl(0.03, 0.03, 0.03, mats.paint('#111827', 0.5), 0, 1.43, 0, 12);
+  k.tor(0.12, 0.006, mats.metal('#6b7280', 0.4), 0, 0.9, 0, H, 0, 0, PI * 2, 4, 24);
+  k.box(0.03, 0.95, 0.03, mats.paint('#374151', 0.5), 0, 0.475, -0.14, 0.004);
+};
+
+B['eyewash station'] = (k, c, R) => {
+  const g = mats.plastic(tone(c)), ch = mats.chrome();
+  k.cyl(0.14, 0.15, 0.02, mats.paint('#374151', 0.5), 0, 0.01, 0, 18);
+  k.cyl(0.025, 0.025, 0.95, mats.paint(tone(c), 0.4), 0, 0.48, 0, 10);
+  k.lathe([[0, 0], [0.05, 0], [0.16, 0.08], [0.17, 0.1], [0.16, 0.1], [0.05, 0.015], [0, 0.015]], g, 0, 0.95, 0, 20);
+  for (const sx of [-1, 1]) k.cyl(0.018, 0.022, 0.05, mats.plastic('#facc15'), sx * 0.05, 1.0, 0, 10);
+  k.rod([0, 0.9, 0.05], [0, 0.95, 0.22], 0.008, ch); k.box(0.14, 0.012, 0.08, g, 0, 0.95, 0.25, 0.005);
+  k.box(0.22, 0.16, 0.01, mats.paint('#16a34a', 0.5), 0, 1.4, 0, 0.006); k.cyl(0.012, 0.012, 0.35, mats.paint('#374151', 0.5), 0, 1.15, -0.02, 6);
+};
+
 B.default = (k, c) => k.box(0.4, 0.4, 0.4, mats.plastic(tone(c)), 0, 0.2, 0, 0.03);
 
 export function objectMesh(o) {
   const g = new THREE.Group();
   if (o.cat !== 'door') {
     const k = new Kit(), R = rngFor(`${o.id}|${o.cat}|${o.x.toFixed(2)}`);
-    (B[o.cat] || B.default)(k, o.color, R);
+    (B[o.cat] || B.default)(k, o.color, R, o);
     k.bake(g);
   }
   g.position.set(o.x, 0, o.y);

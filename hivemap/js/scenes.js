@@ -282,7 +282,7 @@ export function buildScene(def, seed) {
   const roomOf = (n) => def.rooms.find((r) => r.name === n);
   const hasWall = (x, y) => walls.some((w) => segDist(x, y, ...w) < 0.12);
   // can o be placed? pad = free space kept to other furniture
-  const fits = (o, room, pad) => {
+  const fits = (o, room, pad, sibling = false) => {
     const f = half(footprint(o));
     for (const a of [0, Math.PI / 2]) {   // stay inside the room
       const ex = extent(footprint(o), o.th, a);
@@ -291,6 +291,8 @@ export function buildScene(def, seed) {
     }
     for (const d of doorPts) if (objDist(o, d.x, d.y) < 0.9) return false;
     for (const s of spawnPts) if (objDist(o, s.x, s.y) < 0.6) return false;
+    // identical-looking objects on either side of a wall would be indistinguishable: keep them apart
+    if (!sibling && objects.some((q) => q.cat === o.cat && q.color === o.color && Math.hypot(q.x - o.x, q.y - o.y) < 2.5)) return false;
     for (const c of cellsOf(FW, FH, FR, o, 0.02)) if (wallG[c]) return false;
     for (const c of cellsOf(FW, FH, FR, o, pad)) if (objG[c]) return false;
     // keep the building connected: no robot-reachable area may be cut off
@@ -359,7 +361,7 @@ export function buildScene(def, seed) {
         x = room.x0 + 0.7 + R.next() * (room.x1 - room.x0 - 1.4); y = room.y0 + 0.7 + R.next() * (room.y1 - room.y0 - 1.4);
       }
       const o = { id: '', cat, color, x, y, th: Math.atan2(Math.sin(th), Math.cos(th)), room: roomName };
-      if (fits(o, room, pad)) placed = o;
+      if (fits(o, room, pad, !!anchor || mode === 'aisle' || !!(spec && spec.at))) placed = o;
     }
     if (placed) { placed.id = `o${id++}`; addObject(placed); }
     placedAt.push(placed);

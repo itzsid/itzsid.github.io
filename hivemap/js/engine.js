@@ -200,17 +200,17 @@ export class Team {
 
   // ---------- actions (resolve in simulated time)
   // segs: [{ type: 'path', to, standoff?, tol?, points? } | { type: 'turn', by } | { type: 'turn', toward } | { type: 'wait', until, max }]
-  motion(r, segs, kind, label, { until } = {}) {
+  motion(r, segs, kind, label, { until, untilEvery } = {}) {
     if (this.jobs[r]) return Promise.reject(new Error(`${this.robots[r].name} is busy (${this.jobs[r].label}).`));
     if (this.nudges[r]) this.endMover(r, this.nudges[r]);
     if (!segs.length) return Promise.resolve();
-    return new Promise((resolve) => { this.jobs[r] = { segs: segs.slice(), si: 0, kind, label, resolve, until, from: { ...this.pose[r] } }; this.emit({ type: 'job', r }); });
+    return new Promise((resolve) => { this.jobs[r] = { segs: segs.slice(), si: 0, kind, label, resolve, until, untilEvery, from: { ...this.pose[r] } }; this.emit({ type: 'job', r }); });
   }
-  async exploreRoom(r, room, { until } = {}) {
+  async exploreRoom(r, room, { until, untilEvery } = {}) {
     if (!this.scene.coverage[room]) throw new Error(`Unknown room "${room}". Rooms: ${this.scene.rooms.map((q) => q.name).join(', ')}`);
     const before = Object.keys(this.local(r).lms).length, d0 = this.sims[r].distance, t0 = this.time;
     const segs = coveragePlan(this.nav, this.scene, this.pose[r], room);
-    await this.motion(r, segs, 'explore', `exploring ${room}`, { until });
+    await this.motion(r, segs, 'explore', `exploring ${room}`, { until, untilEvery });
     this.sims[r].explored.add(room);
     const L = this.local(r);
     return { room, new_objects: Object.keys(L.lms).length - before, objects_in_my_map: Object.keys(L.lms).length, driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0) };
@@ -227,7 +227,7 @@ export class Team {
     this.emit({ type: 'navplan', r, points: [{ x: cur.x, y: cur.y }, ...pts.slice(1)] });
     const d0 = this.sims[r].distance, t0 = this.time;
     const segs = [{ type: 'path', to: { x: target.x, y: target.y }, standoff, tol: 1.6, points: pts.slice(1) }];
-    if (target.gt || target.face) segs.push({ type: 'turn', toward: { x: target.x, y: target.y } });
+    if (target.gt || target.faceTo) segs.push({ type: 'turn', toward: target.faceTo || { x: target.x, y: target.y } });
     await this.motion(r, segs, 'nav', `driving to ${label}`);
     const p = this.pose[r];
     return { arrived: true, driven_m: +(this.sims[r].distance - d0).toFixed(1), took_s: Math.round(this.time - t0), now_in: roomAt(this.scene, p.x, p.y),
@@ -471,7 +471,8 @@ export class Team {
       if (c.type === 'track') done = this.stepTrack(r, m, dt);
       else if (c.type === 'turn') done = m.stopping ? true : this.stepTurn(r, c, dt);
       else if (c.type === 'wait') { c.t += dt; this.vel[r] = { v: 0, w: 0 }; done = c.t >= (c.seg.max ?? 30) || (c.seg.until && c.seg.until()); }
-      if (this.keyframe(r) && m.until && !m.stopping && m.until()) m.stopping = true;
+      // early stop condition (e.g. "until the target is in my map"), evaluated every few seconds: it may re-solve the map
+      if (this.keyframe(r) && m.until && !m.stopping && this.time - (m.untilAt ?? -9) >= (m.untilEvery ?? 3)) { m.untilAt = this.time; if (m.until()) m.stopping = true; }
       if (m.stopping && (!m.cur || m.cur.type !== 'track' || this.vel[r].v === 0)) return this.endMover(r, m);
       if (m.cur !== c) return false;   // replaced during the step (replan / pull aside)
       if (done) { m.cur = null; m.si++; if (m.si >= m.segs.length) return this.endMover(r, m); }

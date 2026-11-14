@@ -17,29 +17,28 @@ let seed = 1; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 21474836
 const shade = (hex, f) => { const c = new THREE.Color(hex); c.offsetHSL(0, 0, f); return `#${c.getHexString()}`; };
 
 const FLOORS = {
-  wood: (g, s) => {   // planks with grain
-    const base = ['#c8a27a', '#bf9670', '#cfa982', '#b88d66'];
-    const pw = s / 6;
-    for (let i = 0; i < 6; i++) {
+  wood: (g, s) => {   // narrow oak planks with grain, staggered joints
+    const base = ['#c9a37b', '#bf966d', '#d0ab84', '#b98e66', '#c49c74'];
+    const n = 10, pw = s / n;
+    for (let i = 0; i < n; i++) {
       let y = -rnd() * s;
       while (y < s) {
-        const L = s * (0.4 + rnd() * 0.5);
+        const L = s * (0.35 + rnd() * 0.4);
         g.fillStyle = base[Math.floor(rnd() * base.length)]; g.fillRect(i * pw, y, pw, L);
-        g.strokeStyle = 'rgba(80,50,25,0.10)';
-        for (let k = 0; k < 9; k++) { g.beginPath(); const x = i * pw + rnd() * pw; g.moveTo(x, y); g.bezierCurveTo(x + 3, y + L * 0.3, x - 3, y + L * 0.6, x + 1, y + L); g.stroke(); }
-        g.fillStyle = 'rgba(60,35,15,0.35)'; g.fillRect(i * pw, y, pw, 1.5);
+        for (let k = 0; k < 7; k++) { g.strokeStyle = `rgba(80,50,25,${0.06 + rnd() * 0.08})`; g.lineWidth = 0.6 + rnd(); g.beginPath(); const x = i * pw + rnd() * pw; g.moveTo(x, y); g.bezierCurveTo(x + 2, y + L * 0.3, x - 2, y + L * 0.6, x + 1, y + L); g.stroke(); }
+        g.fillStyle = 'rgba(60,35,15,0.4)'; g.fillRect(i * pw, y, pw, 1.5);
         y += L;
       }
-      g.fillStyle = 'rgba(60,35,15,0.3)'; g.fillRect(i * pw, 0, 1.5, s);
+      g.fillStyle = 'rgba(60,35,15,0.35)'; g.fillRect(i * pw, 0, 1.5, s);
     }
   },
   tile: (g, s) => {
     const n = 8, w = s / n;
-    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 236 + Math.floor(rnd() * 10); g.fillStyle = `rgb(${v},${v},${v - 4})`; g.fillRect(i * w, j * w, w, w); }
-    g.strokeStyle = '#c9ccd1'; g.lineWidth = 2; for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * w, 0); g.lineTo(i * w, s); g.moveTo(0, i * w); g.lineTo(s, i * w); g.stroke(); }
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 222 + Math.floor(rnd() * 12); g.fillStyle = `rgb(${v},${v - 2},${v - 7})`; g.fillRect(i * w, j * w, w, w); }
+    g.strokeStyle = '#a9adb3'; g.lineWidth = 2.5; for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * w, 0); g.lineTo(i * w, s); g.moveTo(0, i * w); g.lineTo(s, i * w); g.stroke(); }
   },
   concrete: (g, s) => {
-    g.fillStyle = '#b9bcc0'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#a9adb1'; g.fillRect(0, 0, s, s);
     for (let k = 0; k < 9000; k++) { const v = 150 + Math.floor(rnd() * 70); g.fillStyle = `rgba(${v},${v},${v},0.25)`; g.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 2, 1 + rnd() * 2); }
     g.strokeStyle = 'rgba(90,95,100,0.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, s / 2); g.lineTo(s, s / 2); g.moveTo(s / 2, 0); g.lineTo(s / 2, s); g.stroke();
   },
@@ -49,7 +48,7 @@ const FLOORS = {
     const w = s / 4; g.strokeStyle = 'rgba(40,45,55,0.25)'; g.lineWidth = 1.5; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * w, 0); g.lineTo(i * w, s); g.moveTo(0, i * w); g.lineTo(s, i * w); g.stroke(); }
   },
   vinyl: (g, s) => {
-    g.fillStyle = '#dfe6e3'; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#c9d3cf'; g.fillRect(0, 0, s, s);
     for (let k = 0; k < 2500; k++) { g.fillStyle = rnd() < 0.5 ? 'rgba(160,175,170,0.35)' : 'rgba(250,255,252,0.5)'; g.fillRect(rnd() * s, rnd() * s, 2 + rnd() * 3, 1 + rnd() * 2); }
     const w = s / 4; g.strokeStyle = 'rgba(140,150,148,0.35)'; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * w, 0); g.lineTo(i * w, s); g.moveTo(0, i * w); g.lineTo(s, i * w); g.stroke(); }
   },
@@ -57,7 +56,9 @@ const FLOORS = {
 
 export function floorTypeFor(scene, room) {
   const n = room.toLowerCase();
-  if (/kitchen|bath/.test(n)) return 'tile';
+  if (/kitchen|bath|sales|checkout|reception|lobby/.test(n)) return 'tile';
+  if (/stock/.test(n)) return 'concrete';
+  if (/wet lab|robotics|seminar|nurse|room \d/.test(n)) return 'vinyl';
   if (/storage|loading/.test(n)) return 'concrete';
   if (/office|control/.test(n)) return 'carpet';
   if (/room \d|nurse|corridor/.test(n) || scene.id === 'hospital') return 'vinyl';
@@ -65,7 +66,7 @@ export function floorTypeFor(scene, room) {
   return 'wood';
 }
 export function floorMaterial(type, w, h) {
-  const meters = { wood: 3.2, tile: 2.4, concrete: 6, carpet: 3, vinyl: 3 }[type];
+  const meters = { wood: 2.4, tile: 2.4, concrete: 6, carpet: 3, vinyl: 3 }[type];
   const base = canvasTex(type, type === 'wood' ? 1024 : 512, FLOORS[type]);
   const map = base.clone(); map.repeat.set(w / meters, h / meters); map.needsUpdate = true;
   return new THREE.MeshStandardMaterial({ map, roughness: { wood: 0.5, tile: 0.3, concrete: 0.85, carpet: 1.0, vinyl: 0.42 }[type], metalness: 0 });
