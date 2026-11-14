@@ -6,37 +6,117 @@ import { RobotAgent } from './agents.js';
 import { Dispatcher } from './dispatcher.js';
 import { LocalLLM, MODELS, webgpuAvailable } from './llm.js';
 
-const $ = (s) => document.querySelector(s);
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const view = new SceneView($('#stage'));
 const llm = new LocalLLM();
 const ui = { agents: [], llm, log: (e) => addLog(e) };
-let team = null, speed = 6, seed = 7, sceneIdx = 0, taskKind = 'fetch';
-let worldBusy = false, dirtyLinks = true, dispatcher = null, taskRunning = false, lastCmp = null;
+let team = null, speed = 6, paused = false, seed = 7, sceneIdx = 0, taskKind = 'fetch';
+let worldBusy = false, dirtyLinks = true, dispatcher = null, taskRunning = false, lastCmp = null, worldId = 0;
 const kb = (b) => (b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : b >= 1024 ? `${Math.round(b / 1024)} KB` : `${b} B`);
-const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clock = (t) => { t = Math.max(0, Math.round(t || 0)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+const store = {
+  get(k) { try { return localStorage.getItem(`hivemap.${k}`); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(`hivemap.${k}`, v); } catch { /* private mode */ } },
+};
+const isMobile = () => window.innerWidth <= 860;
+const tick = () => new Promise((r) => setTimeout(r, 20));
 
 // ---------- layout: keep the building centred in the area the dock leaves free
+const dock = $('#dock');
 function applyInsets() {
-  const mobile = window.innerWidth <= 860;
-  view.setInsets(mobile ? { bottom: Math.round(window.innerHeight * 0.48), top: 50 } : { left: 408, top: 64 });
+  if (isMobile()) {
+    const h = dock.dataset.sheet === 'full' ? window.innerHeight * 0.5 : dock.getBoundingClientRect().height;
+    view.setInsets({ bottom: Math.round(Math.min(h, window.innerHeight * 0.6)), top: 56 });
+  } else view.setInsets({ left: 412, top: 64 });
 }
-window.addEventListener('resize', applyInsets);
+window.addEventListener('resize', () => { applyInsets(); placePop(); });
 
-// ---------- drawers
+// ---------- mobile bottom sheet: tap the handle to toggle, or drag it
+const SHEETS = ['peek', 'half', 'full'];
+function setSheet(s) {
+  dock.dataset.sheet = s;
+  $('#handle').setAttribute('aria-expanded', String(s !== 'peek'));
+  dock.style.height = '';
+  setTimeout(applyInsets, 260);
+}
+{
+  const h = $('#handle'); let y0 = null, h0 = 0, moved = false;
+  h.addEventListener('pointerdown', (e) => { if (!isMobile()) return; y0 = e.clientY; h0 = dock.getBoundingClientRect().height; moved = false; h.setPointerCapture(e.pointerId); dock.classList.add('dragging'); });
+  h.addEventListener('pointermove', (e) => {
+    if (y0 == null) return; const dy = e.clientY - y0; if (Math.abs(dy) > 4) moved = true;
+    dock.style.height = `${Math.max(120, Math.min(window.innerHeight * 0.9, h0 - dy))}px`;
+  });
+  const end = (e) => {
+    if (y0 == null) return; dock.classList.remove('dragging');
+    const hNow = dock.getBoundingClientRect().height, vh = window.innerHeight; y0 = null;
+    if (!moved) { setSheet(dock.dataset.sheet === 'peek' ? 'half' : 'peek'); return; }
+    const snaps = { peek: 0, half: vh * 0.5, full: vh * 0.86 };
+    const peekH = parseFloat(getComputedStyle(dock).getPropertyValue('--peek')) || 196; snaps.peek = peekH;
+    setSheet(Object.entries(snaps).sort((a, b) => Math.abs(a[1] - hNow) - Math.abs(b[1] - hNow))[0][0]);
+    e.preventDefault();
+  };
+  h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+  h.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp') { setSheet(SHEETS[Math.min(2, SHEETS.indexOf(dock.dataset.sheet) + 1)]); e.preventDefault(); }
+    if (e.key === 'ArrowDown') { setSheet(SHEETS[Math.max(0, SHEETS.indexOf(dock.dataset.sheet) - 1)]); e.preventDefault(); }
+    if (e.key === 'Enter' || e.key === ' ') { setSheet(dock.dataset.sheet === 'peek' ? 'half' : 'peek'); e.preventDefault(); }
+  });
+}
+$('#q').addEventListener('focus', () => { if (isMobile() && dock.dataset.sheet === 'peek') setSheet('half'); });
+
+// ---------- drawers (Esc closes, focus returns to the opener)
 const scrim = $('#scrim');
-function openDrawer(id) { document.querySelectorAll('.drawer').forEach((d) => (d.hidden = d.id !== id)); scrim.hidden = false; }
-function closeDrawers() { document.querySelectorAll('.drawer').forEach((d) => (d.hidden = true)); scrim.hidden = true; }
+let opener = null;
+function openDrawer(id) {
+  closePop(); opener = document.activeElement;
+  $$('.drawer').forEach((d) => (d.hidden = d.id !== id)); scrim.hidden = false;
+  const d = $(`#${id}`); requestAnimationFrame(() => ($('[data-close]', d) || d).focus());
+}
+function closeDrawers() {
+  const wasOpen = $$('.drawer').some((d) => !d.hidden);
+  $$('.drawer').forEach((d) => (d.hidden = true)); scrim.hidden = true;
+  if (wasOpen && opener && document.contains(opener)) opener.focus(); opener = null;
+}
 $('#open-settings').onclick = () => openDrawer('settings');
-$('#open-compare').onclick = () => openDrawer('compare');
+$('#scene-pill').onclick = () => openDrawer('settings');
+$('#open-compare').onclick = () => { renderTasks(); openDrawer('compare'); };
 scrim.onclick = closeDrawers;
-document.querySelectorAll('[data-close]').forEach((b) => (b.onclick = closeDrawers));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawers(); });
+$$('[data-close]').forEach((b) => (b.onclick = closeDrawers));
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!$('#pop').hidden) { closePop(true); return; }
+  closeDrawers();
+});
+// keep Tab inside an open drawer
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  const d = $$('.drawer').find((x) => !x.hidden); if (!d) return;
+  const f = $$('button, input, select, a[href], [tabindex]:not([tabindex="-1"])', d).filter((x) => !x.disabled && x.offsetParent);
+  if (!f.length) return;
+  if (e.shiftKey && document.activeElement === f[0]) { f[f.length - 1].focus(); e.preventDefault(); }
+  else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { f[0].focus(); e.preventDefault(); }
+});
+
+// ---------- legend (map key)
+const legend = $('#legend');
+function setLegend(open) {
+  legend.classList.toggle('closed', !open); $('#legend-toggle').setAttribute('aria-expanded', String(open));
+}
+setLegend(store.get('legend') ? store.get('legend') === 'open' : !isMobile());
+$('#legend-toggle').onclick = () => { const open = legend.classList.contains('closed'); setLegend(open); store.set('legend', open ? 'open' : 'closed'); };
+function syncLegend() {
+  const on = Object.fromEntries($$('[data-layer]').map((c) => [c.dataset.layer, c.checked]));
+  $$('#legend-body li[data-l]').forEach((li) => (li.hidden = !on[li.dataset.l]));
+}
 
 // ---------- settings
-const SCENE_NOTES = { office: 'Lab, office, hall, kitchen, lounge', warehouse: 'Racks block the view; identical pallets', home: 'Five rooms, small objects', hospital: 'Ten look-alike patient rooms' };
+const SCENE_NOTES = { office: 'Lab, offices, hall, kitchen and lounge.', warehouse: 'Racks block the view; many identical pallets.', home: 'Five rooms full of small objects.', hospital: 'Ten look-alike patient rooms.' };
 function renderScenes() {
-  $('#scenes').innerHTML = SCENES.map((s, i) => `<button class="card-opt ${i === sceneIdx ? 'on' : ''}" data-i="${i}"><b>${s.name}</b><small>${SCENE_NOTES[s.id] || ''}</small></button>`).join('');
-  $('#scenes').querySelectorAll('button').forEach((b) => (b.onclick = () => { if (worldBusy) return; sceneIdx = +b.dataset.i; renderScenes(); buildWorld(); }));
+  $('#scenes').innerHTML = SCENES.map((s, i) => `<button type="button" role="radio" aria-checked="${i === sceneIdx}" class="card-opt ${i === sceneIdx ? 'on' : ''}" data-i="${i}">
+    <b>${esc(s.name)}</b><small>${SCENE_NOTES[s.id] || ''}</small><em>${s.rooms.length} rooms</em></button>`).join('');
+  $$('#scenes button').forEach((b) => (b.onclick = () => { if (worldBusy || +b.dataset.i === sceneIdx) return; sceneIdx = +b.dataset.i; renderScenes(); buildWorld(); }));
 }
 renderScenes();
 $('#nrob').oninput = () => { $('#nval').textContent = $('#nrob').value; };
@@ -44,186 +124,425 @@ $('#nrob').onchange = () => !worldBusy && buildWorld();
 $('#prior').onchange = () => !worldBusy && buildWorld();
 $('#b-apply').onclick = () => !worldBusy && buildWorld();
 $('#b-seed').onclick = () => { if (worldBusy) return; seed = Math.floor(Math.random() * 1e6); buildWorld(); };
-document.querySelectorAll('#speed button').forEach((b) => (b.onclick = () => { speed = +b.dataset.s; document.querySelectorAll('#speed button').forEach((x) => x.classList.toggle('on', x === b)); }));
-document.querySelectorAll('[data-layer]').forEach((c) => (c.onchange = () => view.setLayer(c.dataset.layer, c.checked)));
+function renderSpeed() { $$('#speed button').forEach((x) => { const on = +x.dataset.s === speed; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); }
+$$('#speed button').forEach((b) => (b.onclick = () => { speed = +b.dataset.s; renderSpeed(); }));
+renderSpeed();
+$$('[data-layer]').forEach((c) => (c.onchange = () => { view.setLayer(c.dataset.layer, c.checked); syncLegend(); }));
+syncLegend();
+$('#b-intro').onclick = () => { store.set('intro', ''); introOpen = true; closeDrawers(); renderFeedEmpty(); if (isMobile()) setSheet('half'); };
 
-$('#model').innerHTML = MODELS.map((m, i) => `<option value="${i}">${m.name} · ${m.note.split(' · ')[0].replace('~', '')}</option>`).join('');
-function renderModelNote() {
-  const n = $('#model-note');
-  if (!webgpuAvailable()) { n.textContent = 'This browser has no WebGPU, so robots use the built-in planner (same tools, simple rules). Recent Chrome, Edge or Safari can run the free model.'; $('#b-load').disabled = true; return; }
-  n.textContent = llm.ready ? `Robots think with ${MODELS.find((m) => m.id === llm.modelId).name}, running on your GPU. Free and private.`
-    : 'Robots use the built-in planner until you load a free open model. It runs on your GPU; the one-time download (1–4 GB) is cached.';
+$('#model').innerHTML = MODELS.map((m, i) => `<option value="${i}">${esc(m.name)} · ${esc(m.note.split(' · ')[0].replace('~', ''))}</option>`).join('');
+function modelState(state, pct) {
+  const badge = $('#model-badge'), note = $('#model-note'), btn = $('#b-load');
+  badge.className = `badge ${state}`;
+  badge.textContent = { unsupported: 'Unsupported', idle: 'Not loaded', loading: `Loading ${pct ?? 0}%`, ready: 'Ready', error: 'Failed' }[state];
+  $('#prog').hidden = state !== 'loading';
+  if (state === 'unsupported') { note.textContent = 'This browser has no WebGPU, so robots use the built-in planner (same tools, simple rules). Recent Chrome, Edge or Safari can run the free model.'; btn.disabled = true; $('#model').disabled = true; }
+  if (state === 'idle') { note.textContent = 'Robots use the built-in planner until you load a free open model. It runs on your GPU; the one-time download (1–4 GB) is cached.'; btn.disabled = false; btn.textContent = 'Load'; }
+  if (state === 'loading') { btn.disabled = true; btn.textContent = 'Loading…'; $('#prog-bar').style.width = `${pct ?? 0}%`; }
+  if (state === 'ready') { note.textContent = `Robots think with ${MODELS.find((m) => m.id === llm.modelId)?.name || 'the model'}, running on your GPU. Free and private.`; btn.disabled = false; btn.textContent = 'Switch'; }
+  if (state === 'error') { btn.disabled = false; btn.textContent = 'Retry'; }
 }
-renderModelNote();
+modelState(webgpuAvailable() ? 'idle' : 'unsupported');
 $('#b-load').onclick = async () => {
   const m = MODELS[+$('#model').value];
-  $('#b-load').disabled = true; $('#prog').hidden = false;
+  modelState('loading', 0);
   try {
-    await llm.load(m.id, (r) => { $('#prog-bar').style.width = `${Math.round((r.progress || 0) * 100)}%`; $('#model-note').textContent = r.text || 'Loading…'; });
-    $('#b-load').textContent = 'Loaded';
-  } catch (e) { $('#model-note').textContent = `Could not load the model: ${e.message}`; $('#b-load').disabled = false; }
-  $('#prog').hidden = true; if (llm.ready) { renderModelNote(); refreshStats(); }
+    await llm.load(m.id, (r) => { const pct = Math.round((r.progress || 0) * 100); modelState('loading', pct); if (r.text) $('#model-note').textContent = r.text; });
+    modelState('ready'); refreshStats();
+  } catch (e) { modelState('error'); $('#model-note').textContent = `Could not load the model: ${e.message}`; }
 };
 
 // ---------- world
-async function buildWorld({ shared = true, prior = $('#prior').checked } = {}) {
-  const def = SCENES[sceneIdx], n = +$('#nrob').value;
-  worldBusy = true;
-  $('#world-status').innerHTML = `<span class="spin">Building the ${def.name.toLowerCase()}</span>`;
+async function buildWorld({ shared = true, prior = $('#prior').checked, replay = null } = {}) {
+  const def = SCENES[sceneIdx], n = +$('#nrob').value, id = ++worldId;
+  worldBusy = true; taskRunning = false; setRunning(false); closePop();
+  if (!replay) setReplay(null);
+  $('#world-status').innerHTML = `<span class="spin">Building the ${esc(def.name.toLowerCase())}</span>`;
   $('#scene-pill').textContent = `${def.name} · ${n} robot${n > 1 ? 's' : ''}`;
-  await new Promise((r) => setTimeout(r, 20));
+  $('#team-status').textContent = 'Setting up…';
+  await tick();
   const T = new Team(def, n, seed, { shared });
   if (prior) await T.runHeadless(priorExploration);
+  if (id !== worldId) return null;   // superseded by a newer build
   T.animated = true; team = T;
   T.on((ev) => {
+    if (T !== team) return;
     if (ev.type === 'navplan') view.setNavPath(ev.r, ev.points, T.robots[ev.r].color);
     if (ev.type === 'jobdone') { const r = ev.r; setTimeout(() => { if (!T.jobs[r] && T === team) view.setNavPath(r, null); }, 1500); }
-    if (['merged', 'optimized', 'jobdone', 'job'].includes(ev.type)) { dirtyLinks = true; refreshStats(); renderRoster(); }
+    if (['merged', 'optimized', 'jobdone', 'job'].includes(ev.type)) { dirtyLinks = true; refreshStats(); updateRoster(); }
   });
   view.load(T);
-  document.querySelectorAll('[data-layer]').forEach((c) => view.setLayer(c.dataset.layer, c.checked));
+  $$('[data-layer]').forEach((c) => view.setLayer(c.dataset.layer, c.checked));
+  activeState = [];
   applyInsets();
-  ui.agents = T.robots.map((_, r) => new RobotAgent(T, r, ui));
-  dispatcher = new Dispatcher(T, ui);
-  $('#log').innerHTML = ''; renderSuggestions(); renderRoster(); refreshStats();
+  // per-world logger so events from a replaced world never reach the new feed
+  const wui = { llm, agents: [], log: (e) => { if (T === team) addLog(e); } };
+  wui.agents = T.robots.map((_, r) => new RobotAgent(T, r, wui));
+  ui.agents = wui.agents;
+  dispatcher = new Dispatcher(T, wui);
+  usedSuggestions.clear();
+  clearFeed(true); buildRoster(); renderSuggestions(); refreshStats(); updateHeader();
   const nObj = T.scene.objects.filter((o) => o.cat !== 'door' && o.cat !== 'rack').length;
   $('#world-status').textContent = `${def.rooms.length} rooms, ${nObj} objects. ${prior ? 'Each robot starts knowing only the rooms it explored; maps are merged when a task needs it.' : 'Robots start with empty maps.'}`;
   worldBusy = false; dirtyLinks = true;
   return T;
 }
 
-// ---------- dock
-function renderRoster() {
-  const T = team; if (!T) return;
-  $('#roster').innerHTML = T.robots.map((rb, r) => {
-    const job = T.jobs[r], p = T.pose[r];
-    return `<span class="rob ${job ? 'busy' : ''}" title="${rb.name}: ${job ? job.label : 'idle'} in ${roomAt(T.scene, p.x, p.y)}"><i style="background:${rb.css}">${r + 1}</i>${job ? esc(job.label.replace(/ T\d+| R\d+\.\d+/, '')) : roomAt(T.scene, p.x, p.y)}</span>`;
-  }).join('');
+// ---------- header + roster
+function robotState(T, r) {
+  const job = T.jobs[r], p = T.pose[r], room = roomAt(T.scene, p.x, p.y);
+  const thinking = !job && ui.agents[r]?.busy;
+  const doing = job ? job.label.replace(/ T\d+| R\d+\.\d+/, '') : thinking ? 'thinking' : 'idle';
+  return { job, room, thinking, doing, busy: !!job || thinking };
 }
+function updateHeader() {
+  const T = team; if (!T) return;
+  const working = T.robots.filter((_, r) => robotState(T, r).busy).length;
+  $('#team-title').textContent = `${T.n} robot${T.n > 1 ? 's' : ''}`;
+  $('#team-status').textContent = paused ? 'Paused' : working ? `${working} working` : taskRunning ? 'Planning…' : 'All idle';
+  $('#team-status').className = `status ${paused ? 'paused' : working || taskRunning ? 'on' : ''}`;
+}
+function buildRoster() {
+  const T = team;
+  $('#roster').innerHTML = T.robots.map((rb, r) => `<button type="button" class="rob" role="listitem" data-r="${r}" aria-haspopup="dialog" aria-expanded="false">
+    <i style="background:${rb.css}">${r + 1}</i><span class="rob-t"></span></button>`).join('');
+  $$('#roster .rob').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); const r = +b.dataset.r; if (popR === r) closePop(); else openPop(r); }));
+  updateRoster();
+}
+function updateRoster() {
+  const T = team; if (!T) return;
+  $$('#roster .rob').forEach((b) => {
+    const r = +b.dataset.r, s = robotState(T, r), txt = s.busy ? s.doing : s.room;
+    b.classList.toggle('busy', s.busy);
+    const t = $('.rob-t', b); if (t.textContent !== txt) t.textContent = txt;
+    b.setAttribute('aria-label', `${T.robots[r].name}: ${s.doing} in ${s.room}`);
+  });
+  updateHeader();
+  if (popR != null) renderPop();
+}
+
+// ---------- robot popover
+let popR = null;
+const pop = $('#pop');
+function openPop(r) {
+  popR = r; pop.hidden = false;
+  $$('#roster .rob').forEach((b) => b.setAttribute('aria-expanded', String(+b.dataset.r === r)));
+  renderPop(true); placePop();
+}
+function closePop(refocus = false) {
+  if (popR == null) return;
+  const r = popR; popR = null; pop.hidden = true;
+  $$('#roster .rob').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  if (refocus) $(`#roster .rob[data-r="${r}"]`)?.focus();
+}
+function placePop() {
+  if (popR == null) return;
+  const chip = $(`#roster .rob[data-r="${popR}"]`); if (!chip) return;
+  const d = dock.getBoundingClientRect(), c = chip.getBoundingClientRect();
+  const w = Math.min(300, d.width - 24);
+  pop.style.width = `${w}px`;
+  pop.style.left = `${Math.max(12, Math.min(c.left - d.left, d.width - w - 12))}px`;
+  pop.style.top = `${c.bottom - d.top + 8}px`;
+}
+function renderPop(first = false) {
+  const T = team, r = popR; if (!T || r == null) return;
+  const rb = T.robots[r], s = robotState(T, r), sim = T.sims[r];
+  const objs = Object.keys(T.locals[r]?.lms || {}).length;
+  const rooms = [...sim.explored];
+  const html = `<div class="pop-h"><i style="background:${rb.css}">${r + 1}</i><div><b id="pop-title">${esc(rb.name)}</b><span class="${s.busy ? 'on' : ''}">${esc(s.busy ? s.doing : 'Idle')}</span></div>
+      <button type="button" class="x" data-pop-close aria-label="Close">✕</button></div>
+    <dl class="pop-g">
+      <div><dt>Room</dt><dd>${esc(s.room)}</dd></div>
+      <div><dt>Objects known</dt><dd>${objs}</dd></div>
+      <div><dt>Driven</dt><dd>${sim.distance.toFixed(1)} m</dd></div>
+      <div><dt>Rooms explored</dt><dd>${rooms.length}</dd></div>
+    </dl>
+    ${rooms.length ? `<p class="pop-rooms">Explored: ${rooms.map(esc).join(', ')}</p>` : ''}
+    <button type="button" class="btn primary wide" data-pop-ask>Give ${esc(rb.name)} a task</button>`;
+  if (pop.dataset.html === html) return;
+  pop.dataset.html = html; pop.innerHTML = html;
+  $('[data-pop-close]', pop).onclick = () => closePop(true);
+  $('[data-pop-ask]', pop).onclick = () => { const q = $('#q'); q.value = `${rb.name}, `; closePop(); q.focus(); q.setSelectionRange(q.value.length, q.value.length); };
+  if (first) requestAnimationFrame(() => $('[data-pop-ask]', pop)?.focus({ preventScroll: true }));
+}
+document.addEventListener('pointerdown', (e) => { if (popR != null && !pop.contains(e.target) && !e.target.closest('#roster .rob')) closePop(); });
+
+// ---------- stats footer
 function refreshStats() {
   const T = team; if (!T) return;
   const ate = T.M ? T.teamAte() : T.pooledLocalAte();
   const dis = T.M ? (T.optimized ? T.solverStats.map_disagreement_after_m : T.M.disInit) : null;
+  const stat = (k, v, tip) => `<span title="${esc(tip)}">${k} <b>${v}</b></span>`;
   $('#stats').innerHTML = [
-    `<span>maps merged <b>${T.M ? `${T.M.joined.length}/${T.n}` : `0/${T.n}`}</b></span>`,
-    dis != null ? `<span>robots disagree by <b>${dis.toFixed(2)} m</b></span>` : '',
-    ate != null ? `<span>map error <b>${ate.toFixed(2)} m</b></span>` : '',
-    `<span>sent <b>${kb(T.bytes.objects + T.bytes.dgs)}</b></span>`,
-    `<span>${llm.ready ? 'LLM agents' : 'planner agents'}</span>`,
+    T.shared ? stat('Maps merged', T.M ? `${T.M.joined.length}/${T.n}` : `0/${T.n}`, 'Robots whose maps are joined into the team map') : stat('Sharing', 'off', 'Replay without a shared map'),
+    dis != null ? stat('Disagree', `${dis.toFixed(2)} m`, 'How far apart robots place the same object') : '',
+    ate != null ? stat('Map error', `${ate.toFixed(2)} m`, 'Path error versus ground truth') : '',
+    stat('Sent', kb(T.bytes.objects + T.bytes.dgs), 'Data exchanged between robots'),
+    `<span class="agent" title="What runs each robot's agent">${llm.ready ? 'LLM agents' : 'Planner agents'}</span>`,
   ].filter(Boolean).join('');
 }
+
+// ---------- suggestions (short, refreshed after each task)
+const usedSuggestions = new Set();
 function renderSuggestions() {
   const T = team; if (!T) return;
   const pick = (k) => { try { return makeTask(T, k); } catch { return null; } };
   const f = pick('fetch'), inv = pick('inventory');
-  const unexplored = T.scene.rooms.find((q) => !T.robots.some((_, i) => T.sims[i].explored.has(q.name)))?.name;
-  const s = [f && `Send a robot to the ${f.query}`, inv && `Check every ${inv.cat}`, f && T.n > 1 && `Everyone meet at the ${f.query}`,
-    inv && `Where are the ${inv.cat}s?`, unexplored && `Explore the ${unexplored}`].filter(Boolean).slice(0, 4);
-  $('#chips').innerHTML = $('#log').children.length ? '' : s.map((c) => `<button type="button">${c}</button>`).join('');
-  $('#chips').querySelectorAll('button').forEach((b) => (b.onclick = () => send(b.textContent)));
+  const unexplored = T.scene.rooms.filter((q) => !T.robots.some((_, i) => T.sims[i].explored.has(q.name))).map((q) => q.name);
+  const idleR = T.robots.findIndex((_, r) => !robotState(T, r).busy);
+  const s = [
+    f && `Go to the ${f.query}`,
+    inv && `Where are the ${inv.cat}s?`,
+    unexplored[0] && `Explore the ${unexplored[0]}`,
+    inv && `Check every ${inv.cat}`,
+    f && T.n > 1 && `Everyone meet at the ${f.query}`,
+    idleR >= 0 && T.n > 1 && `Robot ${idleR + 1}, explore the ${T.scene.rooms[(idleR * 3 + usedSuggestions.size) % T.scene.rooms.length].name}`,
+  ].filter((x) => x && !usedSuggestions.has(x)).slice(0, 3);
+  $('#chips').innerHTML = s.map((c) => `<button type="button" ${taskRunning ? 'disabled' : ''}>${esc(c)}</button>`).join('');
+  $$('#chips button').forEach((b) => (b.onclick = () => send(b.textContent)));
 }
 
-let typingEl = null;
+// ---------- activity feed: one card per task, steps collapsible
+const log = $('#log');
+let card = null, typingEl = null, introOpen = !store.get('intro'), pinned = true;
+log.addEventListener('scroll', () => {
+  pinned = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  if (pinned) $('#jump').hidden = true;
+});
+$('#jump').onclick = () => { log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' }); $('#jump').hidden = true; };
+function follow() {
+  if (pinned) log.scrollTop = log.scrollHeight; else $('#jump').hidden = false;
+}
+function renderFeedEmpty() {
+  $('.intro', log)?.remove(); $('.empty', log)?.remove();
+  if ($('.card', log)) return;
+  if (introOpen) {
+    const d = document.createElement('div'); d.className = 'intro';
+    d.innerHTML = `<button type="button" class="x" aria-label="Dismiss intro">✕</button>
+      <b>A robot team that shares one map</b>
+      <p>Each robot maps the rooms it drives through. Hivemap merges those maps so any robot can use what the others have seen.</p>
+      <ol><li><span>Type a task, like “go to the red toolbox”.</span></li><li><span>The dispatcher picks the best robot and says why.</span></li><li><span>Watch it drive, then open <em>Compare</em> to see what sharing saves.</span></li></ol>
+      <div class="row"><button type="button" class="btn primary" data-try>Try a task</button><button type="button" class="btn ghost" data-dismiss>Got it</button></div>`;
+    const dismiss = () => { introOpen = false; store.set('intro', 'seen'); renderFeedEmpty(); };
+    $('.x', d).onclick = dismiss; $('[data-dismiss]', d).onclick = dismiss;
+    $('[data-try]', d).onclick = () => { const c = $('#chips button'); dismiss(); if (c) send(c.textContent); else $('#q').focus(); };
+    log.append(d);
+  } else {
+    const d = document.createElement('p'); d.className = 'empty';
+    d.textContent = 'Tasks appear here with the robot that was picked, why, and what it did.'; log.append(d);
+  }
+}
+function clearFeed(all = false) {
+  if (all) { log.innerHTML = ''; card = null; }
+  else $$('.card', log).forEach((c) => { if (c !== card || !taskRunning) c.remove(); });
+  if (!taskRunning) card = null;
+  typingEl = null; $('#jump').hidden = true; pinned = true;
+  renderFeedEmpty();
+}
+$('#b-clear').onclick = () => clearFeed(false);
+$('#b-pause').onclick = () => {
+  paused = !paused; const b = $('#b-pause');
+  b.setAttribute('aria-pressed', String(paused)); b.classList.toggle('on', paused);
+  $('span', b).textContent = paused ? 'Resume' : 'Pause';
+  $('svg', b).innerHTML = paused ? '<path d="M7 5l12 7-12 7z"/>' : '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+  updateHeader();
+};
+
+function newCard(text, tag) {
+  if (introOpen) { introOpen = false; store.set('intro', 'seen'); }
+  $('.intro', log)?.remove(); $('.empty', log)?.remove();
+  const c = document.createElement('article'); c.className = 'card running';
+  c.innerHTML = `<header><div class="c-q">${esc(text)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</div><span class="c-st"><span class="spin"></span>Working</span></header>
+    <div class="c-notes"></div>
+    <details class="c-steps" open hidden><summary><span class="c-n">Robot steps</span></summary><div class="c-list"></div></details>`;
+  c._t0 = team?.time || 0; c._userToggled = false;
+  $('.c-steps > summary', c).addEventListener('click', () => { c._userToggled = true; });
+  log.append(c); card = c; pinned = true; follow();
+  return c;
+}
+function stamp() { return `<time>${clock(team?.time)}</time>`; }
 function addLog(e) {
-  const T = team, log = $('#log');
-  const rb = e.r != null && e.r !== 'dispatcher' ? T.robots[e.r] : null;
-  const dot = (r) => `<span class="dot" style="background:${T.robots[r].css}"></span>`;
-  const put = (el) => { log.append(el); log.scrollTop = log.scrollHeight; return el; };
-  const div = (cls, html) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; return put(d); };
+  const T = team; if (!T) return;
+  const rb = typeof e.r === 'number' ? T.robots[e.r] : null;
+  const dot = (r) => (typeof r === 'number' && T.robots[r] ? `<span class="dot" style="background:${T.robots[r].css}" aria-hidden="true"></span>` : '');
+  if (!card && !['task', 'thinking-done', 'tool-result'].includes(e.kind)) newCard('Team activity');
+  const notes = card && $('.c-notes', card), list = card && $('.c-list', card);
+  const row = (parent, cls, html) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; parent.append(d); follow(); return d; };
+  const countSteps = () => { const n = list.children.length, st = $('.c-steps', card); st.hidden = !n; $('.c-n', card).textContent = `${n} robot step${n === 1 ? '' : 's'}`; };
   if (e.kind !== 'thinking') { typingEl?.remove(); typingEl = null; }
   switch (e.kind) {
-    case 'task': div('f-task', esc(e.text)); $('#chips').innerHTML = ''; break;
-    case 'dispatch': div('f-disp', esc(e.text)); break;
-    case 'result': div('f-result', `${esc(e.text)}${e.meta ? `<small>${e.meta}</small>` : ''}`); break;
-    case 'thinking': typingEl?.remove(); typingEl = div('f-say typing', `${dot(e.r)}${rb.name} is thinking`); break;
-    case 'user': if (e.from != null && e.from !== 'dispatcher') div('f-peer', `<b>${T.robots[e.from].name} → ${rb.name}:</b> ${esc(e.text.replace(/^\[from Robot \d+\]\s*/, ''))}`); break;
+    case 'task': newCard(e.text, e.tag); break;
+    case 'dispatch': row(notes, 'n-disp', `${dot(e.r)}<span>${esc(e.text)}</span>${stamp()}`); break;
+    case 'thinking': typingEl = row(notes, 'n-think', `${dot(e.r)}<span>${esc(rb?.name || 'Robot')} is thinking</span>`); break;
+    case 'thinking-done': break;
+    case 'user':
+      if (e.from === 'dispatcher' || e.from == null) {
+        if (rb) { row(list, 's-row s-cmd', `${dot(e.r)}<span>Dispatcher → ${esc(rb.id)}: ${esc(String(e.text).replace(/^\[from Dispatcher\]\s*/, ''))}</span>${stamp()}`); countSteps(); }
+      } else if (T.robots[e.from] && rb) row(notes, 'n-peer', `${dot(e.from)}<span><b>${esc(T.robots[e.from].name)} → ${esc(rb.name)}</b> ${esc(String(e.text).replace(/^\[from Robot \d+\]\s*/, ''))}</span>`);
+      break;
     case 'tool': {
-      const d = document.createElement('details'); d.className = 'f-step'; d.dataset.pending = '1'; d.dataset.r = e.r; d.dataset.name = e.name;
-      const args = e.input && Object.values(e.input).filter(Boolean).join(', ');
-      d.innerHTML = `<summary>${dot(e.r)}${rb.id} ${e.name.replace(/_/g, ' ')}${args ? ` ${esc(args)}` : ''} <span class="res"></span></summary>`;
-      put(d); break;
+      const d = document.createElement('details'); d.className = 's-row s-tool'; d.dataset.pending = '1'; d.dataset.r = e.r; d.dataset.name = e.name;
+      const args = e.input && Object.values(e.input).filter((v) => v != null && v !== '').join(', ');
+      d.innerHTML = `<summary>${dot(e.r)}<span><b>${esc(rb?.id || '')}</b> ${esc(String(e.name).replace(/_/g, ' '))}${args ? ` <em>${esc(args)}</em>` : ''} <span class="res">…</span></span>${stamp()}</summary>${e.thought ? `<p class="thought">${esc(e.thought)}</p>` : ''}`;
+      list.append(d); countSteps(); follow(); break;
     }
     case 'tool-result': {
-      const pend = [...log.querySelectorAll('details.f-step[data-pending]')].reverse().find((x) => x.dataset.r === String(e.r) && x.dataset.name === e.name);
-      if (pend) { delete pend.dataset.pending; const o = e.output || {}; pend.querySelector('.res').textContent = o.error ? `⚠ ${o.error}` : summarize(e.name, o); pend.insertAdjacentHTML('beforeend', `<pre>${esc(JSON.stringify(o, null, 1))}</pre>`); }
+      const pend = $$('details.s-tool[data-pending]', log).reverse().find((x) => x.dataset.r === String(e.r) && x.dataset.name === e.name);
+      if (pend) {
+        delete pend.dataset.pending; const o = e.output || {}; const res = $('.res', pend);
+        res.textContent = o.error ? `failed: ${o.error}` : summarize(e.name, o); res.classList.toggle('bad', !!o.error);
+        pend.insertAdjacentHTML('beforeend', `<pre>${esc(JSON.stringify(o, null, 1))}</pre>`);
+      }
       break;
     }
-    case 'reply': if (e.depth) div('f-say', `${dot(e.r)}${esc(e.text)}`); break;
-    case 'error': div('f-err', esc(e.text)); break;
+    case 'reply': if (e.depth) row(notes, 'n-say', `${dot(e.r)}<span>${esc(e.text)}</span>`); break;
+    case 'error': row(notes, 'n-err', `${dot(e.r)}<span>${esc(e.text)}</span>${stamp()}`); break;
+    case 'result': finishCard(e); break;
     default: break;
   }
 }
+const BAD = /^(error|there is no|all robots are busy|nobody|searched the building but found no|could not|the team map has no)|failed|\b0\/\d+/i;
+function finishCard(e) {
+  const c = card; if (!c) return;
+  const bad = BAD.test(e.text);
+  const meta = String(e.meta || '').split(' · ').filter(Boolean);
+  const res = document.createElement('div'); res.className = `c-res ${bad ? 'warn' : 'ok'}`;
+  res.innerHTML = `<p>${esc(e.text)}</p>${meta.length ? `<div class="chips">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}`;
+  c.append(res);
+  c.classList.remove('running'); c.classList.add(bad ? 'warn' : 'done');
+  $('.c-st', c).innerHTML = `${bad ? 'Needs attention' : 'Done'} <time>${clock(team?.time)}</time>`;
+  const st = $('.c-steps', c); if (!c._userToggled) st.open = false;
+  card = null; follow();
+}
 function summarize(name, o) {
-  return { explore_room: `→ +${o.new_objects} objects`, exchange_maps: `→ ${o.robots_merged?.length} merged`, optimize_team_map: `→ ${o.map_disagreement_after_m} m`,
-    search_map: `→ ${o.results?.length ?? 0} found`, navigate_to: `→ ${o.distance_to_real_object_m} m away`, ask_robot: '→ replied' }[name] || '';
+  return { explore_room: `+${o.new_objects} objects`, exchange_maps: `${o.robots_merged?.length} merged`, optimize_team_map: `${o.map_disagreement_after_m} m`,
+    search_map: `${o.results?.length ?? 0} found`, navigate_to: o.distance_to_real_object_m != null ? `${o.distance_to_real_object_m} m from it` : 'arrived', ask_robot: 'replied' }[name] || 'done';
+}
+
+function setRunning(on) {
+  taskRunning = on; dock.classList.toggle('running', on);
+  $('#ask .go').disabled = on; $$('#chips button').forEach((b) => (b.disabled = on));
+  $('#q').placeholder = on ? 'The team is working…' : 'Give the team a task…';
+  updateHeader();
 }
 async function send(text) {
-  text = text.trim(); if (!text || !team || taskRunning || worldBusy) return;
-  $('#q').value = ''; taskRunning = true; $('#ask .go').disabled = true;
-  try { await dispatcher.handle(text); } catch (e) { addLog({ kind: 'error', text: e.message }); }
-  finally { taskRunning = false; $('#ask .go').disabled = false; refreshStats(); renderRoster(); }
+  text = String(text || '').trim(); if (!text || !team || taskRunning || worldBusy) return;
+  const id = worldId;
+  usedSuggestions.add(text);
+  $('#q').value = ''; closePop(); setRunning(true);
+  if (isMobile() && dock.dataset.sheet === 'peek') setSheet('half');
+  try { await dispatcher.handle(text); } catch (e) { addLog({ kind: 'error', text: e.message }); if (card) finishCard({ text: `Error: ${e.message}` }); }
+  finally { if (id === worldId) { setRunning(false); refreshStats(); updateRoster(); renderSuggestions(); } }
 }
 $('#ask').onsubmit = (e) => { e.preventDefault(); send($('#q').value); };
 
 // ---------- compare
 function renderTasks() {
-  $('#task').innerHTML = TASKS.map((t) => `<button class="card-opt ${t.id === taskKind ? 'on' : ''}" data-k="${t.id}"><b>${t.name}</b><small>${t.blurb}</small></button>`).join('');
-  $('#task').querySelectorAll('button').forEach((b) => (b.onclick = () => { taskKind = b.dataset.k; renderTasks(); }));
-  $('#task-text').textContent = `${SCENES[sceneIdx].name}, ${$('#nrob').value} robots.`;
+  $('#task').innerHTML = TASKS.map((t) => `<button type="button" role="radio" aria-checked="${t.id === taskKind}" class="card-opt ${t.id === taskKind ? 'on' : ''}" data-k="${t.id}"><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></button>`).join('');
+  $$('#task button').forEach((b) => (b.onclick = () => { taskKind = b.dataset.k; renderTasks(); }));
+  $('#task-text').textContent = `In the ${SCENES[sceneIdx].name.toLowerCase()} with ${$('#nrob').value} robots, same object layout for both runs.`;
 }
 renderTasks();
-$('#open-compare').addEventListener('click', renderTasks);
 $('#b-compare').onclick = async () => {
   if (worldBusy) return;
-  const btn = $('#b-compare'); btn.disabled = true; btn.innerHTML = '<span class="spin">Running both teams</span>';
-  $('#cmp').innerHTML = ''; await new Promise((r) => setTimeout(r, 30));
+  const btn = $('#b-compare'); btn.disabled = true; btn.textContent = 'Running…';
+  $('#cmp').innerHTML = ''; $('#cmp-prog').hidden = false;
+  // progress: a Team subclass reports which run and phase compare() is in
+  const steps = { 'true:0': [8, 'Shared map: robots explore their own rooms'], 'true:1': [35, 'Shared map: merging maps and running the task'],
+    'false:0': [55, 'Robots alone: robots explore their own rooms'], 'false:1': [80, 'Robots alone: running the task'] };
+  const show = (k, T) => { const [p, t] = steps[k]; $('#cmp-bar').style.width = `${p}%`; $('#cmp-text').textContent = `${t}${T && T.time ? ` · ${clock(T.time)} simulated` : '…'}`; };
+  class Tracked extends Team {
+    constructor(...a) { super(...a); this._phase = 0; show(`${this.shared}:0`); }
+    async runHeadless(policy, max) {
+      const k = `${this.shared}:${this._phase++}`; show(k, this);
+      const iv = setInterval(() => show(k, this), 250);
+      try { return await super.runHeadless(policy, max); } finally { clearInterval(iv); }
+    }
+  }
+  await tick();
   try {
     const def = SCENES[sceneIdx], n = +$('#nrob').value;
-    const c = await compare(Team, def, n, seed, taskKind);
+    const c = await compare(Tracked, def, n, seed, taskKind);
+    $('#cmp-bar').style.width = '100%';
     lastCmp = { c, sceneIdx, n, seed }; renderCompare(c);
-  } catch (e) { $('#cmp').innerHTML = `<p class="f-err">${esc(e.message)}</p>`; }
-  btn.disabled = false; btn.textContent = 'Run both';
+    $('#cmp .cmp')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { $('#cmp').innerHTML = `<p class="n-err">Could not run the comparison: ${esc(e.message)}</p>`; }
+  $('#cmp-prog').hidden = true; btn.disabled = false; btn.textContent = 'Run again';
 };
 function renderCompare(c) {
   const S = c.results.shared, I = c.results.independent;
   const speedup = S.time_s > 0 ? I.time_s / S.time_s : Infinity;
   let verdict, meh = false;
   if (S.score > I.score) verdict = 'Only the team with the shared map finished the task.';
-  else if (S.score >= I.score && I.time_s > S.time_s * 1.15) verdict = `Sharing the map made the team <b>${Number.isFinite(speedup) ? `${speedup.toFixed(1)}× faster` : 'instant'}</b>${I.distance_m > S.distance_m * 1.15 ? `, with <b>${(I.distance_m / Math.max(1, S.distance_m)).toFixed(1)}× less driving</b>` : ''}.`;
+  else if (I.score > S.score) { verdict = 'Here the robots on their own did better.'; meh = true; }
+  else if (I.time_s > S.time_s * 1.15) verdict = `Sharing the map made the team <b>${Number.isFinite(speedup) ? `${speedup.toFixed(1)}× faster` : 'finish instantly'}</b>${I.distance_m > S.distance_m * 1.15 ? `, with <b>${(I.distance_m / Math.max(1, S.distance_m)).toFixed(1)}× less driving</b>` : ''}.`;
   else { verdict = 'Here sharing did not pay off: the robots already knew what they needed, and merging maps costs time.'; meh = true; }
-  const side = (title, r, win, id) => `<div class="side ${win ? 'win' : ''}"><h4>${title}</h4><div class="big">${r.time_s} s</div>
-    <div class="sub">${r.success ? 'done' : `${Math.round(r.score * 100)}% done`} · ${r.distance_m} m driven · ${kb(r.bytes)} sent</div><button class="btn" id="${id}">Watch</button></div>`;
   const sWin = S.score > I.score || (S.score >= I.score && S.time_s < I.time_s);
-  $('#cmp').innerHTML = `<div class="cmp"><div class="q">${esc(c.task.text)}</div><div class="verdict ${meh ? 'meh' : ''}">${verdict}</div>
-    <div class="versus">${side('Shared map', S, sWin, 'w-s')}${side('Each robot alone', I, !sWin, 'w-i')}</div>
-    <div class="runlog">${[...S.logs.map((l) => `shared  ${l}`), ...I.logs.map((l) => `alone   ${l}`)].map(esc).join('\n')}</div></div>`;
+  const bars = (label, a, b, fmt) => {
+    const m = Math.max(a, b, 1e-9);
+    return `<div class="bars"><div class="bl">${label}</div>
+      <div class="bt"><span class="b s-shared" style="width:${Math.max(2, (a / m) * 100)}%"></span><em>${fmt(a)}</em></div>
+      <div class="bt"><span class="b s-alone" style="width:${Math.max(2, (b / m) * 100)}%"></span><em>${fmt(b)}</em></div></div>`;
+  };
+  const pct = (r) => (r.success ? 'Done' : `${Math.round(r.score * 100)}% done`);
+  const side = (title, r, win, id, cls) => `<div class="side ${win ? 'win' : ''}"><div class="side-h"><span class="swatch ${cls}"></span><h4>${title}</h4>${win ? '<span class="won">Better</span>' : ''}</div>
+    <div class="big">${clock(r.time_s)}<small> min</small></div><div class="sub">${pct(r)} · ${r.distance_m} m · ${kb(r.bytes)}</div>
+    <button class="btn" type="button" id="${id}"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg> Watch</button></div>`;
+  $('#cmp').innerHTML = `<div class="cmp"><div class="q">“${esc(c.task.text)}”</div><div class="verdict ${meh ? 'meh' : ''}">${verdict}</div>
+    <div class="chart" aria-label="Comparison chart">
+      ${bars('Time', S.time_s, I.time_s, (v) => `${clock(v)}`)}
+      ${bars('Driving', S.distance_m, I.distance_m, (v) => `${(+v).toFixed(0)} m`)}
+      ${bars('Data sent', S.bytes, I.bytes, kb)}
+      <div class="chart-key"><span><i class="swatch s-shared"></i>Shared map</span><span><i class="swatch s-alone"></i>Robots alone</span><span class="mute">shorter is better</span></div>
+    </div>
+    <div class="versus">${side('Shared map', S, sWin, 'w-s', 's-shared')}${side('Robots alone', I, !sWin, 'w-i', 's-alone')}</div>
+    <details class="runlog"><summary>Run log</summary><pre>${[...S.logs.map((l) => `shared  ${l}`), ...I.logs.map((l) => `alone   ${l}`)].map(esc).join('\n')}</pre></details></div>`;
   $('#w-s').onclick = () => watch(true); $('#w-i').onclick = () => watch(false);
 }
+
+// ---------- replay of a compared run, with a banner and an exit
+function setReplay(shared, state = 'Replaying') {
+  const b = $('#replay');
+  if (shared == null) { b.hidden = true; document.body.classList.remove('replaying'); return; }
+  b.hidden = false; document.body.classList.add('replaying');
+  $('#replay-text').innerHTML = `${state}: <b>${shared ? 'shared map' : 'robots alone'}</b>`;
+}
+$('#replay-exit').onclick = () => { setReplay(null); buildWorld(); };
 async function watch(shared) {
   if (!lastCmp || worldBusy) return;
   closeDrawers();
   sceneIdx = lastCmp.sceneIdx; renderScenes(); $('#nrob').value = lastCmp.n; $('#nval').textContent = lastCmp.n; seed = lastCmp.seed;
-  const T = await buildWorld({ shared, prior: true });
+  setReplay(shared, 'Setting up replay');
+  const T = await buildWorld({ shared, prior: true, replay: true }); if (!T) return;
+  const id = worldId;
+  setReplay(shared);
   const task = { ...lastCmp.c.task, target: lastCmp.c.task.target && T.scene.objects.find((o) => o.id === lastCmp.c.task.target.id) };
-  addLog({ kind: 'task', text: `${task.text} (${shared ? 'shared map' : 'robots alone'})` });
-  taskRunning = true; $('#ask .go').disabled = true;
+  addLog({ kind: 'task', text: task.text, tag: shared ? 'shared map' : 'robots alone' });
+  if (isMobile()) setSheet('half');
+  setRunning(true);
   try {
-    const res = await runTask(T, task, (m) => addLog({ kind: 'dispatch', text: m.replace(/^\[t=\d+s\]\s*/, '') }));
-    addLog({ kind: 'result', text: res.success ? 'Task complete.' : `Task ${Math.round(res.score * 100)}% complete.`, meta: `${res.time_s} s · ${res.distance_m} m driven` });
-  } finally { taskRunning = false; $('#ask .go').disabled = false; }
+    const res = await runTask(T, task, (m) => { if (T === team) addLog({ kind: 'dispatch', text: m.replace(/^\[t=\d+s\]\s*/, '') }); });
+    if (T === team) addLog({ kind: 'result', text: res.success ? 'Task complete.' : `Task ${Math.round(res.score * 100)}% complete.`, meta: `${res.time_s} s · ${res.distance_m} m driven` });
+  } catch (e) { if (T === team) addLog({ kind: 'result', text: `Error: ${e.message}` }); }
+  finally { if (id === worldId) { setRunning(false); setReplay(shared, 'Replay finished'); refreshStats(); } }
 }
 
 // ---------- render loop
-let last = performance.now(), lastSlow = 0;
+let last = performance.now(), lastSlow = 0, activeState = [];
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   const T = team;
   if (T) {
-    if (T.busy()) T.tick(dt * speed);
+    if (T.busy() && !paused) T.tick(dt * speed);
     T.robots.forEach((_, r) => view.setRobotPose(r, T.pose[r]));
     if (now - lastSlow > 120) {
       lastSlow = now;
-      T.robots.forEach((rb, r) => { const v = T.liveView(r); view.setTrail(r, v.poses, T.sims[r].gt, false); view.setLandmarks(r, v.lms, rb.color); });
+      T.robots.forEach((rb, r) => {
+        const v = T.liveView(r); view.setTrail(r, v.poses, T.sims[r].gt, false); view.setLandmarks(r, v.lms, rb.color);
+        const on = !!T.jobs[r];
+        if (view.setActive && activeState[r] !== on) { activeState[r] = on; view.setActive(r, on); }
+      });
       if (dirtyLinks || T.optJob) {
         dirtyLinks = false;
         const links = [];
@@ -235,12 +554,15 @@ function frame(now) {
         view.setLinks(links.slice(0, 400));
         refreshStats();
       }
-      if (T.busy()) renderRoster();
+      if (T.busy() || taskRunning) updateRoster();
+      const ck = clock(T.time); if ($('#clock').textContent !== ck) $('#clock').textContent = ck;
     }
   }
   view.render(now);
   requestAnimationFrame(frame);
 }
+if (isMobile()) setSheet(introOpen ? 'half' : 'peek');
+renderFeedEmpty();
 applyInsets();
 buildWorld().then(() => requestAnimationFrame(frame));
 window.__ui = { get team() { return team; }, ui, send };

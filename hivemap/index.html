@@ -80,13 +80,13 @@
       <span>Map key</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
     </button>
     <ul class="legend-b" id="legend-body">
-      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 11 C 10 11, 12 3, 20 3 S 30 6, 32 6" fill="none" stroke="var(--path-c)" stroke-width="2.4" stroke-linecap="round" opacity=".45"/><path d="M2 11 C 10 11, 12 3, 20 3" fill="none" stroke="var(--path-c)" stroke-width="2.6" stroke-linecap="round"/></svg><span><b>Robot path</b> in its color; bright while working</span></li>
-      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="11" cy="7" r="4.4" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="23" cy="7" r="4.4" fill="none" stroke="#0d9488" stroke-width="2"/></svg><span><b>Ring</b>: object in that robot's map</span></li>
-      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 12 Q 17 -2 31 12" fill="none" stroke="#eab308" stroke-width="2.2" stroke-linecap="round"/></svg><span><b>Gold arc</b>: same object in two robots' maps</span></li>
-      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#334155" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round"/></svg><span><b>Dashed slate</b>: two robots saw each other</span></li>
-      <li><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 10 H 24" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="4 3" stroke-linecap="round"/><path d="M26 2 h6 l-3 6 z" fill="#2563eb"/></svg><span><b>Dashed + pin</b>: planned route to a goal</span></li>
-      <li data-l="gt" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#64748b" stroke-width="1.6" stroke-dasharray="2 2"/></svg><span><b>Gray dashes</b>: true path (ground truth)</span></li>
-      <li data-l="fov" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M6 7 L 30 1 L 30 13 Z" fill="#2563eb" opacity=".22"/></svg><span><b>Cone</b>: what the camera sees</span></li>
+      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 11 C 10 11, 12 3, 20 3 S 30 6, 32 6" fill="none" stroke="var(--path-c)" stroke-width="2.4" stroke-linecap="round" opacity=".45"/><path d="M2 11 C 10 11, 12 3, 20 3" fill="none" stroke="var(--path-c)" stroke-width="2.6" stroke-linecap="round"/></svg><span>Robot path <small>(bright = working)</small></span></li>
+      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="11" cy="7" r="4.4" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="23" cy="7" r="4.4" fill="none" stroke="#0d9488" stroke-width="2"/></svg><span>Object in a robot's map</span></li>
+      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 12 Q 17 -2 31 12" fill="none" stroke="#eab308" stroke-width="2.2" stroke-linecap="round"/></svg><span>Same object, two robots' maps</span></li>
+      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#334155" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round"/></svg><span>Robots saw each other</span></li>
+      <li><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 10 H 24" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="4 3" stroke-linecap="round"/><path d="M26 2 h6 l-3 6 z" fill="#2563eb"/></svg><span>Planned route and goal</span></li>
+      <li data-l="gt" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#64748b" stroke-width="1.6" stroke-dasharray="2 2"/></svg><span>True path (ground truth)</span></li>
+      <li data-l="fov" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M6 7 L 30 1 L 30 13 Z" fill="#2563eb" opacity=".22"/></svg><span>Camera field of view</span></li>
     </ul>
   </section>
 

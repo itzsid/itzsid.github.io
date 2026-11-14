@@ -127,6 +127,7 @@ function screenTex(kind) {
 const M = {};
 const mk = (key, fn) => (M[key] ||= Object.assign(fn(), { _shared: true }));
 export const mats = {
+  sharedMat: (key, fn) => mk(key, fn),
   wood: (hex = '#a0703f') => mk(`wood${hex}`, () => new THREE.MeshStandardMaterial({ map: woodTex(hex), roughness: 0.55 })),
   paint: (hex, rough = 0.55) => mk(`paint${hex}${rough}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0.05 })),
   plastic: (hex) => mk(`plastic${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.38, metalness: 0 })),
