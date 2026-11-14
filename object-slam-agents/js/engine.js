@@ -171,7 +171,7 @@ export class Team {
 
   // ---------- clock
   tick(dt) {
-    this.time += dt;
+    if (Object.keys(this.jobs).length) this.time += dt;   // the clock measures robot work, not map computation
     for (const [r, j] of Object.entries(this.jobs)) {
       let budget = dt;
       while (budget > 0 && j.idx < j.kfs.length) {

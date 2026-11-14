@@ -36,7 +36,7 @@ Every robot builds an object map with object-based SLAM. ${T.shared ? 'Robots ca
 Each turn has <team_state> with robots, rooms each robot explored, map status and the objects you know (id | label | position | room | seen by).
 ${TOOL_TEXT}
 Think like a field robot that wants to finish fast: use what the team already knows before driving around. If you do not know something, check whether exchanging maps would give it to you before exploring. Explore only rooms nobody has explored. Optimize once after a merge when map disagreement is above 0.15 m, before navigating. Ask another robot only when the request depends on what it knows or it should act. Never repeat an identical action.
-Messages starting with [from Robot X] come from another robot's agent: answer from your own knowledge, or act if asked.
+Messages starting with [from Robot X] come from another robot's agent: answer from your own knowledge, or act if asked. Messages starting with [from Dispatcher] are assignments from the team dispatcher: carry them out (an object id in the message can be used directly with navigate_to).
 Reply ONLY with a JSON object {"thought": "...", "action": "...", ...arguments}. Final replies: 1-3 sentences with object ids and the measured outcome.`;
   }
 
@@ -139,7 +139,13 @@ ${objs.map((o) => `${o.id} | ${o.label} | (${fmt(o.x)}, ${fmt(o.y)}) | ${o.room}
 
   // ---------- Offline planner: rule-based use of the same tools
   async offlineTurn(text, depth, from) {
-    const T = this.T, r = this.r, t = text.toLowerCase().replace(/^\[from robot \d+\]\s*/, '');
+    const T = this.T, r = this.r, t = text.toLowerCase().replace(/^\[from (robot \d+|dispatcher)\]\s*/, '');
+    const idMatch = text.match(/\b(T\d+|R\d+\.\d+)\b/);
+    if (idMatch && /\b(go|drive|navigate|visit)\b/.test(t)) {
+      const nav = await this.call('navigate_to', { object_id: idMatch[1] }, depth);
+      if (nav.error) return nav.error;
+      return `Reached ${idMatch[1]} after ${nav.driven_m} m (${nav.distance_to_real_object_m} m from the object).`;
+    }
     const call = (n, i = {}) => this.call(n, i, depth);
     const q = embedText(t);
     const roomIn = T.scene.rooms.find((x) => t.includes(x.name.toLowerCase()))?.name;
@@ -161,7 +167,7 @@ ${objs.map((o) => `${o.id} | ${o.label} | (${fmt(o.x)}, ${fmt(o.y)}) | ${o.room}
       return true;
     };
     // a question from another robot: answer from my own observations
-    if (from != null && !/\b(go|drive|come|navigate|meet|explore)\b/.test(t)) {
+    if (from != null && from !== 'dispatcher' && !/\b(go|drive|come|navigate|meet|explore)\b/.test(t)) {
       const mine = findKnown().filter((o) => o.seen_by.includes(this.robot.id));
       if (roomIn && !q) { const os = T.objectsFor(r).filter((o) => o.room === roomIn && o.seen_by.includes(this.robot.id)); return os.length ? `In the ${roomIn} I saw: ${os.slice(0, 8).map((o) => o.label).join(', ')}.` : `I have not seen the ${roomIn}.`; }
       if (!mine.length) return `I have not seen ${q ? `a ${q.col ? q.col + ' ' : ''}${q.cat || 'object'}` : 'that'}.`;
