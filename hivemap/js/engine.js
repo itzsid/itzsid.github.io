@@ -281,7 +281,7 @@ export class Team {
       if (j === r) return;
       const d = dist(this.pose[j], this.pose[r]);
       if (d > range || this.speed(j) > 0.1 || (this.moving(j) && !(this.mover(j).stall > 1))) return;
-      out.push({ x: this.pose[j].x, y: this.pose[j].y, r: Math.min(0.8, d - 0.15) });
+      out.push({ x: this.pose[j].x, y: this.pose[j].y, r: Math.min(0.9, d - 0.05) });
     });
     return out.filter((b) => b.r > 0.3);
   }
@@ -394,7 +394,9 @@ export class Team {
     if (goalTaken && dist(p, goal) <= (seg.tol ?? 2.2)) { m.cur = null; m.si++; return; }   // close enough: stop here
     let target = goal;
     if (goalTaken) target = this.spotNear(goal, r, 3) || goal;
-    const plan = this.nav.plan(p, target, { block: blocks });
+    const again = m.lastReplanBlocker === j && dist(p, m.lastReplanAt) < 0.5;
+    const plan = again ? null : this.nav.plan(p, target, { block: blocks });
+    m.lastReplanBlocker = j; m.lastReplanAt = { x: p.x, y: p.y };
     if (plan && plan.length < remaining + 12 && plan.points.length > 1) {
       const tr = compileTrack(this.nav, p, truncate(plan.points, target, target === goal ? (seg.standoff || 0) : 0).slice(1));
       if (tr) { m.cur = { type: 'track', tr, s: 0, k: 0, pivotDone: -1, pivot: null, w: 0, seg }; m.stall = 0; return; }

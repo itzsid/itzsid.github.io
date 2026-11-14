@@ -28,6 +28,7 @@ export function associate(A, B, { simThresh = 0.8, inlierDist = 1.0, iters = 400
   }
   const R = rng(seed);
   let best = { inl: [], T: null };
+  const hyps = [];
   for (let it = 0; it < iters && cands.length >= 2; it++) {
     const p = cands[Math.floor(R.next() * cands.length)], q = cands[Math.floor(R.next() * cands.length)];
     if (p === q || p.a === q.a || p.b === q.b) continue;
@@ -35,9 +36,10 @@ export function associate(A, B, { simThresh = 0.8, inlierDist = 1.0, iters = 400
     if (Math.abs(da - db) > inlierDist || da < 1.0) continue;
     const T = rigidFit([[p.a, p.b], [q.a, q.b]]);
     const inl = cands.filter((c) => { const t = apply(T, c.b); return Math.hypot(t.x - c.a.x, t.y - c.a.y) < inlierDist; });
+    if (inl.length >= 2) hyps.push({ T, n: inl.length });
     if (inl.length > best.inl.length) best = { inl, T };
   }
-  if (best.inl.length < 3) return { candidates: cands, inliers: [], outliers: cands, T: null };
+  if (best.inl.length < 3) return { candidates: cands, inliers: [], outliers: cands, T: null, second: 0, rms: Infinity };
   // refine, then enforce one-to-one by similarity
   let T = rigidFit(best.inl.map((c) => [c.a, c.b]));
   let inl = cands.filter((c) => { const t = apply(T, c.b); return Math.hypot(t.x - c.a.x, t.y - c.a.y) < inlierDist; })
@@ -46,6 +48,16 @@ export function associate(A, B, { simThresh = 0.8, inlierDist = 1.0, iters = 400
   for (const c of inl) { if (usedA.has(c.a.key) || usedB.has(c.b.key)) continue; usedA.add(c.a.key); usedB.add(c.b.key); one.push(c); }
   T = rigidFit(one.map((c) => [c.a, c.b]));
   const outliers = cands.filter((c) => !one.includes(c));
-  return { candidates: cands, inliers: one, outliers, T };
+  // ambiguity: best competing hypothesis that puts B somewhere clearly different (look-alike layouts)
+  const cb = one.reduce((m, c) => ({ x: m.x + c.b.x / one.length, y: m.y + c.b.y / one.length }), { x: 0, y: 0 });
+  const at = apply(T, cb);
+  let second = 0;
+  for (const h of hyps) {
+    const q = apply(h.T, cb), dth = Math.abs(Math.atan2(Math.sin(h.T.th - T.th), Math.cos(h.T.th - T.th)));
+    if ((Math.hypot(q.x - at.x, q.y - at.y) > 1.2 || dth > 0.3) && h.n > second) second = h.n;
+  }
+  const rms = Math.sqrt(one.reduce((a, c) => { const t = apply(T, c.b); return a + (t.x - c.a.x) ** 2 + (t.y - c.a.y) ** 2; }, 0) / one.length);
+  let spread = 0; for (const p of one) for (const q of one) spread = Math.max(spread, Math.hypot(p.b.x - q.b.x, p.b.y - q.b.y));
+  return { candidates: cands, inliers: one, outliers, T, second, rms, spread };
 }
 export { apply as applyT };

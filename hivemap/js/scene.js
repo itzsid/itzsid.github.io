@@ -86,6 +86,7 @@ export class SceneView {
     this.size = { w: 24, h: 16 };
     this.active = {};
     this.frameTimes = [];
+    window.__sceneView = this;   // debug handle (camera tweaks from the console)
     if (this.useAO) this.initAO();
     new ResizeObserver(() => this.resize()).observe(container); this.resize();
   }
@@ -286,13 +287,18 @@ export class SceneView {
     for (const g of Object.values(this.navLines || {})) g.traverse((o) => o.material?.resolution?.set(w, h));
     if (!this.userMoved) this.fitCamera();
   }
+  // frame the whole building inside the visible (un-inset) part of the canvas
   fitCamera() {
     const { w: SW, h: SH } = this.size, { left, bottom, top } = this.insets;
-    const vw = Math.max(200, (this.width || 1) - left), vh = Math.max(200, (this.height || 1) - bottom - top);
-    const vfFull = (this.camera.fov * Math.PI) / 180, vf = 2 * Math.atan(Math.tan(vfFull / 2) * (vh / (this.height || vh)));
-    const hf = 2 * Math.atan(Math.tan(vf / 2) * (vw / vh)), elev = (58 * Math.PI) / 180;
-    const d = Math.max((SW / 2 + 1.2) / Math.tan(hf / 2), ((SH * Math.sin(elev)) / 2 + 1.2) / Math.tan(vf / 2));
-    this.controls.target.set(SW / 2, 0, SH / 2); this.camera.position.set(SW / 2, d * Math.sin(elev), SH / 2 + d * Math.cos(elev)); this.camera.lookAt(this.controls.target);
+    const W = this.width || 1, Hh = this.height || 1, m = 18;
+    const x0 = ((left + m) / W) * 2 - 1, x1 = 1 - (m / W) * 2, y0 = -1 + ((bottom + m) / Hh) * 2, y1 = 1 - ((top + m) / Hh) * 2;
+    const elev = (58 * Math.PI) / 180, tgt = new THREE.Vector3(SW / 2, 0, SH / 2), v = new THREE.Vector3();
+    const pts = []; for (const x of [-0.3, SW + 0.3]) for (const z of [-0.3, SH + 0.3]) for (const y of [0, WALL_H]) pts.push([x, y, z]);
+    const place = (d) => { this.camera.position.set(tgt.x, d * Math.sin(elev), tgt.z + d * Math.cos(elev)); this.camera.lookAt(tgt); this.camera.updateMatrixWorld(); };
+    const fits = (d) => { place(d); return pts.every((p) => { v.set(...p).project(this.camera); return v.x >= x0 && v.x <= x1 && v.y >= y0 && v.y <= y1; }); };
+    let lo = 2, hi = 400;
+    if (x1 - x0 > 0.05 && y1 - y0 > 0.05) { for (let i = 0; i < 32; i++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; } } else hi = Math.max(SW, SH) * 1.6;
+    this.controls.target.copy(tgt); place(hi);
   }
   render(t) {
     for (const g of Object.values(this.navLines || {})) for (const c of g.children) if (c.userData.pulse) c.position.y = 0.95 + 0.12 * Math.sin(t / 250);

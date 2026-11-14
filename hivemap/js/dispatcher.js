@@ -202,9 +202,10 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
       for (const o of T.objectsFor(r)) {
         const e = embedText(o.label);
         if (!e || (target.cat && e.cat !== target.cat)) continue;
-        if (room && o.room !== room) continue;
+        const oroom = this.roomNear(o);
+        if (room && oroom !== room) continue;
         let g = groups.find((x) => x.cat === e.cat && Math.hypot(x.x - o.x, x.y - o.y) < 1.0);
-        if (!g) { g = { label: o.label, cat: e.cat, col: e.col, x: o.x, y: o.y, room: o.room, refs: {}, seenBy: new Set() }; groups.push(g); }
+        if (!g) { g = { label: o.label, cat: e.cat, col: e.col, x: o.x, y: o.y, room: oroom, refs: {}, seenBy: new Set() }; groups.push(g); }
         if (!(r in g.refs) || /^T/.test(o.id)) g.refs[r] = o.id;
         o.seen_by.forEach((s) => g.seenBy.add(s));
       }
@@ -231,7 +232,14 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     const pts = this.T.scene.coverage[name] || [], c = { x: (q.x0 + q.x1) / 2, y: (q.y0 + q.y1) / 2 };
     return this.T.nav.isFree(c) || !pts.length ? c : pts.slice().sort((a, b) => Math.hypot(a.x - c.x, a.y - c.y) - Math.hypot(b.x - c.x, b.y - c.y))[0];
   }
-  roomOf(r) { const p = this.T.pose[r]; return roomAt(this.T.scene, p.x, p.y); }
+  roomOf(r) { return this.roomNear(this.T.pose[r]); }
+  // room containing a point; points on a wall line count for the nearest room
+  roomNear(p) {
+    const n = roomAt(this.T.scene, p.x, p.y);
+    if (n !== 'outside') return n;
+    const d = (q) => Math.hypot(Math.max(q.x0 - p.x, 0, p.x - q.x1), Math.max(q.y0 - p.y, 0, p.y - q.y1));
+    return this.T.scene.rooms.slice().sort((a, b) => d(a) - d(b))[0].name;
+  }
   unexplored() { const T = this.T; return T.scene.rooms.map((q) => q.name).filter((n) => !T.robots.some((_, i) => T.sims[i].explored.has(n))); }
   fairCost(r, d) { return d + Math.min(FAIR_CAP, FAIR * this.load[r]); }
   objText(g) { return `${g.label} ${g.refs[Object.keys(g.refs)[0]]}`; }
@@ -417,7 +425,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     if (nearest.r !== p.r) why = `${fmt(p.d)} m away; ${T.robots[nearest.r].id} is ${fmt(p.d - nearest.d)} m closer but has driven ${fmt(this.load[nearest.r])} m recently, so the work is shared`;
     else if (pool.length === 1) why = `the only ${it.robotRoom ? `idle robot in the ${it.robotRoom}` : 'idle robot'} (${fmt(p.d)} m away)`;
     else if (!next) why = `${fmt(p.d)} m away`;
-    else why = `${fmt(p.d)} m away, closest of ${new Set(opts.map((o) => o.r)).size} ${it.robotRoom ? `robots in the ${it.robotRoom}` : 'idle robots'}${next ? ` (next: ${T.robots[next.r].id} at ${fmt(next.d)} m)` : ''}`;
+    else why = `${fmt(p.d)} m away, closest of ${new Set(opts.map((o) => o.r)).size} ${it.robotRoom ? `robots in the ${it.robotRoom}` : blind.length ? 'idle robots that have it in their maps' : 'idle robots'}${next ? ` (next: ${T.robots[next.r].id} at ${fmt(next.d)} m)` : ''}`;
     if (blind.length && !this.allMerged()) why += `; ${listNames(blind.map((r) => T.robots[r].id))} ${blind.length > 1 ? "don't" : "doesn't"} have it in ${blind.length > 1 ? 'their maps' : 'its map'} (maps not linked yet)`;
     if (groups.length > 1 && !it.objRoom) why += `; nearest of ${groups.length} ${plural(g.cat, groups.length)}`;
     return `${where}. Picked ${rb}: ${why}.`;
@@ -563,7 +571,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     const T = this.T, room = it.room;
     if (!room) return this.done(this.helpText(true), ctx);
     const seen = new Map();
-    for (let r = 0; r < T.n; r++) for (const o of T.objectsFor(r)) if (o.room === room && !/door/.test(o.label)) {
+    for (let r = 0; r < T.n; r++) for (const o of T.objectsFor(r)) if (this.roomNear(o) === room && !/door/.test(o.label)) {
       const k = [...seen.keys()].find((x) => x.label === o.label && Math.hypot(x.x - o.x, x.y - o.y) < 1); if (!k) seen.set(o, 1);
     }
     const counts = {}; for (const o of seen.keys()) counts[o.label] = (counts[o.label] || 0) + 1;
