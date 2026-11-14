@@ -24,79 +24,127 @@
   </script>
 </head>
 <body>
-  <div id="stage" aria-label="3D view of the building and robots"></div>
+  <div id="stage" aria-label="3D view of the building and robots. Drag to orbit, scroll to zoom."></div>
 
   <header class="topbar">
-    <div class="brand">
+    <a class="brand" href="./" aria-label="Hivemap home">
       <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#16181d"/><g stroke="#16181d" stroke-width="1.2"><path d="M11 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z" fill="#60a5fa"/><path d="M21 6.5l4 2.3v4.6l-4 2.3-4-2.3V8.8z" fill="#2dd4bf"/><path d="M16 15.2l4 2.3v4.6l-4 2.3-4-2.3v-4.6z" fill="#fbbf24"/></g></svg>
-      <div><b>Hivemap</b><span>One map. Many robots.</span></div>
-    </div>
+      <span class="brand-t"><b>Hivemap</b><small>One map. Many robots.</small></span>
+    </a>
     <div class="top-actions">
-      <span class="pill" id="scene-pill"></span>
-      <button class="tbtn" id="open-compare">Compare</button>
-      <button class="tbtn icon" id="open-settings" aria-label="Settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+      <button class="pill" id="scene-pill" type="button" title="Change building or team size"></button>
+      <button class="tbtn" id="open-compare" type="button" aria-haspopup="dialog" aria-controls="compare">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7"/></svg><span>Compare</span>
+      </button>
+      <button class="tbtn icon" id="open-settings" type="button" aria-label="Settings" aria-haspopup="dialog" aria-controls="settings"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
 
-  <aside class="dock" id="dock" aria-label="Team">
-    <div class="roster" id="roster"></div>
-    <form class="taskform" id="ask">
-      <input id="q" placeholder="Give the team a task…" autocomplete="off" aria-label="Task for the robot team">
-      <button class="go" aria-label="Send task"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-    </form>
-    <div class="suggest" id="chips"></div>
-    <div class="feed" id="log" aria-live="polite"></div>
-    <div class="stats" id="stats"></div>
-  </aside>
-
-  <div class="legend" id="legend" aria-hidden="true">
-    <span><i class="ring"></i>object in a robot's map</span>
-    <span><i class="ln g"></i>same object, two robots</span>
-    <span><i class="ln p"></i>robots saw each other</span>
+  <div class="replay" id="replay" hidden role="status">
+    <span class="replay-dot" aria-hidden="true"></span>
+    <span id="replay-text">Replaying</span>
+    <button type="button" class="replay-exit" id="replay-exit">Exit replay</button>
   </div>
 
-  <!-- Settings drawer -->
+  <aside class="dock" id="dock" aria-label="Robot team" data-sheet="half">
+    <button class="handle" id="handle" type="button" aria-label="Expand or collapse the team panel" aria-expanded="true"><span></span></button>
+    <div class="dock-h">
+      <div class="dock-title"><h1 id="team-title">Team</h1><span class="status" id="team-status"></span></div>
+      <span class="clock" id="clock" title="Simulated time">0:00</span>
+    </div>
+    <div class="roster" id="roster" role="list" aria-label="Robots (select one for details)"></div>
+    <form class="taskform" id="ask">
+      <label class="sr" for="q">Task for the robot team</label>
+      <input id="q" placeholder="Give the team a task…" autocomplete="off" enterkeyhint="send">
+      <button class="go" type="submit" aria-label="Send task"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+    <div class="suggest" id="chips" aria-label="Suggested tasks"></div>
+    <div class="feed-h">
+      <h2>Activity</h2>
+      <div class="feed-actions">
+        <button type="button" class="mini" id="b-pause" aria-pressed="false" title="Pause the simulation"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span>Pause</span></button>
+        <button type="button" class="mini" id="b-clear" title="Clear finished tasks">Clear</button>
+      </div>
+    </div>
+    <div class="feed-wrap">
+      <div class="feed" id="log" aria-live="polite" aria-relevant="additions"></div>
+      <button type="button" class="jump" id="jump" hidden>New activity ↓</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="pop" id="pop" role="dialog" aria-modal="false" aria-labelledby="pop-title" hidden></div>
+  </aside>
+
+  <section class="legend" id="legend" aria-label="Map key">
+    <button class="legend-h" id="legend-toggle" type="button" aria-expanded="true" aria-controls="legend-body">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
+      <span>Map key</span><svg class="chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+    <ul class="legend-b" id="legend-body">
+      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 11 C 10 11, 12 3, 20 3 S 30 6, 32 6" fill="none" stroke="var(--path-c)" stroke-width="2.4" stroke-linecap="round" opacity=".45"/><path d="M2 11 C 10 11, 12 3, 20 3" fill="none" stroke="var(--path-c)" stroke-width="2.6" stroke-linecap="round"/></svg><span><b>Robot path</b> in its color; bright while working</span></li>
+      <li data-l="est"><svg viewBox="0 0 34 14" aria-hidden="true"><circle cx="11" cy="7" r="4.4" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="23" cy="7" r="4.4" fill="none" stroke="#0d9488" stroke-width="2"/></svg><span><b>Ring</b>: object in that robot's map</span></li>
+      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 12 Q 17 -2 31 12" fill="none" stroke="#eab308" stroke-width="2.2" stroke-linecap="round"/></svg><span><b>Gold arc</b>: same object in two robots' maps</span></li>
+      <li data-l="links"><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#334155" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round"/></svg><span><b>Dashed slate</b>: two robots saw each other</span></li>
+      <li><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M2 10 H 24" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="4 3" stroke-linecap="round"/><path d="M26 2 h6 l-3 6 z" fill="#2563eb"/></svg><span><b>Dashed + pin</b>: planned route to a goal</span></li>
+      <li data-l="gt" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M3 7 H 31" stroke="#64748b" stroke-width="1.6" stroke-dasharray="2 2"/></svg><span><b>Gray dashes</b>: true path (ground truth)</span></li>
+      <li data-l="fov" hidden><svg viewBox="0 0 34 14" aria-hidden="true"><path d="M6 7 L 30 1 L 30 13 Z" fill="#2563eb" opacity=".22"/></svg><span><b>Cone</b>: what the camera sees</span></li>
+    </ul>
+  </section>
+
   <div class="scrim" id="scrim" hidden></div>
-  <aside class="drawer" id="settings" aria-label="Settings" hidden>
-    <div class="drawer-h"><h2>Settings</h2><button class="tbtn icon" data-close aria-label="Close">✕</button></div>
+
+  <!-- Settings drawer -->
+  <aside class="drawer" id="settings" role="dialog" aria-modal="true" aria-labelledby="settings-h" hidden tabindex="-1">
+    <div class="drawer-h"><h2 id="settings-h">Settings</h2><button class="x" type="button" data-close aria-label="Close settings">✕</button></div>
     <section>
       <h3>Building</h3>
-      <div class="scenes" id="scenes"></div>
+      <div class="scenes" id="scenes" role="radiogroup" aria-label="Building"></div>
     </section>
     <section>
-      <h3>Robots <span class="val" id="nval">4</span></h3>
-      <input type="range" id="nrob" min="1" max="10" value="4" aria-label="Number of robots">
-      <label class="chk"><input type="checkbox" id="prior" checked> Each robot has already explored its own rooms</label>
-      <div class="row"><button class="btn" id="b-apply">Apply</button><button class="btn ghost" id="b-seed">Shuffle objects</button></div>
+      <div class="h3row"><h3><label for="nrob">Robots</label></h3><output class="val" id="nval" for="nrob">4</output></div>
+      <input type="range" id="nrob" min="1" max="10" value="4">
+      <div class="ticks" aria-hidden="true"><span>1</span><span>5</span><span>10</span></div>
+      <label class="switch"><input type="checkbox" id="prior" checked><span class="sw" aria-hidden="true"></span><span>Robots start having explored their own rooms</span></label>
+      <div class="row"><button class="btn ghost" type="button" id="b-seed">Shuffle objects</button><button class="btn ghost" type="button" id="b-apply">Restart</button></div>
       <p class="hint" id="world-status"></p>
     </section>
     <section>
-      <h3>Simulation speed</h3>
-      <div class="seg" id="speed" role="group" aria-label="Simulation speed"><button data-s="1">1×</button><button data-s="3">3×</button><button data-s="6" class="on">6×</button><button data-s="12">12×</button></div>
+      <h3 id="speed-h">Simulation speed</h3>
+      <div class="seg" id="speed" role="radiogroup" aria-labelledby="speed-h"><button type="button" role="radio" data-s="1">1×</button><button type="button" role="radio" data-s="3">3×</button><button type="button" role="radio" data-s="6">6×</button><button type="button" role="radio" data-s="12">12×</button></div>
     </section>
     <section>
-      <h3>Agent model</h3>
-      <div class="row"><select id="model" aria-label="Model"></select><button class="btn" id="b-load">Load</button></div>
+      <div class="h3row"><h3><label for="model">Agent model</label></h3><span class="badge" id="model-badge">Not loaded</span></div>
+      <div class="row"><select id="model"></select><button class="btn primary" type="button" id="b-load">Load</button></div>
       <div class="prog" id="prog" hidden><div id="prog-bar"></div></div>
       <p class="hint" id="model-note"></p>
     </section>
     <section>
-      <h3>Show</h3>
-      <label class="chk"><input type="checkbox" data-layer="est" checked> Robot paths and object estimates</label>
-      <label class="chk"><input type="checkbox" data-layer="links" checked> Links between robots' maps</label>
-      <label class="chk"><input type="checkbox" data-layer="fov"> Camera field of view</label>
-      <label class="chk"><input type="checkbox" data-layer="gt"> True paths (for comparison)</label>
+      <h3>Show on the map</h3>
+      <label class="switch"><input type="checkbox" data-layer="est" checked><span class="sw" aria-hidden="true"></span><span>Robot paths and object rings</span></label>
+      <label class="switch"><input type="checkbox" data-layer="links" checked><span class="sw" aria-hidden="true"></span><span>Links between robots' maps</span></label>
+      <label class="switch"><input type="checkbox" data-layer="fov"><span class="sw" aria-hidden="true"></span><span>Camera field of view</span></label>
+      <label class="switch"><input type="checkbox" data-layer="gt"><span class="sw" aria-hidden="true"></span><span>True paths, for comparison</span></label>
     </section>
-    <p class="about">Perception is simulated (standing in for SAM 2 + CLIP). Agents run an open model in your browser via WebLLM, or a built-in planner. SLAM back end after Choudhary et al., <a href="https://arxiv.org/abs/1702.03435">IJRR 2017</a>. By <a href="https://itzsid.github.io/">Siddharth Choudhary</a>.</p>
+    <section>
+      <button class="btn ghost" type="button" id="b-intro">Show the intro again</button>
+      <p class="about">Perception is simulated (standing in for SAM 2 + CLIP). Agents run an open model in your browser via WebLLM, or a built-in planner. SLAM back end after Choudhary et al., <a href="https://arxiv.org/abs/1702.03435">IJRR 2017</a>. By <a href="https://itzsid.github.io/">Siddharth Choudhary</a>.</p>
+    </section>
   </aside>
 
-  <!-- Compare -->
-  <aside class="drawer" id="compare" aria-label="Compare" hidden>
-    <div class="drawer-h"><h2>Does sharing help?</h2><button class="tbtn icon" data-close aria-label="Close">✕</button></div>
-    <p class="lead">Run the same task twice in the same building: once with a map the team shares, once with every robot on its own.</p>
-    <div class="tasks" id="task"></div>
-    <p class="hint" id="task-text"></p>
-    <button class="btn primary wide" id="b-compare">Run both</button>
+  <!-- Compare drawer -->
+  <aside class="drawer" id="compare" role="dialog" aria-modal="true" aria-labelledby="compare-h" hidden tabindex="-1">
+    <div class="drawer-h"><h2 id="compare-h">Does sharing the map help?</h2><button class="x" type="button" data-close aria-label="Close compare">✕</button></div>
+    <p class="lead">Run one task twice on identical copies of the building, off-screen and at full speed.</p>
+    <div class="howto">
+      <div><span class="swatch s-shared"></span><b>Shared map</b><small>Robots merge what they've seen into one team map before acting.</small></div>
+      <div><span class="swatch s-alone"></span><b>Robots alone</b><small>Each robot only knows its own rooms and must explore the rest.</small></div>
+    </div>
+    <section>
+      <h3 id="task-h">Task</h3>
+      <div class="tasks" id="task" role="radiogroup" aria-labelledby="task-h"></div>
+      <p class="hint" id="task-text"></p>
+    </section>
+    <button class="btn primary wide" type="button" id="b-compare">Run both</button>
+    <div class="cmp-prog" id="cmp-prog" hidden role="status"><div class="prog"><div id="cmp-bar"></div></div><p class="hint" id="cmp-text"></p></div>
     <div id="cmp"></div>
   </aside>
 

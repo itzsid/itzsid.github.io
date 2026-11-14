@@ -66,8 +66,9 @@ export function floorTypeFor(scene, room) {
 }
 export function floorMaterial(type, w, h) {
   const meters = { wood: 3.2, tile: 2.4, concrete: 6, carpet: 3, vinyl: 3 }[type];
-  const map = canvasTex(type, 512, FLOORS[type], [w / meters, h / meters]);
-  return new THREE.MeshStandardMaterial({ map, roughness: { wood: 0.55, tile: 0.35, concrete: 0.85, carpet: 1.0, vinyl: 0.45 }[type], metalness: 0 });
+  const base = canvasTex(type, type === 'wood' ? 1024 : 512, FLOORS[type]);
+  const map = base.clone(); map.repeat.set(w / meters, h / meters); map.needsUpdate = true;
+  return new THREE.MeshStandardMaterial({ map, roughness: { wood: 0.5, tile: 0.3, concrete: 0.85, carpet: 1.0, vinyl: 0.42 }[type], metalness: 0 });
 }
 
 // wood grain for furniture, tinted by base colour
@@ -81,22 +82,74 @@ function woodTex(hex) {
   });
 }
 
+// brushed metal: fine horizontal streaks (greyscale, tinted by material colour)
+function brushedTex() {
+  return canvasTex('brushed', 256, (g, s) => {
+    g.fillStyle = '#d8d8d8'; g.fillRect(0, 0, s, s);
+    for (let k = 0; k < 700; k++) { const v = 170 + Math.floor(rnd() * 85); g.fillStyle = `rgba(${v},${v},${v},0.35)`; g.fillRect(0, rnd() * s, s, 0.6 + rnd()); }
+  });
+}
+// woven fabric: subtle cross-hatch + speckle
+function fabricTex() {
+  return canvasTex('fabric', 128, (g, s) => {
+    g.fillStyle = '#e6e6e6'; g.fillRect(0, 0, s, s);
+    for (let y = 0; y < s; y += 2) { g.fillStyle = `rgba(0,0,0,${0.04 + rnd() * 0.04})`; g.fillRect(0, y, s, 1); }
+    for (let x = 0; x < s; x += 2) { g.fillStyle = `rgba(255,255,255,${0.05 + rnd() * 0.05})`; g.fillRect(x, 0, 1, s); }
+    for (let k = 0; k < 900; k++) { const v = Math.floor(rnd() * 60) + 180; g.fillStyle = `rgba(${v},${v},${v},0.25)`; g.fillRect(rnd() * s, rnd() * s, 1, 1); }
+  }, [3, 3]);
+}
+// corrugated cardboard with a tape strip down the middle
+function cardboardTex() {
+  return canvasTex('cardboard', 128, (g, s) => {
+    g.fillStyle = '#c49a6c'; g.fillRect(0, 0, s, s);
+    for (let k = 0; k < 1500; k++) { g.fillStyle = rnd() < 0.5 ? 'rgba(120,80,40,0.10)' : 'rgba(240,210,170,0.10)'; g.fillRect(rnd() * s, rnd() * s, 1 + rnd() * 3, 1); }
+    g.fillStyle = 'rgba(200,170,120,0.85)'; g.fillRect(s * 0.42, 0, s * 0.16, s);
+    g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(s * 0.42, 0, 2, s);
+  });
+}
+// a desktop-ish screen: soft gradient + a few UI blocks
+function screenTex(kind) {
+  return canvasTex(`screen-${kind}`, 128, (g, s) => {
+    const gr = g.createLinearGradient(0, 0, s, s);
+    if (kind === 'tv') { gr.addColorStop(0, '#1b2a4a'); gr.addColorStop(0.6, '#2b5d8a'); gr.addColorStop(1, '#e09a5a'); }
+    else if (kind === 'med') { gr.addColorStop(0, '#04140f'); gr.addColorStop(1, '#0b2a22'); }
+    else { gr.addColorStop(0, '#203a5c'); gr.addColorStop(1, '#3b6ea5'); }
+    g.fillStyle = gr; g.fillRect(0, 0, s, s);
+    if (kind === 'med') { g.strokeStyle = '#34d399'; g.lineWidth = 3; g.beginPath(); for (let x = 0; x < s; x += 4) { const y = s / 2 + (x % 40 === 20 ? -30 : x % 40 === 24 ? 20 : 0); x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+    else if (kind !== 'tv') {
+      g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(0, 0, s, 8);
+      g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(10, 18, s * 0.55, s * 0.5);
+      g.fillStyle = 'rgba(255,255,255,0.35)'; for (let k = 0; k < 5; k++) g.fillRect(s * 0.7, 20 + k * 12, s * 0.22, 6);
+    }
+  });
+}
+
 const M = {};
 const mk = (key, fn) => (M[key] ||= Object.assign(fn(), { _shared: true }));
 export const mats = {
-  wood: (hex = '#a0703f') => mk(`wood${hex}`, () => new THREE.MeshStandardMaterial({ map: woodTex(hex), roughness: 0.6 })),
+  wood: (hex = '#a0703f') => mk(`wood${hex}`, () => new THREE.MeshStandardMaterial({ map: woodTex(hex), roughness: 0.55 })),
   paint: (hex, rough = 0.55) => mk(`paint${hex}${rough}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0.05 })),
   plastic: (hex) => mk(`plastic${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.38, metalness: 0 })),
   metal: (hex = '#b8bec6', rough = 0.32) => mk(`metal${hex}${rough}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: rough, metalness: 0.85 })),
-  fabric: (hex) => mk(`fabric${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.95, metalness: 0 })),
+  brushed: (hex = '#c3c8ce') => mk(`brushed${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, map: brushedTex(), roughness: 0.38, metalness: 0.8 })),
+  chrome: () => mk('chrome', () => new THREE.MeshStandardMaterial({ color: '#e5e7eb', roughness: 0.12, metalness: 1 })),
+  fabric: (hex) => mk(`fabric${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, map: fabricTex(), roughness: 0.95, metalness: 0 })),
+  leather: (hex) => mk(`leather${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, metalness: 0 })),
   rubber: () => mk('rubber', () => new THREE.MeshStandardMaterial({ color: '#1d2025', roughness: 0.9 })),
-  screen: () => mk('screen', () => new THREE.MeshStandardMaterial({ color: '#0b1220', roughness: 0.15, metalness: 0.3, emissive: '#1e3a8a', emissiveIntensity: 0.35 })),
-  glass: () => mk('glass', () => new THREE.MeshPhysicalMaterial({ color: '#dbeafe', roughness: 0.05, transmission: 0.6, transparent: true, opacity: 0.5 })),
-  leaf: (hex) => mk(`leaf${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.75, flatShading: true })),
-  emissive: (hex) => mk(`em${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.9, roughness: 0.4 })),
-  wall: () => mk('wall', () => new THREE.MeshStandardMaterial({ color: '#f6f5f2', roughness: 0.92 })),
+  cardboard: () => mk('cardboard', () => new THREE.MeshStandardMaterial({ map: cardboardTex(), roughness: 0.9 })),
+  film: () => mk('film', () => new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.2, transparent: true, opacity: 0.42, depthWrite: false })),
+  ceramic: (hex = '#f8fafc') => mk(`ceramic${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.18, metalness: 0 })),
+  screen: (kind = 'pc') => mk(`screen${kind}`, () => new THREE.MeshStandardMaterial({ color: '#000000', roughness: 0.2, metalness: 0.1, emissive: '#ffffff', emissiveMap: screenTex(kind), emissiveIntensity: 0.9 })),
+  screenOff: () => mk('screenOff', () => new THREE.MeshStandardMaterial({ color: '#0b0f17', roughness: 0.12, metalness: 0.4 })),
+  glass: () => mk('glass', () => new THREE.MeshStandardMaterial({ color: '#cfe3f3', roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35, depthWrite: false })),
+  leaf: (hex) => mk(`leaf${hex}`, () => new THREE.MeshStandardMaterial({ color: hex, roughness: 0.6, side: THREE.DoubleSide })),
+  soil: () => mk('soil', () => new THREE.MeshStandardMaterial({ color: '#3b2a1e', roughness: 1 })),
+  emissive: (hex, k = 0.9) => mk(`em${hex}${k}`, () => new THREE.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: k, roughness: 0.4 })),
+  wall: () => mk('wall', () => new THREE.MeshStandardMaterial({ color: '#f4f2ee', roughness: 0.92 })),
   wallTop: () => mk('wallTop', () => new THREE.MeshStandardMaterial({ color: '#3a3f47', roughness: 0.7 })),
-  baseboard: () => mk('baseboard', () => new THREE.MeshStandardMaterial({ color: '#d8d6d0', roughness: 0.6 })),
+  baseboard: () => mk('baseboard', () => new THREE.MeshStandardMaterial({ color: '#cfccc5', roughness: 0.6 })),
+  frame: () => mk('frame', () => new THREE.MeshStandardMaterial({ color: '#e9e4da', roughness: 0.5 })),
+  ground: () => mk('ground', () => new THREE.MeshStandardMaterial({ color: '#e3e6ea', roughness: 1 })),
 };
 export const tone = (name) => ({ red: '#c62828', blue: '#2f5fb8', green: '#2e7d32', gray: '#8d939b', white: '#eceff1', brown: '#7b5232', black: '#26292e', yellow: '#e8b923', orange: '#e8742a' }[name] || '#999999');
-export { shade };
+export { shade, rnd };
