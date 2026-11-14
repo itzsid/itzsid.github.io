@@ -19,10 +19,12 @@ export class RobotSim {
     this.scene = scene; this.robot = def; this.R = rng(seed); this.detectProb = detectProb;
     this.yawBias = (this.R.next() * 2 - 1) * 0.014;     // rad per meter, differs per robot
     this.gt = [{ ...def.start }]; this.dr = [{ ...def.start }]; this.odom = []; this.obs = [];
-    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0; this.sightings = {}; this.embSum = {};
+    this.version = 0; this.explored = new Set(); this.distance = 0; this.falseCount = 0; this.sightings = {}; this.embSum = {}; this.lastObs = {};
     this.observe(0);
   }
   get k() { return this.gt.length - 1; }
+  // rough position of an object from dead reckoning (no map solve)
+  quickPos(obj) { const o = this.obs[this.lastObs[obj]]; return o ? compose(this.dr[o.k], o.z) : null; }
   // label of an object from the running mean of its descriptors (no map solve needed)
   quickLabel(obj) {
     const e = this.embSum[obj]; if (!e) return null;
@@ -40,6 +42,7 @@ export class RobotSim {
       this.sightings[o.id] = (this.sightings[o.id] || 0) + 1;
       const emb = embedObject(o, R, 0.14 + 0.08 * far), acc = (this.embSum[o.id] ||= new Array(emb.length).fill(0));
       for (let d = 0; d < emb.length; d++) acc[d] += emb[d];
+      this.lastObs[o.id] = this.obs.length;
       this.obs.push({ k, obj: o.id, z: { x: rel.x + R.gauss() * NOISE.obsPos * (1 + far), y: rel.y + R.gauss() * NOISE.obsPos * (1 + far), th: wrap(rel.th + R.gauss() * NOISE.obsRot) }, emb });
     }
     if (R.next() < NOISE.falseRate) {   // spurious detection (never re-observed -> filtered)

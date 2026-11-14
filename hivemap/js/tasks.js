@@ -27,7 +27,7 @@ export async function priorExploration(T) {
 const center = (T, room) => { const q = T.scene.rooms.find((x) => x.name === room); return { x: (q.x0 + q.x1) / 2, y: (q.y0 + q.y1) / 2 }; };
 const seenBy = (T, r, objId) => objId in T.local(r).lms;
 // cheap check (no map solve): has robot r seen something matching the query at least twice?
-const quickKnows = (T, r, task) => { const q = embedText(task.query), s = T.sims[r]; return Object.keys(s.sightings).some((id) => { if (s.sightings[id] < MIN_SIGHTINGS) return false; const l = s.quickLabel(id); return l && l.cat === q.cat && (!q.col || l.color === q.col); }); };
+const quickKnows = (T, r, task) => { const q = embedText(task.query), s = T.sims[r]; return Object.keys(s.sightings).some((id) => { if (s.sightings[id] < MIN_SIGHTINGS) return false; const l = s.quickLabel(id); if (!l || l.cat !== q.cat || (q.col && l.color !== q.col)) return false; if (!task.room) return true; const p = s.quickPos(id), rm = T.scene.rooms.find((x) => x.name === task.room); return p && p.x > rm.x0 - 1.5 && p.x < rm.x1 + 1.5 && p.y > rm.y0 - 1.5 && p.y < rm.y1 + 1.5; }); };
 const sighted = (T, r, objId) => (T.sims[r].sightings[objId] || 0) >= MIN_SIGHTINGS;   // cheap: same rule as the map
 const instances = (T, cat, color) => T.scene.objects.filter((o) => o.cat === cat && !o.hidden && (!color || o.color === color));
 const pickBy = (arr, k) => arr[((k % arr.length) + arr.length) % arr.length];
@@ -121,7 +121,10 @@ async function exploreUntil(T, r, found, { avoid = new Set(), done = (n) => T.si
     if (!todo.length) return found();
     todo.sort((a, b) => Math.hypot(center(T, a).x - p.x, center(T, a).y - p.y) - Math.hypot(center(T, b).x - p.x, center(T, b).y - p.y));
     avoid.add(todo[0]);
-    await T.exploreRoom(r, todo[0], { until: cheap ? () => cheap() && found() : found, untilEvery: cheap ? 0 : every });
+    // full check (may re-solve the map) at most every few seconds, and only once the cheap check passes
+    let last = -1e9;
+    const until = () => { if (cheap && !cheap()) return false; if (T.time - last < Math.max(every, 3)) return false; last = T.time; return found(); };
+    await T.exploreRoom(r, todo[0], { until: every === 0 && !cheap ? found : until, untilEvery: 0 });
   }
 }
 
@@ -225,10 +228,10 @@ export async function runTask(T, task, log = () => {}) {
       await T.goTo(r, { x: s.x, y: s.y, standoff: 0.05, faceTo: { x: o.x, y: o.y }, ...(slots[r] ? {} : { gt: task.target }) }, o.label);
       const p = T.pose[r];
       // at the meeting point = close to the real object, allowing for the ring of teammates around it
-      return { d: Math.hypot(task.target.x - p.x, task.target.y - p.y), allow: Math.max(near, Math.hypot(s.x - o.x, s.y - o.y) + 0.9) };
+      return { d: Math.hypot(task.target.x - p.x, task.target.y - p.y), allow: Math.max(near, Math.hypot(s.x - o.x, s.y - o.y) + 1.3) };
     })()));
     const ok = arrivals.filter((a) => a && a.d < a.allow).length;
-    out = { arrived: ok, robots: T.n }; out.success = ok === T.n; out.score = ok / T.n;
+    out = { arrived: ok, robots: T.n, distances_m: arrivals.map((a) => (a ? +a.d.toFixed(2) : null)) }; out.success = ok === T.n; out.score = ok / T.n;
     say(`${ok}/${T.n} robots at the meeting point`);
   }
   if (task.kind === 'dispatch') {

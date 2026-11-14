@@ -276,15 +276,21 @@ function refreshStats() {
   const T = team; if (!T) return;
   const ate = T.M ? T.teamAte() : T.pooledLocalAte();
   const dis = T.M ? (T.optimized ? T.solverStats.map_disagreement_after_m : T.M.disInit) : null;
-  const stat = (k, v, tip) => `<span title="${esc(tip)}">${k} <b>${v}</b></span>`;
+  const stat = (k, v, tip, cls = '') => `<span class="${cls}" title="${esc(tip)}">${k} <b>${v}</b></span>`;
+  const agent = llm.ready ? (MODELS.find((m) => m.id === llm.modelId)?.name || 'open LLM') : 'built-in planner';
   $('#stats').innerHTML = [
-    T.shared ? stat('Maps merged', T.M ? `${T.M.joined.length}/${T.n}` : `0/${T.n}`, 'Robots whose maps are joined into the team map') : stat('Sharing', 'off', 'Replay without a shared map'),
-    dis != null ? stat('Disagree', `${dis.toFixed(2)} m`, 'How far apart robots place the same object') : '',
-    ate != null ? stat('Map error', `${ate.toFixed(2)} m`, 'Path error versus ground truth') : '',
-    stat('Sent', kb(T.bytes.objects + T.bytes.dgs), 'Data exchanged between robots'),
-    `<span class="agent" title="What runs each robot's agent">${llm.ready ? 'LLM agents' : 'Planner agents'}</span>`,
+    T.shared ? stat('Shared map:', T.M ? `${T.M.joined.length}/${T.n} robots` : `0/${T.n} robots`, "How many robots' maps are combined into one team map.")
+      : stat('Shared map:', 'off', 'This replay runs without a shared map: each robot only knows what it saw.'),
+    Number.isFinite(dis) ? stat('Robots agree within', `${dis.toFixed(2)} m`, 'Average distance between where different robots place the same object. Lower means the maps line up.') : '',
+    Number.isFinite(ate) && ate > 0 ? stat('Accuracy vs. truth', `${ate.toFixed(2)} m`, 'How far the team map is from the true layout. Only knowable in a simulation.') : '',
+    stat('Data shared', kb(T.bytes.objects + T.bytes.dgs), 'Bytes robots sent each other: object descriptors and optimization messages, not images.'),
+    stat('Agents:', agent, 'The brain each robot uses: a built-in planner, or an open LLM running in your browser.', 'agent'),
   ].filter(Boolean).join('');
 }
+$('#stats-i').onclick = () => {
+  const h = $('#stats-help'), open = h.hidden;
+  h.hidden = !open; $('#stats-i').setAttribute('aria-expanded', String(open)); $('#stats-i').classList.toggle('on', open);
+};
 
 // ---------- suggestions (short, refreshed after each task)
 const usedSuggestions = new Set();
