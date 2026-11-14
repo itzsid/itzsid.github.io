@@ -86,7 +86,7 @@ function robotMesh(robot) {
   eye.position.set(-0.05, 0.74, 0); g.add(eye);
   // field of view wedge on the floor (local +x is forward)
   const fov = new THREE.Mesh(new THREE.CircleGeometry(SENSOR.range, 32, -SENSOR.fov / 2, SENSOR.fov),
-    new THREE.MeshBasicMaterial({ color: robot.color, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide }));
+    new THREE.MeshBasicMaterial({ color: robot.color, transparent: true, opacity: 0.06, depthWrite: false, side: THREE.DoubleSide }));
   fov.rotation.x = -Math.PI / 2; fov.position.y = 0.02; g.add(fov);
   g.userData.fov = fov;
   return g;
@@ -105,7 +105,7 @@ export class SceneView {
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(r.domElement); this.renderer = r;
     this.labels = new CSS2DRenderer(); this.labels.domElement.className = 'labels-layer'; container.appendChild(this.labels.domElement);
-    this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0xf4f5f8);
+    this.scene = new THREE.Scene(); this.scene.background = new THREE.Color(0xeef0f4);
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
     this.controls = new OrbitControls(this.camera, r.domElement);
     this.controls.enableDamping = true; this.controls.maxPolarAngle = Math.PI * 0.47; this.controls.minDistance = 5; this.controls.maxDistance = 120;
@@ -113,7 +113,8 @@ export class SceneView {
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xcbd5e1, 1.6));
     this.sun = new THREE.DirectionalLight(0xffffff, 1.5); this.sun.castShadow = true; this.sun.shadow.mapSize.set(1024, 1024);
     this.scene.add(this.sun, this.sun.target);
-    this.layers = { gt: false, est: true, fov: true, links: true };
+    this.layers = { gt: false, est: true, fov: false, links: true };
+    this.insets = { left: 0, bottom: 0, top: 0 };
     this.size = { w: 24, h: 16 };
     new ResizeObserver(() => this.resize()).observe(container); this.resize();
   }
@@ -156,7 +157,7 @@ export class SceneView {
       const m = robotMesh(rb); m.userData.fov.visible = this.layers.fov; this.dyn.add(m);
       const tag = textLabel(rb.name.replace('Robot ', 'R'), 'robot-tag'); tag.element.style.background = rb.css; tag.position.set(0, 1.15, 0); m.add(tag);
       this.robots[rb.i] = m;
-      const lm = new LineMaterial({ color: rb.color, linewidth: 2.6, worldUnits: false, transparent: true, opacity: 0.9 }); lm.resolution.set(this.width || 1, this.height || 1);
+      const lm = new LineMaterial({ color: rb.color, linewidth: 2, worldUnits: false, transparent: true, opacity: 0.85 }); lm.resolution.set(this.width || 1, this.height || 1);
       const trail = new Line2(new LineGeometry(), lm); trail.visible = false; this.estGroup.add(trail);
       const gtl = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: 0x64748b, dashSize: 0.18, gapSize: 0.14, transparent: true, opacity: 0.6 })); this.gtGroup.add(gtl);
       this.trails[rb.i] = { trail, gtl, lm, n: -1 }; this.rings[rb.i] = {};
@@ -212,16 +213,24 @@ export class SceneView {
     if (name === 'links' && this.linkGroup) this.linkGroup.visible = on;
     if (name === 'fov' && this.robots) for (const m of Object.values(this.robots)) m.userData.fov.visible = on;
   }
+  setInsets(ins) { this.insets = { left: 0, bottom: 0, top: 0, ...ins }; this.resize(); }
   resize() {
     const w = this.container.clientWidth, h = this.container.clientHeight; if (!w || !h) return;
     this.width = w; this.height = h; this.renderer.setSize(w, h); this.labels.setSize(w, h);
-    this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
+    const { left, bottom, top } = this.insets;
+    this.camera.aspect = w / h;
+    // render the full canvas but centre the projection on the visible area
+    this.camera.setViewOffset(w, h, -(left / 2), (bottom - top) / 2, w, h);
+    this.camera.updateProjectionMatrix();
     for (const t of Object.values(this.trails || {})) t.lm.resolution.set(w, h);
     if (!this.userMoved) this.fitCamera();
   }
   fitCamera() {
-    const { w: SW, h: SH } = this.size, vf = (this.camera.fov * Math.PI) / 180, a = this.camera.aspect, hf = 2 * Math.atan(Math.tan(vf / 2) * a), elev = (58 * Math.PI) / 180;
-    const d = Math.max((SW / 2 + 2.2) / Math.tan(hf / 2), ((SH * Math.sin(elev)) / 2 + 1.6) / Math.tan(vf / 2));
+    const { w: SW, h: SH } = this.size, { left, bottom, top } = this.insets;
+    const vw = Math.max(200, (this.width || 1) - left), vh = Math.max(200, (this.height || 1) - bottom - top);
+    const vfFull = (this.camera.fov * Math.PI) / 180, vf = 2 * Math.atan(Math.tan(vfFull / 2) * (vh / (this.height || vh)));
+    const hf = 2 * Math.atan(Math.tan(vf / 2) * (vw / vh)), elev = (58 * Math.PI) / 180;
+    const d = Math.max((SW / 2 + 1.2) / Math.tan(hf / 2), ((SH * Math.sin(elev)) / 2 + 1.2) / Math.tan(vf / 2));
     this.controls.target.set(SW / 2, 0, SH / 2); this.camera.position.set(SW / 2, d * Math.sin(elev), SH / 2 + d * Math.cos(elev)); this.camera.lookAt(this.controls.target);
   }
   render(t) {
