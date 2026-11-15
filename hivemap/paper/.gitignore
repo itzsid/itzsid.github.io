@@ -4,3 +4,4 @@
 *.log
 *.out
 figs/teaser.png
+results/results.jsonl
