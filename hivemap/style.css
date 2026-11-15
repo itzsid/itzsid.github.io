@@ -356,3 +356,17 @@ input[type=range] { width: 100%; accent-color: var(--ink); margin: 0; }
 .c-alt p { margin: 3px 0 4px; line-height: 1.45; }
 .c-alt .alt-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
 .c-alt .linkbtn { border: 0; background: none; padding: 0; font: inherit; font-size: 12px; color: #2563eb; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+/* hover card for objects and robots in the 3D view */
+#hovertip { position: fixed; z-index: 20; pointer-events: none; min-width: 190px; max-width: 280px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.97); box-shadow: 0 12px 32px -12px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.06); font-size: 12.5px; color: #14161b; }
+#hovertip[hidden] { display: none; }
+#hovertip b { display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
+#hovertip .tsub { display: block; color: #8a8f99; font-size: 12px; margin: 1px 0 6px; }
+#hovertip .tsub.on { color: #059669; }
+#hovertip .trow { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; border-top: 1px solid #f0f1f4; }
+#hovertip .tk { color: #8a8f99; white-space: nowrap; }
+#hovertip .tv { text-align: right; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+#hovertip .tv em { color: #b0b5bd; font-style: normal; }
+#hovertip .tchip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px 1px 3px; border-radius: 99px; background: #f3f4f6; font-size: 11.5px; font-weight: 600; }
+#hovertip .tchip i, #hovertip .tdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+#hovertip .tnote { margin: 5px 0 0; color: #4a4f59; font-size: 11.5px; }

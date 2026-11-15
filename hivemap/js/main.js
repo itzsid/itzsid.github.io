@@ -11,7 +11,7 @@ const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const view = new SceneView($('#stage'));
 const llm = new LocalLLM();
 const ui = { agents: [], llm, log: (e) => addLog(e) };
-let team = null, speed = 6, paused = false, seed = 7, sceneIdx = 0, taskKind = 'fetch';
+let team = null, speed = 6, paused = false, seed = 7, sceneIdx = Math.max(0, SCENES.findIndex((d) => d.id === 'hospital')), taskKind = 'fetch';   // default: hospital wing, 10 robots
 let worldBusy = false, dirtyLinks = true, dispatcher = null, taskRunning = false, lastCmp = null, worldId = 0;
 const kb = (b) => (b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : b >= 1024 ? `${Math.round(b / 1024)} KB` : `${b} B`);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -271,6 +271,60 @@ function renderPop(first = false) {
   if (first) requestAnimationFrame(() => $('[data-pop-ask]', pop)?.focus({ preventScroll: true }));
 }
 document.addEventListener('pointerdown', (e) => { if (popR != null && !pop.contains(e.target) && !e.target.closest('#roster .rob')) closePop(); });
+
+// ---------- hover details in the 3D view (tap on touch screens)
+const tip = document.createElement('div'); tip.id = 'hovertip'; tip.hidden = true; tip.setAttribute('role', 'tooltip'); document.body.append(tip);
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+function objectTip(T, o) {
+  const seers = T.robots.map((_, r) => r).filter((r) => T.locals[r] && o.id in T.locals[r].lms);
+  const chip = (r) => `<span class="tchip"><i style="background:${T.robots[r].css}"></i>${T.robots[r].id}</span>`;
+  const shared = T.objectsFor(0).find((x) => x._gt && x._gt.id === o.id && /^T/.test(x.id));
+  const est = shared || (seers.length ? T.objectsFor(seers[0]).find((x) => x._gt && x._gt.id === o.id) : null);
+  const err = est ? Math.hypot(est.x - o.x, est.y - o.y) : null;
+  let called = '';
+  if (seers.length) { const lab = T.labelOf(seers[0], o.id); if (lab && lab !== `${o.color} ${o.cat}`) called = `<p class="tnote">${T.robots[seers[0]].id} recognizes it as “${esc(lab)}”.</p>`; }
+  return `<b>${esc(cap(`${o.color} ${o.cat}`))}</b><span class="tsub">${esc(roomAt(T.scene, o.x, o.y))}</span>
+    <div class="trow"><span class="tk">In maps of</span><span class="tv">${seers.length ? seers.map(chip).join('') : '<em>nobody yet</em>'}</span></div>
+    ${shared ? `<div class="trow"><span class="tk">Shared map</span><span class="tv">${shared.id}${seers.length > 1 ? ' · links their maps' : ''}</span></div>` : ''}
+    ${err != null ? `<div class="trow"><span class="tk">Map error</span><span class="tv">${err.toFixed(2)} m</span></div>` : ''}${called}`;
+}
+function robotTip(T, r) {
+  const rb = T.robots[r], s = robotState(T, r), sim = T.sims[r];
+  const objs = Object.keys(T.locals[r]?.lms || {}).length, rooms = [...sim.explored];
+  return `<b><i class="tdot" style="background:${rb.css}"></i>${esc(rb.name)}</b><span class="tsub ${s.busy ? 'on' : ''}">${esc(s.busy ? s.doing : 'Idle')} · ${esc(s.room)}</span>
+    <div class="trow"><span class="tk">Objects known</span><span class="tv">${objs}</span></div>
+    <div class="trow"><span class="tk">Driven</span><span class="tv">${sim.distance.toFixed(1)} m</span></div>
+    <div class="trow"><span class="tk">Explored</span><span class="tv">${rooms.length ? rooms.map(esc).join(', ') : 'nothing yet'}</span></div>`;
+}
+let tipAt = null, tipQueued = false, tipTimer = null;
+function updateTip() {
+  tipQueued = false;
+  const T = team; if (!T || !tipAt) { tip.hidden = true; return; }
+  const hit = view.pick(tipAt.x, tipAt.y);
+  if (!hit) { tip.hidden = true; $('#stage').style.cursor = ''; return; }
+  tip.innerHTML = hit.type === 'robot' ? robotTip(T, hit.i) : objectTip(T, hit.object);
+  tip.hidden = false; $('#stage').style.cursor = 'pointer';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = `${Math.min(window.innerWidth - w - 10, tipAt.x + 14)}px`;
+  tip.style.top = `${Math.max(10, Math.min(window.innerHeight - h - 10, tipAt.y + 14))}px`;
+}
+const stageEl = $('#stage');
+stageEl.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  if (e.buttons) { tipAt = null; tip.hidden = true; return; }   // orbiting the camera
+  tipAt = { x: e.clientX, y: e.clientY };
+  if (!tipQueued) { tipQueued = true; requestAnimationFrame(updateTip); }
+});
+stageEl.addEventListener('pointerleave', () => { tipAt = null; tip.hidden = true; });
+let downAt = null;
+stageEl.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+stageEl.addEventListener('pointerup', (e) => {   // tap to inspect on touch screens
+  if (e.pointerType === 'mouse' || !downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 8) return;
+  tipAt = { x: e.clientX, y: e.clientY }; updateTip();
+  clearTimeout(tipTimer); tipTimer = setTimeout(() => { tipAt = null; tip.hidden = true; }, 5000);
+});
+// keep the card live while hovering (robots move, maps change)
+setInterval(() => { if (tipAt && !tip.hidden) updateTip(); }, 400);
 
 // ---------- stats footer
 function refreshStats() {

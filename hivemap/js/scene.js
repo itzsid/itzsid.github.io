@@ -184,7 +184,7 @@ export class SceneView {
     for (const rb of team.robots) {
       const m = robotMesh(rb); m.userData.fov.visible = this.layers.fov; this.dyn.add(m);
       const tag = textLabel(rb.name.replace('Robot ', 'R'), 'robot-tag'); tag.element.style.background = rb.css; tag.position.set(0, 0.9, 0); m.add(tag);
-      this.robots[rb.i] = m;
+      this.robots[rb.i] = m; m.userData.robotIndex = rb.i;
       const lm = new LineMaterial({ color: rb.color, linewidth: TRAIL.idleWidth, worldUnits: false, transparent: true, opacity: TRAIL.idleOpacity, depthWrite: false });
       lm.resolution.set(this.width || 1, this.height || 1);
       const trail = new Line2(new LineGeometry(), lm); trail.visible = false; trail.renderOrder = 2; this.estGroup.add(trail);
@@ -193,6 +193,22 @@ export class SceneView {
       this.ringMats[rb.i] = new THREE.MeshBasicMaterial({ color: rb.color, map: getMarkerTex(), transparent: true, opacity: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
     }
     this.userMoved = false; this.fitCamera();
+  }
+
+  // what is under the pointer: { type: 'robot', i } | { type: 'object', object } | null
+  pick(clientX, clientY) {
+    if (!this.world || !this.robots) return null;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this._ray ||= new THREE.Raycaster(); this._ndc ||= new THREE.Vector2();
+    this._ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    this._ray.setFromCamera(this._ndc, this.camera);
+    const robots = Object.values(this.robots);
+    const hitR = this._ray.intersectObjects(robots, true).find((h) => h.object !== h.object.parent?.userData?.fov && !h.object.userData.noAO);
+    if (hitR) { let o = hitR.object; while (o && o.userData.robotIndex == null) o = o.parent; if (o) return { type: 'robot', i: o.userData.robotIndex }; }
+    const objs = this.world.children.filter((c) => c.userData && c.userData.object && c.userData.object.cat !== 'rack');
+    const hitO = this._ray.intersectObjects(objs, true)[0];
+    if (hitO) { let o = hitO.object; while (o && !o.userData?.object) o = o.parent; if (o) return { type: 'object', object: o.userData.object }; }
+    return null;
   }
 
   // objects that appear mid-run (e.g. the lost item in the search task)
