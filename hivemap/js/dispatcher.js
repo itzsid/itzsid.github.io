@@ -343,7 +343,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     await this.syncMap();
     if (T.shared && robots.length > 1 && rooms.length > 1) {
       const roomsEach = T.robots.map((_, r) => T.sims[r].explored.size), total = T.scene.rooms.length;
-      ctx.alt = `Without the shared map each robot would know only the ${Math.min(...roomsEach)}–${Math.max(...roomsEach)} rooms it drove through itself; to know all ${total}, every robot would have to explore the whole building.`;
+      ctx.altKind = 'inventory'; ctx.alt = `Without the shared map each robot would know only the ${Math.min(...roomsEach)}–${Math.max(...roomsEach)} rooms it drove through itself; to know all ${total}, every robot would have to explore the whole building.`;
     }
     const objs = res.reduce((a, x) => a + (x.new_objects || 0), 0);
     return this.done(`Explored ${listNames(res.map((x) => x.room))}: ${objs} new object${objs === 1 ? '' : 's'} mapped.`, ctx);
@@ -413,6 +413,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     const g = picks[0].g, rb = picks.map((p) => p.r);
     if (T.shared && picks.length === 1) {
       const alt = opts.filter((o) => this.sawItself(o.r, o.g)).sort((a, b) => a.d - b.d)[0], p0 = picks[0];
+      ctx.altKind = 'fetch';
       if (!alt) ctx.alt = `Without the shared map, no free robot had seen ${an(it.target.text)} ${it.target.text} itself: one would have had to search the building first.`;
       else if (alt.d <= p0.d + 0.5) ctx.alt = `${T.robots[p0.r].name} had seen it itself, so the shared map didn't change this one.`;
       else ctx.alt = `Without the shared map only ${this.ids([...new Set(opts.filter((o) => this.sawItself(o.r, o.g)).map((o) => o.r))])} could go: best was ${T.robots[alt.r].id}, ${fmt(alt.d)} m away (about ${this.eta(alt.d)}) instead of ${fmt(p0.d)} m (about ${this.eta(p0.d)}).`;
@@ -479,6 +480,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     const skipped = T.robots.map((_, r) => r).filter((r) => !robots.includes(r) && !it.robots.length && !it.count && !it.robotRoom);
     this.note(`${robots.length === T.n ? `All ${T.n} robots` : listNames(robots.map((r) => T.robots[r].id))} meet at ${g.label} ${g.refs[know[0]] || ''} in the ${g.room}${skipped.length ? ` (${listNames(skipped.map((r) => T.robots[r].id))} busy)` : ''}.${blind.length ? ` ${listNames(blind.map((r) => T.robots[r].id))} ${blind.length > 1 ? "aren't" : "isn't"} linked to the team map yet, so ${blind.length > 1 ? 'they follow' : 'it follows'} the nearest teammate.` : ''}`, { robots });
     if (T.shared) {
+      ctx.altKind = 'rendezvous';
       const blindAlone = robots.filter((r) => !this.sawItself(r, g));
       ctx.alt = blindAlone.length ? `Without the shared map, ${this.ids(blindAlone)} ${blindAlone.length > 1 ? 'had' : 'had'} never seen the ${g.label} and would have had to search for it before meeting.` : 'Every robot had seen it itself, so the shared map didn\'t change this one.';
     }
@@ -555,6 +557,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
         if (!best) { unreach = todo2.length; break; }
         const g = todo2.splice(best.gi, 1)[0]; acc2[best.r] = best.c; pos2[best.r] = { x: g.x, y: g.y };
       }
+      ctx.altKind = 'dispatch';
       const mk = Math.max(0, ...Object.values(acc)), mk2 = Math.max(0, ...Object.values(acc2));
       ctx.alt = unreach ? `Without the shared map, ${unreach} of them ${unreach > 1 ? 'were' : 'was'} known only to busy robots and would have been missed.`
         : mk2 > mk * 1.1 + 1 ? `Without the shared map each robot could only visit the ones it saw itself: the slowest robot would drive about ${fmt(mk2)} m (about ${this.eta(mk2)}) instead of ${fmt(mk)} m.`
@@ -584,6 +587,7 @@ target = object words only (color + kind, e.g. "red toolbox"), "" if none. room 
     }
     if (!groups.length) return this.done(this.missText(it), ctx);
     if (T.shared && groups.length > 1) {
+      ctx.altKind = 'inventory';
       const best = T.robots.map((_, r) => ({ r, k: groups.filter((g) => this.sawItself(r, g)).length })).sort((a, b) => b.k - a.k)[0];
       ctx.alt = best.k < groups.length ? `Without the shared map, the best-informed robot (${T.robots[best.r].id}) knew only ${best.k} of these ${groups.length}.` : `${T.robots[best.r].name} alone already knew all of them.`;
     }

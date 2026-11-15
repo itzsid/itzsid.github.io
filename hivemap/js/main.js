@@ -435,8 +435,8 @@ function finishCard(e) {
   if (e.alt) {
     const neutral = /didn't change|already knew all/.test(e.alt);
     const alt = document.createElement('div'); alt.className = `c-alt ${neutral ? 'neutral' : ''}`;
-    alt.innerHTML = `<span class="alt-tag">${neutral ? 'Shared map' : 'Shared map helped'}</span><p>${esc(e.alt)}</p><button type="button" class="linkbtn">See a full side-by-side run</button>`;
-    $('button', alt).onclick = () => { openDrawer('compare'); };
+    alt.innerHTML = `<span class="alt-tag">${neutral ? 'Shared map' : 'Shared map helped'}</span><p>${esc(e.alt)}</p><button type="button" class="linkbtn">Run it side by side: shared map vs. robots alone</button>`;
+    $('button', alt).onclick = () => openComparison(e.altKind || 'fetch');
     c.append(alt);
   }
   c.classList.remove('running'); c.classList.add(bad ? 'warn' : 'done');
@@ -467,6 +467,12 @@ async function send(text) {
 $('#ask').onsubmit = (e) => { e.preventDefault(); send($('#q').value); };
 
 // ---------- compare
+// open Compare with a task preselected and start the run immediately
+function openComparison(kind) {
+  if (TASKS.some((t) => t.id === kind)) taskKind = kind;
+  renderTasks(); openDrawer('compare');
+  const btn = $('#b-compare'); if (btn && !btn.disabled) btn.click();
+}
 function renderTasks() {
   $('#task').innerHTML = TASKS.map((t) => `<button type="button" role="radio" aria-checked="${t.id === taskKind}" class="card-opt ${t.id === taskKind ? 'on' : ''}" data-k="${t.id}"><b>${esc(t.name)}</b><small>${esc(t.blurb)}</small></button>`).join('');
   $$('#task button').forEach((b) => (b.onclick = () => { taskKind = b.dataset.k; renderTasks(); }));
@@ -526,7 +532,12 @@ function verdictFor(S, I) {
   const speedup = S.time_s > 0 ? I.time_s / S.time_s : Infinity;
   if (S.score > I.score) return { text: 'Only the team with the shared map finished the task.', good: true };
   if (I.score > S.score) return { text: 'Here the robots on their own did better.', good: false };
-  if (I.time_s > S.time_s * 1.15) return { text: `With the shared map the team finished <b>${Number.isFinite(speedup) ? `${speedup.toFixed(1)}× faster` : 'instantly'}</b>${I.distance_m > S.distance_m * 1.15 ? ` and drove <b>${(I.distance_m / Math.max(1, S.distance_m)).toFixed(1)}× less</b>` : ''}.`, good: true };
+  // answered straight from the map (no real driving): ratios are meaningless, say what "alone" cost instead
+  if (S.time_s < 5 && S.distance_m < 3 && I.time_s > S.time_s + 10) return { text: `With the shared map the answer came <b>straight from the map</b>, no driving needed. Alone, Robot 1 needed <b>${clock(I.time_s)}</b> and <b>${(+I.distance_m).toFixed(0)} m</b> of driving to find out.`, good: true };
+  if (I.time_s > S.time_s * 1.15) {
+    const dr = I.distance_m / Math.max(1, S.distance_m);
+    return { text: `With the shared map the team finished <b>${speedup.toFixed(1)}× faster</b>${dr > 1.15 ? ` and drove <b>${dr > 20 ? `${(+I.distance_m).toFixed(0)} m less` : `${dr.toFixed(1)}× less`}</b>` : ''}.`, good: true };
+  }
   if (S.time_s > I.time_s * 1.15) return { text: 'Here sharing cost more than it saved: the robots already knew what they needed, and linking maps takes time.', good: false };
   return { text: 'About the same: the robots already knew what they needed.', good: false };
 }
