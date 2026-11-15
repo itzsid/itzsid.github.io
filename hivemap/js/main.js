@@ -272,6 +272,36 @@ function renderPop(first = false) {
 }
 document.addEventListener('pointerdown', (e) => { if (popR != null && !pop.contains(e.target) && !e.target.closest('#roster .rob')) closePop(); });
 
+// ---------- plain-language object names (IDs like T12 / R1.7 stay in the hover card)
+const ID_RE = /\b(T\d+|R\d+\.\d+)\b/g;
+let nameCache = { key: '', map: new Map() };
+function objectNames(T) {
+  const key = `${T.time}|${T.M ? T.M.versions.join(',') : ''}|${T.sims.map((s) => s.version).join(',')}`;
+  if (nameCache.key === key) return nameCache.map;
+  const map = new Map(), all = [];
+  for (let r = 0; r < T.n; r++) for (const o of T.objectsFor(r)) if (!map.has(o.id)) { const e = { id: o.id, label: o.label, room: o.room, x: o.x, y: o.y }; map.set(o.id, e); all.push(e); }
+  // number look-alikes per room ("chair 2 in the Kitchen"); one physical object can have several ids, so group by position
+  const groups = {};
+  for (const e of all) { const k = `${e.label}|${e.room}`; const g = (groups[k] ||= []); let c = g.find((q) => Math.hypot(q.x - e.x, q.y - e.y) < 1.0); if (!c) { c = { x: e.x, y: e.y, ids: [] }; g.push(c); } c.ids.push(e); }
+  for (const g of Object.values(groups)) { g.sort((a, b) => a.x - b.x || a.y - b.y); g.forEach((c, i) => c.ids.forEach((e) => (e.n = g.length > 1 ? i + 1 : 0))); }
+  nameCache = { key, map }; return map;
+}
+function humanize(text) {
+  const T = team; if (!T || !text) return text || '';
+  const names = objectNames(T);
+  const nm = (e) => `${e.label}${e.n ? ` ${e.n}` : ''}`;
+  let t = String(text);
+  // "orange armchair T47" / "orange armchair (T47)" -> "orange armchair" (or "chair 2" when the room has several)
+  t = t.replace(/([a-z0-9][a-z0-9 -]*?) \(?(T\d+|R\d+\.\d+)\)?/gi, (m, before, id) => {
+    const e = names.get(id); if (!e) return m;
+    return before.toLowerCase().endsWith(e.label.toLowerCase()) ? `${before}${e.n ? ` ${e.n}` : ''}` : `${before} the ${nm(e)} in the ${e.room}`;
+  });
+  // any remaining bare id -> "the chair 2 in the Kitchen"
+  t = t.replace(ID_RE, (id) => { const e = names.get(id); return e ? `the ${nm(e)} in the ${e.room}` : id; });
+  return t.replace(/\bthe (Room \d+)/g, '$1').replace(/\bthe the\b/gi, 'the').replace(/ in the ([A-Za-z0-9 ]+?) in the \1/g, ' in the $1').replace(/ at \(\d+(\.\d+)?, \d+(\.\d+)?\)/g, '');
+}
+const H = (t) => esc(humanize(t));
+
 // ---------- hover details in the 3D view (tap on touch screens)
 const tip = document.createElement('div'); tip.id = 'hovertip'; tip.hidden = true; tip.setAttribute('role', 'tooltip'); document.body.append(tip);
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -285,8 +315,8 @@ function objectTip(T, o) {
   if (seers.length) { const lab = T.labelOf(seers[0], o.id); if (lab && lab !== `${o.color} ${o.cat}`) called = `<p class="tnote">${T.robots[seers[0]].id} recognizes it as “${esc(lab)}”.</p>`; }
   return `<b>${esc(cap(`${o.color} ${o.cat}`))}</b><span class="tsub">${esc(roomAt(T.scene, o.x, o.y))}</span>
     <div class="trow"><span class="tk">In maps of</span><span class="tv">${seers.length ? seers.map(chip).join('') : '<em>nobody yet</em>'}</span></div>
-    ${shared ? `<div class="trow"><span class="tk">Shared map</span><span class="tv">${shared.id}${seers.length > 1 ? ' · links their maps' : ''}</span></div>` : ''}
-    ${err != null ? `<div class="trow"><span class="tk">Map error</span><span class="tv">${err.toFixed(2)} m</span></div>` : ''}${called}`;
+    ${shared ? `<div class="trow"><span class="tk">Shared map ID</span><span class="tv">${shared.id}${seers.length > 1 ? ' · links their maps' : ''}</span></div>` : ''}
+    ${err != null ? `<div class="trow"><span class="tk">Position off by</span><span class="tv">${err.toFixed(2)} m</span></div><p class="tnote">How far the map's estimate is from where it really is (only the simulation knows the truth).</p>` : ''}${called}`;
 }
 function robotTip(T, r) {
   const rb = T.robots[r], s = robotState(T, r), sim = T.sims[r];
@@ -448,18 +478,18 @@ function addLog(e) {
   if (e.kind !== 'thinking') { typingEl?.remove(); typingEl = null; }
   switch (e.kind) {
     case 'task': newCard(e.text, e.tag); break;
-    case 'dispatch': row(notes, 'n-disp', `${dot(e.r)}<span>${esc(e.text)}</span>${stamp()}`); break;
+    case 'dispatch': row(notes, 'n-disp', `${dot(e.r)}<span>${H(e.text)}</span>${stamp()}`); break;
     case 'thinking': typingEl = row(notes, 'n-think', `${dot(e.r)}<span>${esc(rb?.name || 'Robot')} is thinking</span>`); break;
     case 'thinking-done': break;
     case 'user':
       if (e.from === 'dispatcher' || e.from == null) {
-        if (rb) { row(list, 's-row s-cmd', `${dot(e.r)}<span>Dispatcher → ${esc(rb.id)}: ${esc(String(e.text).replace(/^\[from Dispatcher\]\s*/, ''))}</span>${stamp()}`); countSteps(); }
-      } else if (T.robots[e.from] && rb) row(notes, 'n-peer', `${dot(e.from)}<span><b>${esc(T.robots[e.from].name)} → ${esc(rb.name)}</b> ${esc(String(e.text).replace(/^\[from Robot \d+\]\s*/, ''))}</span>`);
+        if (rb) { row(list, 's-row s-cmd', `${dot(e.r)}<span>Dispatcher → ${esc(rb.id)}: ${H(String(e.text).replace(/^\[from Dispatcher\]\s*/, ''))}</span>${stamp()}`); countSteps(); }
+      } else if (T.robots[e.from] && rb) row(notes, 'n-peer', `${dot(e.from)}<span><b>${esc(T.robots[e.from].name)} → ${esc(rb.name)}</b> ${H(String(e.text).replace(/^\[from Robot \d+\]\s*/, ''))}</span>`);
       break;
     case 'tool': {
       const d = document.createElement('details'); d.className = 's-row s-tool'; d.dataset.pending = '1'; d.dataset.r = e.r; d.dataset.name = e.name;
       const args = e.input && Object.values(e.input).filter((v) => v != null && v !== '').join(', ');
-      d.innerHTML = `<summary>${dot(e.r)}<span><b>${esc(rb?.id || '')}</b> ${esc(String(e.name).replace(/_/g, ' '))}${args ? ` <em>${esc(args)}</em>` : ''} <span class="res">…</span></span>${stamp()}</summary>${e.thought ? `<p class="thought">${esc(e.thought)}</p>` : ''}`;
+      d.innerHTML = `<summary>${dot(e.r)}<span><b>${esc(rb?.id || '')}</b> ${esc(String(e.name).replace(/_/g, ' '))}${args ? ` <em>${H(args)}</em>` : ''} <span class="res">…</span></span>${stamp()}</summary>${e.thought ? `<p class="thought">${esc(e.thought)}</p>` : ''}`;
       list.append(d); countSteps(); follow(); break;
     }
     case 'tool-result': {
@@ -471,7 +501,7 @@ function addLog(e) {
       }
       break;
     }
-    case 'reply': if (e.depth) row(notes, 'n-say', `${dot(e.r)}<span>${esc(e.text)}</span>`); break;
+    case 'reply': if (e.depth) row(notes, 'n-say', `${dot(e.r)}<span>${H(e.text)}</span>`); break;
     case 'error': row(notes, 'n-err', `${dot(e.r)}<span>${esc(e.text)}</span>${stamp()}`); break;
     case 'result': finishCard(e); break;
     default: break;
@@ -483,13 +513,13 @@ function finishCard(e) {
   const bad = BAD.test(e.text);
   const meta = String(e.meta || '').split(' · ').filter(Boolean);
   const res = document.createElement('div'); res.className = `c-res ${bad ? 'warn' : 'ok'}`;
-  res.innerHTML = `<p>${esc(e.text)}</p>${meta.length ? `<div class="chips">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}`;
+  res.innerHTML = `<p>${H(e.text)}</p>${meta.length ? `<div class="chips">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>` : ''}`;
   c.append(res);
   // what the shared map changed for this task (computed by the dispatcher from who saw what)
   if (e.alt) {
     const neutral = /didn't change|already knew all/.test(e.alt);
     const alt = document.createElement('div'); alt.className = `c-alt ${neutral ? 'neutral' : ''}`;
-    alt.innerHTML = `<span class="alt-tag">${neutral ? 'Shared map' : 'Shared map helped'}</span><p>${esc(e.alt)}</p><button type="button" class="linkbtn">Run it side by side: shared map vs. robots alone</button>`;
+    alt.innerHTML = `<span class="alt-tag">${neutral ? 'Shared map' : 'Shared map helped'}</span><p>${H(e.alt)}</p><button type="button" class="linkbtn">Run it side by side: shared map vs. robots alone</button>`;
     $('button', alt).onclick = () => openComparison(e.altKind || 'fetch');
     c.append(alt);
   }
