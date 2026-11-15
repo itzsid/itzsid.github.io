@@ -1,0 +1,15 @@
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{Fetch} & \multicolumn{2}{c}{Inventory} & \multicolumn{2}{c}{Rendezvous} & \multicolumn{2}{c}{Dispatch} & \multicolumn{2}{c}{Search} & \multicolumn{2}{c}{Sent per episode} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}\cmidrule(lr){12-13}
+Condition & succ. & time & score & time & score & time & score & time & succ. & time & bytes & msgs \\
+\midrule
+Alone & 90 & 294 & 98 & 469 & 92 & 651 & \textbf{98} & 39 & \textbf{100} & 354 & 0\,B & 0 \\
+Language & 77 & 121 & \textbf{99} & \textbf{0} & 90 & 252 & \textbf{98} & 35 & 92 & 148 & 845\,B & 15 \\
+Map (merge only) & 83 & \textbf{36} & 88 & \textbf{0} & 96 & \textbf{70} & 83 & \textbf{18} & 76 & \textbf{86} & 415\,kB & 56 \\
+Map + opt. & \textbf{97} & 62 & 97 & \textbf{0} & \textbf{100} & 91 & 92 & 18 & 88 & 86 & 580\,kB & 2352 \\
+\midrule
+Oracle map & 97 & 36 & 99 & 0 & 100 & 63 & 92 & 20 & 100 & 86 & 415\,kB & 56 \\
+\bottomrule
+\end{tabular}

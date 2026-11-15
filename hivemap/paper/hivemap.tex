@@ -230,7 +230,10 @@ For \cond{Language}, bytes are the UTF-8 length of each message, counted once pe
 For \cond{Map}, they are the object descriptors sent to each joined teammate plus the separator estimates sent in each optimization round.
 
 \textbf{Grid.}
-%%GRID%%
+The main grid crosses six buildings, three team sizes (2, 4, and 8 robots), five tasks, five seeds, and seven conditions: the five in Table~\ref{tab:main} plus two merging ablations (Sec.~\ref{sec:verify}). That is 3{,}150 episodes.
+A scaling sweep adds teams of 1, 6, and 10 robots in the office and the hospital for fetch and rendezvous (three seeds, 252 episodes).
+A last set re-runs inventory and dispatch under \cond{Language} with summed instead of maximum counts (180 episodes).
+The seed fixes the odometry and sensor noise and the choice of target.
 
 %% =====================================================================
 \section{Results}\label{sec:results}

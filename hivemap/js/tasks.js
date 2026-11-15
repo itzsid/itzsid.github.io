@@ -108,7 +108,11 @@ export function makeTask(T, kind) {
 }
 
 const matchesCat = (o, cat) => { const e = embedText(o.label); return e && e.cat === cat; };
-const matchesTarget = (o, task) => { const e = embedText(o.label), q = embedText(task.query); return e && q && e.cat === q.cat && (!q.col || e.col === q.col) && (!task.room || o.room === task.room); };
+// Room-qualified targets: by default the estimate must lie inside the named room. Optional
+// (experiments only): task.roomMargin + task.roomRect also accept estimates up to roomMargin
+// metres outside the room rectangle, so a small map error near a wall does not hide the target.
+const inRect = (o, q, m) => o.x > q.x0 - m && o.x < q.x1 + m && o.y > q.y0 - m && o.y < q.y1 + m;
+const matchesTarget = (o, task) => { const e = embedText(o.label), q = embedText(task.query); return e && q && e.cat === q.cat && (!q.col || e.col === q.col) && (!task.room || o.room === task.room || (task.roomMargin > 0 && task.roomRect && inRect(o, task.roomRect, task.roomMargin))); };
 
 // merge same-category reports within 1 m (one physical object seen twice)
 function dedupe(list) {
@@ -302,3 +306,6 @@ export async function compare(TeamCls, sceneDef, n, seed, kind) {
   }
   return { task, results, scene: results.scene };
 }
+
+// Helpers re-exported (read-only) for the experiment harness in experiments.js.
+export const _internal = { reachedOk, center, quickKnows, sighted, instances, matchesCat, matchesTarget, dedupe, exploreUntil, meetingSlots };
