@@ -1,16 +1,12 @@
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{lrrrr}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrrrr}
 \toprule
-Merge & wrong & wrong & robots & \\
-& frames & links & joined & score \\
+ & \multicolumn{3}{c}{Wrong merge (\%)} & \multicolumn{3}{c}{Robots joined (\%)} & \multicolumn{3}{c}{Success (\%)} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Team size & 2 & 4 & 8 & 2 & 4 & 8 & 2 & 4 & 8 \\
 \midrule
-\multicolumn{5}{l}{\emph{Look-alike scenes}} \\
-\quad Map + opt. & 0.0\% & 1.1\% & 100\% & 89 \\
-\quad Verified, no meetings & 7.1\% & 10.9\% & 28\% & 64 \\
-\quad No verification & 72.9\% & 43.0\% & 74\% & 45 \\
-\multicolumn{5}{l}{\emph{Other scenes}} \\
-\quad Map + opt. & 0.0\% & 0.0\% & 100\% & 96 \\
-\quad Verified, no meetings & 6.0\% & 0.0\% & 34\% & 59 \\
-\quad No verification & 82.0\% & 16.6\% & 86\% & 40 \\
+Checks + meetings & 3 & 0 & 3 & 100 & 100 & 100 & 93 & 92 & 93 \\
+Checks only & 0 & 7 & 14 & 77 & 40 & 26 & 79 & 42 & 40 \\
+Neither & 17 & 69 & 78 & 95 & 88 & 74 & 80 & 34 & 35 \\
 \bottomrule
 \end{tabular}

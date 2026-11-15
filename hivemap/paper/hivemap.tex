@@ -28,7 +28,11 @@ We ask which of the two a team should share, and when.
 We built Hivemap, an open-source testbed that runs in a web browser.
 In it, up to ten simulated robots with drifting odometry and open-vocabulary object detections explore six buildings, then carry out five kinds of task: go to an object, count a category, meet at a landmark, visit every instance of a category, and find a lost item.
 The robots either work alone, exchange short natural-language messages, or merge their object maps through verified cross-robot data association and distributed pose-graph optimization.
-%%ABS_RESULTS%%
+Across 3{,}582 simulated episodes, language messages make fetch, rendezvous, and search two to three times faster than working alone for under 1\,kB, but no more reliable, because the robot that hears a description must find and recognize the object itself.
+The verified, optimized map makes fetch and rendezvous seven to ten times faster than working alone and succeeds in 96--98\% of those episodes, within two points of a ground-truth map.
+It costs about 400\,kB per episode, roughly 600 times the messages.
+Talking is enough for counting a category and for covering it room by room.
+A map that is merged but not optimized, or merged from unchecked object matches, is less reliable than no sharing at all on several tasks.
 The whole system, including in-browser language-model agents that choose among these same tools, runs on a laptop.
 \end{abstract}
 
@@ -62,9 +66,8 @@ Merging errors, rejected look-alike matches, and residual drift are therefore pa
 Our contributions are:
 \begin{enumerate}
 \item \textbf{Hivemap}, an open-source multi-robot testbed that runs in the browser, with up to ten robots, six buildings (including a hospital wing with ten look-alike patient rooms), five task families, and per-robot LLM agents that call mapping and messaging operations as tools (Fig.~\ref{fig:teaser}).
-\item A \textbf{controlled comparison} of the three media over %%N_EPISODES%% episodes, reporting success, completion time, distance driven, and bytes sent per channel.
-\item \textbf{Findings} on when each medium is enough.
-%%CONTRIB_RESULTS%%
+\item A \textbf{controlled comparison} of the three media over 3{,}582 episodes, reporting success, completion time, distance driven, and bytes sent per channel.
+\item \textbf{Findings} on when each medium is enough. Words tell a robot where to look; a verified map tells it where to go and which object is meant. The map pays off only when it is optimized and its merges are checked.
 \end{enumerate}
 
 We do not propose a new SLAM back-end or a new LLM planner.
@@ -119,12 +122,12 @@ When asked, the team exchanges maps, finds each robot's frame relative to the ot
 Agents or scripted policies then act on the result.
 Everything runs in JavaScript in the browser and, for experiments, headless in Node.js with a fixed random seed.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{pipeline.pdf}
+\includegraphics[width=0.92\textwidth]{pipeline.pdf}
 \caption{\textbf{Pipeline.} Each robot runs local object SLAM. In the \cond{Map} conditions, robots exchange compact object descriptors, align their frames by meeting each other or by matching objects, verify which objects are the same physical thing, and solve the joint pose graph with the two-stage distributed solver. In \cond{Language}, robots instead answer questions in words from their own maps.}
 \label{fig:pipeline}
-\end{figure}
+\end{figure*}
 
 \subsection{Buildings, robots, and sensing}
 Six floor plans cover common indoor settings: an office (24\,m$\times$16\,m, 5 rooms), a warehouse with occluding racks and many identical pallets (36$\times$22\,m, 3 areas), an apartment (20$\times$14\,m, 5 rooms), a hospital wing with ten nearly identical patient rooms off one corridor (36$\times$18\,m, 11 rooms), a retail store with shelf aisles (30$\times$20\,m, 4 areas), and a lab building (32$\times$18\,m, 7 rooms).
@@ -169,6 +172,13 @@ Given the frames, two objects from different robots become one shared object if 
 Here $\sigma = 0.1 + 0.04\,d$ grows with the distance $d$ the robot had driven before first seeing the object, so the gate widens with accumulated drift.
 Each accepted match adds a ``same object'' factor between the two robots' landmarks, and each meeting adds a relative-pose factor between their keyframes.
 
+\textbf{Placing maps in the floor plan.}
+Robots navigate on the known floor plan, so a map must be placed in it.
+A real robot would do this by localizing against the floor plan.
+In simulation we take a shortcut: we place each robot's own map, and the merged team map as a whole, with a least-squares rigid fit of the estimated trajectory to the true one.
+This removes the global offset but keeps the map's internal distortion, including any distortion that a wrong merge causes.
+It applies equally to every condition, including \cond{Alone} and \cond{Language}, and it makes absolute position errors optimistic (Sec.~\ref{sec:limits}).
+
 \subsection{Distributed optimization}
 The joint graph is solved with the same two-stage solver run in its distributed form~\cite{choudhary2016icra,choudhary2017ijrr}.
 Each robot updates only its own poses and landmarks and, after every round, sends its estimates of the variables that appear in factors shared with other robots, the ``separators.''
@@ -208,7 +218,9 @@ Answers name the object and its room but never give coordinates, because without
 The asking robot searches the named rooms in order of how many teammates named them, then by distance, and stops as soon as it sees the object itself.
 For counts, robots cannot tell whether two teammates saw the same chair, so the asker takes the largest count reported for each room; summing counts is an ablation.
 \item \cond{Map}: maps are exchanged and merged as in Sec.~\ref{sec:merge}, and the policy queries the merged map and drives straight to the merged object positions. \cond{Map (merge only)} skips the distributed optimization and keeps the RANSAC or meeting alignment; \cond{Map + opt.} runs it.
+\item \cond{Oracle map}: an upper bound. The same policy as \cond{Map + opt.}, but the team map holds every object any robot has mapped at its true position, merged without error. Labels are still the robots' own perceptions.
 \end{itemize}
+Two ablations isolate the merge safeguards (Sec.~\ref{sec:verify}). \emph{Neither} drops both the three alignment checks and the look-alike and wall checks on object links, and ignores robot meetings, so maps are linked by appearance and RANSAC alone. \emph{Checks only} keeps every check but ignores meetings; it separates the effect of the checks from the effect of meetings.
 The language channel is generous by design: messages are free, instant, and never lost, every teammate answers, and the asker never misreads an answer.
 
 \textbf{Protocol.}
@@ -217,15 +229,15 @@ In a prior shift, the robots split the rooms round-robin and cover them, so each
 Then a task is issued:
 \begin{itemize}
 \item \emph{Fetch}: Robot~1 goes to a named object, e.g. ``bring a sensor reading from the black vending machine.'' The target is chosen among objects seen by a teammate but not by Robot~1, with a name (color and category, plus room if needed) that picks out one object.
-\item \emph{Inventory}: Robot~1 reports how many objects of a category exist and in which rooms; the score is the fraction of rooms whose count is correct.
-\item \emph{Rendezvous}: all robots meet at a named object; the score is the fraction that arrive.
-\item \emph{Dispatch}: the team visits every instance of a category (e.g. every fire extinguisher); the score is the fraction visited.
+\item \emph{Inventory}: Robot~1 reports how many objects of a category exist and in which rooms. It succeeds if the count is right in every room. We judge counts per room in every condition, because language replies carry no coordinates.
+\item \emph{Rendezvous}: all robots meet at a named object; it succeeds if every robot arrives.
+\item \emph{Dispatch}: the team visits every instance of a category (e.g. every fire extinguisher); it succeeds if every instance is visited.
 \item \emph{Search}: an object that appeared after the prior shift (e.g. a lost backpack) must be found, and Robot~1 must drive to it.
 \end{itemize}
 A robot has reached an object when it stops within the object's radius plus 1\,m of its true position.
 
 \textbf{Metrics.}
-We report success (score of 1), mean score, completion time in simulated seconds, total distance driven, and bytes sent.
+We report the success rate, the mean completion time in simulated seconds (failed episodes count with the time they used), the distance driven, and the bytes sent.
 For \cond{Language}, bytes are the UTF-8 length of each message, counted once per recipient.
 For \cond{Map}, they are the object descriptors sent to each joined teammate plus the separator estimates sent in each optimization round.
 
@@ -238,7 +250,102 @@ The seed fixes the odometry and sensor noise and the choice of target.
 %% =====================================================================
 \section{Results}\label{sec:results}
 
-%%RESULTS%%
+\begin{table*}[t]
+\centering
+\caption{\textbf{Main results.} Success rate (\%) and mean completion time (s) per task over 90 episodes each (six buildings, teams of 2, 4, and 8, five seeds), and the mean bytes sent per episode. Inventory is answered from memory when robots share knowledge, hence 0\,s. Bold: best among the four real conditions; the oracle map is an upper bound.}
+\label{tab:main}
+\input{tables/main.tex}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{time_by_task.pdf}
+\caption{\textbf{Completion time} by task and condition (mean and 95\% bootstrap interval, 90 episodes per bar). Inventory is omitted because sharing conditions answer it without driving.}
+\label{fig:time}
+\end{figure*}
+
+\subsection{Words say where to look; a map says where to go}\label{sec:main}
+Table~\ref{tab:main} and Fig.~\ref{fig:time} summarize the main grid.
+Language alone is a large improvement over working alone.
+On the same episodes, it cuts mean completion time by 57\% on fetch (95\% interval 46--66\%), 66\% on rendezvous (58--73\%), and 54\% on search (42--63\%).
+The messages cost 643 bytes per episode on average.
+
+The verified, optimized map cuts the time much further: by another 67\% on fetch (60--72\%) and 70\% on rendezvous (62--76\%) relative to \cond{Language}, and by 33\% and 25\% on dispatch and search.
+Against working alone, fetch becomes 6.9 times faster and rendezvous 9.7 times faster, and the mean distance driven per episode, over all tasks, falls from 160\,m to 43\,m (61\,m with language).
+
+Fig.~\ref{fig:qual} shows why.
+Robot~1 is asked for the white hospital bed in Room~104, which it has never seen.
+Alone, it searches the wing for 819\,s.
+With language, a teammate replies ``I saw a white hospital bed in the Room~104,'' so Robot~1 drives there and scans the room until it sees the bed itself: 74\,s.
+With the map, Robot~1 already knows where the bed is and drives straight to it: 23\,s.
+A room name narrows the search to one room; a map position removes the search.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{qual.pdf}
+\caption{\textbf{One fetch episode, three media} (hospital, eight robots). Robot~1 must reach the white hospital bed in Room~104 (star), which only a teammate has seen. Lines show Robot~1's path from its start (circle). \emph{Alone}, it searches the wing. \emph{Language}: a teammate names the room, and Robot~1 scans it until it sees the bed. \emph{Map}: the merged map gives the bed's position.}
+\label{fig:qual}
+\end{figure*}
+
+\subsection{A description must be re-grounded; a map hands over the object}\label{sec:reliab}
+Language makes the team faster but not more reliable.
+Fetch succeeds in 76\% of episodes with language and 82\% alone; rendezvous in 64\% and 68\%.
+The intervals overlap, so language is no more reliable than working alone.
+The failures share a cause.
+With language, as when working alone, Robot~1 must find the target with its own perception and decide which object matches the description.
+Of the 22 failed language fetches, 11 ended at a different object that also fits the description and 7 never found the target. In one hospital episode, a teammate's drifted map put the requested bed in the neighboring look-alike room, and Robot~1 went to the bed there.
+Working alone fails in the same two ways (9 and 5 of 16 failures).
+A merged map does not have this problem: the teammate's identification, built from its own repeated views, arrives with the object's position.
+\cond{Map + opt.} fails only 4 of 90 fetches and 2 of 90 rendezvous episodes.
+
+\subsection{Where talking is enough}\label{sec:counting}
+Counting and covering are different.
+For inventory, a room-level answer is all the task needs, and \cond{Language} is right in every room in 96\% of episodes, against 90\% for \cond{Map + opt.}
+For dispatch, \cond{Language} succeeds in 93\% of episodes against 84\%, although the map finishes in 29\,s instead of 44\,s.
+The map's residual errors occasionally leave two copies of one object unmerged, which produces double counts and wasted visits; a room-level count does not have that failure.
+Two caveats apply.
+Our prior shift gives each room to exactly one robot, so taking the largest count reported for each room is nearly ideal.
+If the asker instead sums the reports, inventory accuracy drops to 68\% and dispatch takes twice as long (86\,s), because robots search rooms for instances that were counted twice.
+
+\subsection{Optimization makes the merged map trustworthy}\label{sec:opt}
+\cond{Map (merge only)} is as fast as \cond{Map + opt.} but fails more often on every task: 80\% versus 96\% on fetch, 70\% versus 90\% on inventory, 66\% versus 84\% on dispatch, and 86\% versus 96\% on search.
+Without the distributed solve, the error of the position Robot~1 drives to is 0.77\,m on fetch, against 0.26\,m with it.
+That is enough to stop short of the object or to leave duplicates of the same object in the map.
+On inventory and dispatch, merging without optimization is less reliable than not sharing at all (70\% and 66\% versus 94\%).
+With optimization the map comes within two points of the oracle on fetch and rendezvous, four on search, and eight on inventory and dispatch, at the same speed.
+
+\begin{table}[t]
+\centering
+\caption{\textbf{Merge safeguards} by team size, over all tasks and buildings (150 episodes per cell). A wrong merge is any wrong object link or wrong frame alignment, scored against ground truth.}
+\label{tab:verify}
+\input{tables/verify.tex}
+\end{table}
+
+\subsection{Checks and meetings keep the map honest}\label{sec:verify}
+Table~\ref{tab:verify} compares the full merge (alignment and link checks plus robot meetings) with the two ablations.
+Without checks or meetings, appearance and RANSAC link the maps of most robots, but wrongly: 69\% of four-robot episodes and 78\% of eight-robot episodes contain a wrong merge, and success falls to about a third, below working alone.
+With two robots, unchecked matching still works most of the time (17\% wrong merges, 80\% success), because there are fewer maps to confuse.
+Keeping the checks but ignoring meetings produces fewer wrong merges (7\% and 14\%), but most alignments are then rejected as ambiguous: only 40\% of robots join at four robots and 26\% at eight, and success drops to about 40\%.
+Meetings supply unambiguous frame links, and the checks keep object matches from undoing them.
+Together they join every robot with wrong merges in at most 3\% of episodes.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{scaling.pdf}
+\caption{\textbf{Team size} (rendezvous in the office and the hospital, six episodes per point). With a shared map, meeting time grows slowly with team size; alone and with language, robots spend longer searching and more of them fail to arrive. Alone and \cond{Language} overlap at 8 and 10 robots in the right panel.}
+\label{fig:scaling}
+\end{figure}
+
+\subsection{Team size and cost}\label{sec:cost}
+Fig.~\ref{fig:scaling} varies the team size from 1 to 10 for rendezvous.
+The time for all robots to meet grows from 158 to 686\,s alone, from 65 to 526\,s with language, and from 31 to 113\,s with the optimized map.
+With ten robots, all of them arrive in a third of episodes alone or with language, half with the unoptimized map, 83\% with the optimized map, and every time with the oracle map.
+These points rest on six episodes each and should be read as trends.
+
+The map is not free.
+\cond{Map + opt.} sends 405\,kB per episode on average: 310\,kB of object descriptors and 95\,kB of separator estimates during optimization.
+That is about 630 times the 643 bytes of language messages, or about nine compressed camera images of 45\,kB each.
+For robots on a shared wireless network this is small, but under the tight links that motivate distributed SLAM~\cite{choudhary2017ijrr,cieslewski2018icra}, a team may prefer to talk for counting tasks and send the map only when it needs positions.
 
 %% =====================================================================
 \section{Limitations}\label{sec:limits}
@@ -248,6 +355,11 @@ Our descriptors are synthetic.
 Real mask-plus-CLIP features are noisier, confuse more categories, and drift with viewpoint and lighting, so real data would produce more look-alike matches.
 This would likely widen the gap between verified and unverified merging, but we have not shown it.
 Multi-robot open-vocabulary mappers on real sensors~\cite{chang2023hydramulti,gu2025mrcographs,tian2022kimeramulti} are the natural back-end for a real deployment.
+
+\textbf{Placing maps with ground truth.}
+We place each map in the floor plan with a rigid fit to the true trajectory (Sec.~\ref{sec:merge}).
+This affects every condition equally, but it makes position errors optimistic and gives \cond{Alone} and \cond{Language} correct room names for free.
+A real system would localize against the floor plan and would see larger errors, which would likely make room names less reliable and favor the map further.
 
 \textbf{Scripted policies instead of LLMs.}
 We isolate the medium by using fixed policies.
@@ -262,12 +374,20 @@ Conversely, our channel is lossless and instant, which favors language.
 
 \textbf{Scale and realism.}
 The buildings are small and two-dimensional, and the robots are homogeneous.
+Idle robots parked at the dock occasionally block a doorway; we count such stalled legs as failures, and they affect at most 6\% of the episodes in any task and condition.
 The map's advantage should grow with building size, since the cost of searching a room grows while the cost of driving to a known point does not, but larger and multi-floor buildings remain to be tested.
 
 %% =====================================================================
 \section{Conclusion}\label{sec:conclusion}
 
-%%CONCLUSION%%
+Should a team of language-model robots talk or share a map?
+In our testbed, the answer depends on what the task needs to know.
+For ``which room,'' a few hundred bytes of language are enough: messages make search two to three times faster and count objects at least as well as a map does.
+For ``which object, and where,'' words fall short, because the robot that hears them must re-find and re-identify the object.
+A merged object map hands over both the identity and the position, and makes fetch and rendezvous seven to ten times faster with near-oracle success.
+That map is only worth sending if it is built carefully: without distributed optimization or without checks against look-alike places, it can be worse than not sharing.
+A practical team might therefore do both: talk by default, and exchange and optimize the map when a task needs positions.
+Testing this with real language-model agents, real perception, and larger buildings is the next step.
 
 The code, the experiment harness, and the per-episode results are available at \url{https://itzsid.github.io/hivemap/}, where the simulation and its agents run in the browser.
 

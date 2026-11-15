@@ -32,7 +32,7 @@ def main(path, out='qual'):
     for ax, c in zip(axes, conds):
         run = d['runs'][c]
         for q in d['rooms']:
-            ax.text((q['x0'] + q['x1']) / 2, (q['y0'] + q['y1']) / 2, q['name'].replace('Room ', ''), ha='center', va='center', fontsize=5, color='#b5b4ae', zorder=1)
+            ax.text((q['x0'] + q['x1']) / 2, (q['y0'] + q['y1']) / 2, q['name'].replace('Room ', '').replace('Nurse station', 'Nurse\nstation'), ha='center', va='center', fontsize=5, color='#b5b4ae', zorder=1)
         for w in d['walls']:
             ax.plot([w[0], w[2]], [w[1], w[3]], color='#4a4a47', linewidth=0.9, solid_capstyle='butt', zorder=2)
         ox = [o['x'] for o in d['objects'] if o['cat'] != 'door']

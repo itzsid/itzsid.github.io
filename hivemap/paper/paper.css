@@ -109,11 +109,11 @@ figcaption { font-size: 14.5px; line-height: 1.55; color: var(--text); margin-to
 .fig-label { font-weight: 700; }
 .table-card figcaption { margin: 0 0 10px; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table.booktabs { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+table.booktabs { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.35; font-variant-numeric: tabular-nums; }
 table.booktabs thead tr:first-child th { border-top: 1.6px solid var(--text); }
 table.booktabs thead tr:last-child th { border-bottom: 1px solid var(--text); }
 table.booktabs tbody tr:last-child td { border-bottom: 1.6px solid var(--text); }
-table.booktabs th, table.booktabs td { padding: 5px 8px; text-align: right; white-space: nowrap; }
+table.booktabs th, table.booktabs td { padding: 5px 6px; text-align: right; white-space: nowrap; }
 table.booktabs th:first-child, table.booktabs td:first-child { text-align: left; }
 table.booktabs th { font-weight: 700; }
 table.booktabs tr.group td { border-top: 1px solid var(--border); }

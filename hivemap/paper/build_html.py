@@ -94,6 +94,10 @@ def strip_braces(s):
 def authors_of(e):
     out = []
     for a in re.split(r'\s+and\s+', e.get('author', '')):
+        raw = a.strip()
+        if raw.startswith('{') and raw.endswith('}') and raw.count('{') == 1:   # corporate author, e.g. {Qwen Team}
+            out.append(('', raw[1:-1]))
+            continue
         a = strip_braces(a).strip()
         if not a:
             continue

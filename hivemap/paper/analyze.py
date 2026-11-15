@@ -21,7 +21,7 @@ TASKS = ['fetch', 'inventory', 'rendezvous', 'dispatch', 'search']
 TASK_NAME = {'fetch': 'Fetch', 'inventory': 'Inventory', 'rendezvous': 'Rendezvous', 'dispatch': 'Dispatch', 'search': 'Search'}
 MAIN = ['alone', 'language', 'shared_noopt', 'shared_opt', 'oracle']
 NAME = {'alone': 'Alone', 'language': 'Language', 'shared_noopt': 'Map (merge only)', 'shared_opt': 'Map + opt.', 'oracle': 'Oracle map',
-        'shared_noverify': 'No verification', 'shared_noenc': 'Verified, no meetings'}
+        'shared_noverify': 'No checks, no meetings', 'shared_noenc': 'Checks, no meetings'}
 SHORT = {'alone': 'Alone', 'language': 'Language', 'shared_noopt': 'Merge only', 'shared_opt': 'Map + opt.', 'oracle': 'Oracle'}
 # colors: neutral baseline, then validated categorical slots (orange, aqua, blue); oracle = outline + hatch
 COL = {'alone': '#9a9893', 'language': '#eb6834', 'shared_noopt': '#1baf7a', 'shared_opt': '#2a78d6', 'oracle': '#ffffff'}
@@ -71,6 +71,13 @@ def ok(r):
     return not r.get('error')
 
 
+def succ_of(r):
+    """Success; inventory is judged per room (exact count in every room) in every condition."""
+    if r['task'] == 'inventory' and r.get('inv_room_exact') is not None:
+        return bool(r['inv_room_exact'])
+    return bool(r.get('success'))
+
+
 def episode_key(r):
     return (r['scene'], r['n'], r['seed'], r['task'])
 
@@ -118,7 +125,7 @@ def main_table(rows, N):
             sel = [r for r in main if r['condition'] == c and r['task'] == t]
             if not sel:
                 continue
-            succ = mean_ci([1.0 if (ok(r) and r.get('success')) else 0.0 for r in sel])
+            succ = mean_ci([1.0 if (ok(r) and succ_of(r)) else 0.0 for r in sel])
             score = mean_ci([(r.get('score') or 0.0) if ok(r) else 0.0 for r in sel])
             time = mean_ci([r['time_s'] for r in sel if ok(r) and r.get('time_s') is not None])
             stats[(c, t)] = {'n': len(sel), 'success': succ, 'score': score, 'time': time}
@@ -135,8 +142,9 @@ def main_table(rows, N):
     N['distance_mean'] = {c: stats[(c, 'dist')][0] for c in MAIN}
 
     # which metric to show per task: success for single-goal tasks, score for graded ones
-    metric = {'fetch': 'success', 'inventory': 'score', 'rendezvous': 'score', 'dispatch': 'score', 'search': 'success'}
+    metric = {t: 'success' for t in TASKS}
     mlabel = {'success': 'succ.', 'score': 'score'}
+    mlabel_html = {'success': '%', 'score': 'score'}
     best = {}
     for t in TASKS:
         cands = [c for c in MAIN if c != 'oracle' and (c, t) in stats]
@@ -147,11 +155,11 @@ def main_table(rows, N):
     # LaTeX
     L = []
     L.append('\\setlength{\\tabcolsep}{4pt}')
-    L.append('\\begin{tabular}{l' + 'rr' * len(TASKS) + 'rr}')
+    L.append('\\begin{tabular}{l' + 'rr' * len(TASKS) + 'r}')
     L.append('\\toprule')
-    L.append(' & ' + ' & '.join(f'\\multicolumn{{2}}{{c}}{{{TASK_NAME[t]}}}' for t in TASKS) + ' & \\multicolumn{2}{c}{Sent per episode} \\\\')
-    L.append(''.join(f'\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}' for i in range(len(TASKS))) + f'\\cmidrule(lr){{{2 + 2 * len(TASKS)}-{3 + 2 * len(TASKS)}}}')
-    L.append('Condition & ' + ' & '.join(f'{mlabel[metric[t]]} & time' for t in TASKS) + ' & bytes & msgs \\\\')
+    L.append(' & ' + ' & '.join(f'\\multicolumn{{2}}{{c}}{{{TASK_NAME[t]}}}' for t in TASKS) + ' & Sent \\\\')
+    L.append(''.join(f'\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}' for i in range(len(TASKS))) )
+    L.append('Condition & ' + ' & '.join(f'{mlabel[metric[t]]} & time' for t in TASKS) + ' & per ep. \\\\')
     L.append('\\midrule')
     for c in MAIN:
         if c == 'oracle':
@@ -170,15 +178,15 @@ def main_table(rows, N):
             if c != 'oracle' and abs(tm - best[(t, 'time')]) < 1e-9:
                 ts = f'\\textbf{{{ts}}}'
             cells += [qs, ts]
-        cells += [tex_bytes(fmt_bytes(stats[(c, 'bytes')])), f"{stats[(c, 'msgs')]:.0f}"]
+        cells += [tex_bytes(fmt_bytes(stats[(c, 'bytes_mean')]))]
         L.append(f'{NAME[c]} & ' + ' & '.join(cells) + ' \\\\')
     L.append('\\bottomrule')
     L.append('\\end{tabular}')
     open(R('tables', 'main.tex'), 'w').write('\n'.join(L) + '\n')
 
     # HTML
-    H = ['<table class="booktabs">', '<thead><tr><th></th>' + ''.join(f'<th colspan="2" style="text-align:center">{TASK_NAME[t]}</th>' for t in TASKS) + '<th colspan="2" style="text-align:center">Sent per episode</th></tr>',
-         '<tr><th>Condition</th>' + ''.join(f'<th>{mlabel[metric[t]]}</th><th>time</th>' for t in TASKS) + '<th>bytes</th><th>msgs</th></tr></thead><tbody>']
+    H = ['<table class="booktabs">', '<thead><tr><th></th>' + ''.join(f'<th colspan="2" style="text-align:center">{TASK_NAME[t]}</th>' for t in TASKS) + '<th>sent</th></tr>',
+         '<tr><th>Condition</th>' + ''.join(f'<th>{mlabel_html[metric[t]]}</th><th>s</th>' for t in TASKS) + '<th></th></tr></thead><tbody>']
     for c in MAIN:
         cells = []
         for t in TASKS:
@@ -189,7 +197,7 @@ def main_table(rows, N):
             qc = ' class="best"' if c != 'oracle' and abs(q - best[(t, 'q')]) < 1e-9 else ''
             tc = ' class="best"' if c != 'oracle' and abs(tm - best[(t, 'time')]) < 1e-9 else ''
             cells += [f'<td{qc}>{q * 100:.0f}</td>', f'<td{tc}>{tm:.0f}</td>']
-        cells += [f'<td>{fmt_bytes(stats[(c, "bytes")])}</td>', f'<td>{stats[(c, "msgs")]:.0f}</td>']
+        cells += [f'<td>{fmt_bytes(stats[(c, "bytes_mean")])}</td>']
         cls = ' class="group"' if c == 'oracle' else ''
         H.append(f'<tr{cls}><td>{NAME[c]}</td>' + ''.join(cells) + '</tr>')
     H.append('</tbody></table>')
@@ -198,39 +206,33 @@ def main_table(rows, N):
 
 
 def verify_table(rows, N):
+    """Merge quality and task success by team size for the three merge variants."""
     conds = ['shared_opt', 'shared_noenc', 'shared_noverify']
-    groups = {'Look-alike scenes': ['hospital', 'warehouse'], 'Other scenes': ['office', 'home', 'retail', 'labs']}
     main = [r for r in rows if r['grid'] == 'main']
     out = {}
-    for g, scs in groups.items():
-        for c in conds:
-            sel = [r for r in main if r['condition'] == c and r['scene'] in scs and ok(r)]
-            if not sel:
-                continue
-            links = sum(r.get('merge_links') or 0 for r in sel)
-            wrong = sum(r.get('merge_wrong_links') or 0 for r in sel)
-            wf = [1.0 if (r.get('merge_wrong_frames') or 0) > 0 else 0.0 for r in sel]
-            joined = [(r.get('merge_joined') or 0) / r['n'] for r in sel if r['n'] > 1]
-            goal = [r for r in sel if r['task'] in ('fetch', 'rendezvous', 'search')]
-            succ = np.mean([1.0 if r.get('success') else 0.0 for r in sel])
-            err = [r.get('target_pos_err_m') for r in sel if r['task'] == 'fetch' and r.get('target_pos_err_m') is not None]
-            out[(g, c)] = {'episodes': len(sel), 'wrong_frame_eps': float(np.mean(wf)), 'wrong_link_rate': wrong / links if links else 0.0,
-                           'joined': float(np.mean(joined)) if joined else float('nan'), 'success': float(succ),
-                           'fetch_err_m': float(np.median(err)) if err else float('nan'),
-                           'score': float(np.mean([r.get('score') or 0 for r in sel]))}
-    N['verify'] = {f'{g}|{c}': v for (g, c), v in out.items()}
-    L = ['\\setlength{\\tabcolsep}{3.5pt}', '\\begin{tabular}{lrrrr}', '\\toprule',
-         'Merge & wrong & wrong & robots & \\\\', '& frames & links & joined & score \\\\', '\\midrule']
-    H = ['<table class="booktabs">', '<thead><tr><th>Merge</th><th>episodes with a wrong frame</th><th>wrong object links</th><th>robots joined</th><th>task score</th></tr></thead><tbody>']
-    for g in groups:
-        L.append(f'\\multicolumn{{5}}{{l}}{{\\emph{{{g}}}}} \\\\')
-        H.append(f'<tr class="group"><td colspan="5"><em>{g}</em></td></tr>')
-        for c in conds:
-            v = out.get((g, c))
-            if not v:
-                continue
-            L.append(f"\\quad {NAME[c]} & {v['wrong_frame_eps'] * 100:.1f}\\% & {v['wrong_link_rate'] * 100:.1f}\\% & {v['joined'] * 100:.0f}\\% & {v['score'] * 100:.0f} \\\\")
-            H.append(f"<tr><td>&emsp;{NAME[c]}</td><td>{v['wrong_frame_eps'] * 100:.1f}%</td><td>{v['wrong_link_rate'] * 100:.1f}%</td><td>{v['joined'] * 100:.0f}%</td><td>{v['score'] * 100:.0f}</td></tr>")
+    for c in conds:
+        for n in (2, 4, 8):
+            sel = [r for r in main if r['condition'] == c and r['n'] == n and ok(r)]
+            wrong = [1.0 if ((r.get('merge_wrong_links') or 0) + (r.get('merge_wrong_frames') or 0)) > 0 else 0.0 for r in sel]
+            err = [r['target_pos_err_m'] for r in sel if r['task'] in ('fetch', 'rendezvous') and r.get('target_pos_err_m') is not None]
+            out[(c, n)] = {'episodes': len(sel), 'wrong_merge_eps': float(np.mean(wrong)),
+                           'wrong_links_per_ep': float(np.mean([r.get('merge_wrong_links') or 0 for r in sel])),
+                           'joined': float(np.mean([(r.get('merge_joined') or 0) / r['n'] for r in sel])),
+                           'success': float(np.mean([1.0 if succ_of(r) else 0.0 for r in sel])),
+                           'time': float(np.mean([r['time_s'] for r in sel if r['task'] != 'inventory'])),
+                           'err_median_m': float(np.median(err)) if err else float('nan')}
+    N['verify'] = {f'{c}|{n}': v for (c, n), v in out.items()}
+    L = ['\\setlength{\\tabcolsep}{3pt}', '\\begin{tabular}{lrrrrrrrrr}', '\\toprule',
+         ' & \\multicolumn{3}{c}{Wrong merge (\\%)} & \\multicolumn{3}{c}{Robots joined (\\%)} & \\multicolumn{3}{c}{Success (\\%)} \\\\',
+         '\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}',
+         'Team size & 2 & 4 & 8 & 2 & 4 & 8 & 2 & 4 & 8 \\\\', '\\midrule']
+    H = ['<table class="booktabs">', '<thead><tr><th></th><th colspan="3" style="text-align:center">Episodes with a wrong merge (%)</th><th colspan="3" style="text-align:center">Robots joined (%)</th><th colspan="3" style="text-align:center">Task success (%)</th></tr>',
+         '<tr><th>Team size</th>' + '<th>2</th><th>4</th><th>8</th>' * 3 + '</tr></thead><tbody>']
+    vname = {'shared_opt': 'Checks + meetings', 'shared_noenc': 'Checks only', 'shared_noverify': 'Neither'}
+    for c in conds:
+        cells = [f"{out[(c, n)][k] * 100:.0f}" for k in ('wrong_merge_eps', 'joined', 'success') for n in (2, 4, 8)]
+        L.append(f'{vname[c]} & ' + ' & '.join(cells) + ' \\\\')
+        H.append(f'<tr><td>{vname[c]}</td>' + ''.join(f'<td>{x}</td>' for x in cells) + '</tr>')
     L += ['\\bottomrule', '\\end{tabular}']
     H.append('</tbody></table>')
     open(R('tables', 'verify.tex'), 'w').write('\n'.join(L) + '\n')
@@ -273,32 +275,36 @@ def fig_time(rows, N):
 
 
 def fig_scaling(rows, N):
+    """Rendezvous vs team size (office + hospital, seeds 1-3: 6 episodes per point)."""
     sel = [r for r in rows if r['task'] in ('fetch', 'rendezvous') and r['scene'] in ('office', 'hospital') and ok(r)
            and (r['grid'] == 'scaling' or (r['grid'] == 'main' and r['seed'] <= 3))]
     ns = sorted({r['n'] for r in sel})
     conds = ['alone', 'language', 'shared_noopt', 'shared_opt']
-    fig, axes = plt.subplots(1, 2, figsize=(3.45, 1.6))
+    fig, axes = plt.subplots(1, 2, figsize=(3.45, 1.55))
     marker = {'alone': 'o', 'language': 's', 'shared_noopt': '^', 'shared_opt': 'D'}
+    style = {'shared_noopt': (0, (3, 1.5))}
     res = {}
-    for ax, t in zip(axes, ('fetch', 'rendezvous')):
+    for ax, (metric, ylab) in zip(axes, (('time_s', 'time (s)'), ('success', 'all robots arrive (%)'))):
         for c in conds:
             xs, ys = [], []
             for n in ns:
-                v = [r['time_s'] for r in sel if r['task'] == t and r['condition'] == c and r['n'] == n]
+                v = [(r[metric] if metric == 'time_s' else 100.0 * bool(r['success'])) for r in sel if r['task'] == 'rendezvous' and r['condition'] == c and r['n'] == n]
                 if v:
                     xs.append(n); ys.append(float(np.mean(v)))
-            res[f'{t}|{c}'] = dict(zip(map(str, xs), ys))
-            ax.plot(xs, ys, color=COL[c], linewidth=1.6, marker=marker[c], markersize=3.6, markeredgecolor='white', markeredgewidth=0.6, zorder=3)
-        ax.set_title(TASK_NAME[t], pad=3)
+            res[f'rendezvous|{metric}|{c}'] = dict(zip(map(str, xs), ys))
+            ax.plot(xs, ys, color=COL[c], linewidth=1.5, linestyle=style.get(c, '-'), marker=marker[c], markersize=3.4, markeredgecolor='white', markeredgewidth=0.5, zorder=3 if c != 'shared_noopt' else 4)
+        for c in conds:   # fetch numbers for the text
+            res[f'fetch|time_s|{c}'] = {str(n): float(np.mean([r['time_s'] for r in sel if r['task'] == 'fetch' and r['condition'] == c and r['n'] == n] or [float('nan')])) for n in ns}
         ax.set_xticks(ns)
-        ax.set_xlabel('robots')
+        ax.set_xlabel('robots', labelpad=1)
+        ax.set_ylabel(ylab, labelpad=2)
         ax.yaxis.grid(True, color=GRID, linewidth=0.6, zorder=0)
         ax.set_axisbelow(True)
-        ax.set_ylim(bottom=0)
-    axes[0].set_ylabel('completion time (s)')
-    handles = [plt.Line2D([0], [0], color=COL[c], marker=marker[c], markersize=3.6, markeredgecolor='white', linewidth=1.6) for c in conds]
-    fig.legend(handles, [SHORT[c] for c in conds], loc='lower center', ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.2), handlelength=1.6, columnspacing=0.9)
-    fig.subplots_adjust(wspace=0.35, bottom=0.26)
+        ax.set_ylim(bottom=0, top=105 if metric == 'success' else None)
+    fig.suptitle('Rendezvous, by team size', fontsize=8, y=1.02)
+    handles = [plt.Line2D([0], [0], color=COL[c], marker=marker[c], markersize=3.4, markeredgecolor='white', linewidth=1.5, linestyle=style.get(c, '-')) for c in conds]
+    fig.legend(handles, [SHORT[c] for c in conds], loc='lower center', ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.2), handlelength=1.8, columnspacing=0.9)
+    fig.subplots_adjust(wspace=0.42, bottom=0.27)
     N['scaling'] = res
     save(fig, 'scaling')
 
