@@ -108,11 +108,19 @@ export function makeTask(T, kind) {
 }
 
 const matchesCat = (o, cat) => { const e = embedText(o.label); return e && e.cat === cat; };
-// Room-qualified targets: by default the estimate must lie inside the named room. Optional
-// (experiments only): task.roomMargin + task.roomRect also accept estimates up to roomMargin
-// metres outside the room rectangle, so a small map error near a wall does not hide the target.
-const inRect = (o, q, m) => o.x > q.x0 - m && o.x < q.x1 + m && o.y > q.y0 - m && o.y < q.y1 + m;
-const matchesTarget = (o, task) => { const e = embedText(o.label), q = embedText(task.query); return e && q && e.cat === q.cat && (!q.col || e.col === q.col) && (!task.room || o.room === task.room || (task.roomMargin > 0 && task.roomRect && inRect(o, task.roomRect, task.roomMargin))); };
+const matchesTarget = (o, task) => { const e = embedText(o.label), q = embedText(task.query); return e && q && e.cat === q.cat && (!q.col || e.col === q.col) && (!task.room || o.room === task.room); };
+// The object a room-qualified query refers to. Default: first strict match (estimate inside the
+// named room). Optional (experiment harness): with task.roomMargin + task.roomRect, if NO object
+// matches strictly, take the label match whose estimate is nearest the room, up to roomMargin
+// metres outside it (a small map error near a wall must not hide the target).
+const roomGap = (o, q) => Math.hypot(Math.max(q.x0 - o.x, 0, o.x - q.x1), Math.max(q.y0 - o.y, 0, o.y - q.y1));
+function findTarget(list, task) {
+  const strict = list.find((o) => matchesTarget(o, task));
+  if (strict || !task.room || !(task.roomMargin > 0) || !task.roomRect) return strict;
+  let best = null, bg = Infinity;
+  for (const o of list) { if (!matchesTarget(o, { query: task.query })) continue; const g = roomGap(o, task.roomRect); if (g <= task.roomMargin && g < bg) { bg = g; best = o; } }
+  return best || undefined;
+}
 
 // merge same-category reports within 1 m (one physical object seen twice)
 function dedupe(list) {
@@ -187,7 +195,7 @@ export async function runTask(T, task, log = () => {}) {
   };
 
   if (task.kind === 'fetch') {
-    const find = () => T.objectsFor(0).find((o) => matchesTarget(o, task));
+    const find = () => findTarget(T.objectsFor(0), task);
     if (!find()) { say('Robot 1 does not know the target; exploring'); await exploreUntil(T, 0, () => !!find(), { cheap: () => quickKnows(T, 0, task) }); }
     const o = find();
     if (o) { say(`Robot 1 drives to ${o.label} (${o.id})`); const nav = await T.goTo(0, { x: o.x, y: o.y, gt: task.target }, o.label); out = { reached_m: nav.distance_to_real_object_m }; }
@@ -240,7 +248,7 @@ export async function runTask(T, task, log = () => {}) {
     const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.5;
     const claims = new Set();
     const arrivals = await Promise.all(T.robots.map((_, r) => (async () => {
-      const find = () => T.objectsFor(r).find((o) => matchesTarget(o, task));
+      const find = () => findTarget(T.objectsFor(r), task);
       if (!find()) await exploreUntil(T, r, () => !!find(), { cheap: () => quickKnows(T, r, task) });
       const o = find(); if (!o) return null;
       // approach, then claim the nearest free spot of the ring around the meeting point (claims go over the radio)
@@ -308,4 +316,4 @@ export async function compare(TeamCls, sceneDef, n, seed, kind) {
 }
 
 // Helpers re-exported (read-only) for the experiment harness in experiments.js.
-export const _internal = { reachedOk, center, quickKnows, sighted, instances, matchesCat, matchesTarget, dedupe, exploreUntil, meetingSlots };
+export const _internal = { reachedOk, center, quickKnows, sighted, instances, matchesCat, matchesTarget, findTarget, roomGap, dedupe, exploreUntil, meetingSlots };

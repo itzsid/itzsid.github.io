@@ -34,24 +34,42 @@ import { compose, between } from './geom.js';
 export const CONDITIONS = ['alone', 'language', 'shared_noopt', 'shared_opt', 'oracle', 'shared_noverify', 'shared_noenc'];
 const SHARED = new Set(['shared_noopt', 'shared_opt', 'oracle', 'shared_noverify', 'shared_noenc']);
 export const TASK_KINDS = ['fetch', 'inventory', 'rendezvous', 'dispatch', 'search'];
-const { reachedOk, center, quickKnows, sighted, instances, matchesCat, matchesTarget, dedupe, exploreUntil, meetingSlots } = H;
+const { reachedOk, center, quickKnows, sighted, instances, matchesCat, matchesTarget, findTarget, roomGap, dedupe, exploreUntil, meetingSlots } = H;
+// label matches the query and the estimate is in the named room, or (no strict match needed here) within the room margin: used for scoring only
+const matchesLoose = (o, task) => matchesTarget(o, task) || (task.room && task.roomMargin > 0 && matchesTarget(o, { query: task.query }) && roomGap(o, task.roomRect) <= task.roomMargin);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const reach = (o) => (CATS[o?.cat]?.r ?? 0.4) + 1.0;
-const ROOM_MARGIN = 1.0;   // see tasks.js matchesTarget
+const ROOM_MARGIN = 1.0;   // see tasks.js findTarget
 const COLLIDE = 0.5;   // centre-centre distance (m) below which two 0.56 x 0.44 m robots are counted as colliding
 
 // ---------------------------------------------------------------- instrumentation
 function instrument(T) {
-  const I = { goals: [], explores: [], timeouts: 0, exchanges: 0, dgsRounds: 0, mapMsgs: 0 };
+  const I = { goals: [], explores: [], timeouts: 0, noPath: 0, stuckNav: 0, stuckExplore: 0, exchanges: 0, dgsRounds: 0, mapMsgs: 0 };
   const goTo = T.goTo.bind(T), exploreRoom = T.exploreRoom.bind(T), exchange = T.exchange.bind(T), optimize = T.optimize.bind(T);
   T.goTo = async (r, target, label) => {
-    const res = await goTo(r, target, label);
+    let res;
+    try { res = await goTo(r, target, label); }
+    catch (e) {
+      // the planner found no path to this goal (e.g. the goal estimate falls in a cut-off pocket): count the leg
+      // as failed and let the policy continue, instead of aborting the whole episode (same in every condition)
+      if (!/No path/.test(String(e.message))) throw e;
+      I.noPath++;
+      res = { arrived: false, no_path: true, driven_m: 0, took_s: 0, now_in: roomAt(T.scene, T.pose[r].x, T.pose[r].y), ...(target.gt ? { distance_to_real_object_m: +dist(T.pose[r], target.gt).toFixed(2) } : {}) };
+    }
     I.goals.push({ r, x: target.x, y: target.y, gtId: target.gt?.id ?? null, standoff: target.standoff ?? null, t: T.time, pose: { ...T.pose[r] }, timed_out: !!res.timed_out });
+    // stuck leg: the robot ended far from the goal, beyond any early stop the engine allows by design (tol 1.6 m + 1.5 m)
+    if (!res.no_path && dist(T.pose[r], target) > Math.max(3.5, (target.standoff ?? 1.0) + 2.0)) I.stuckNav++;
     if (res.timed_out) I.timeouts++;
     return res;
   };
   T.exploreRoom = async (r, room, opts) => {
+    const k0 = T.sims[r].k;
+    let fired = false;   // an early stop (target seen) before entering the room is not "stuck"
+    if (opts?.until) { const u = opts.until; opts = { ...opts, until: () => { const v = u(); if (v) fired = true; return v; } }; }
     const res = await exploreRoom(r, room, opts);
+    // stuck coverage: the robot never got inside the room it was asked to cover (e.g. blocked by parked robots)
+    const q = T.scene.rooms.find((x) => x.name === room);
+    if (q && !fired && !T.sims[r].gt.slice(k0).some((p) => p.x > q.x0 + 0.3 && p.x < q.x1 - 0.3 && p.y > q.y0 + 0.3 && p.y < q.y1 - 0.3)) I.stuckExplore++;
     I.explores.push({ r, room, t: T.time });
     if (res.timed_out) I.timeouts++;
     return res;
@@ -213,7 +231,8 @@ function askWhere(T, C, from, task, { prefix = '', toAll = false, ask = true } =
   const out = [];
   T.robots.forEach((_, j) => {
     if (j === from) return;
-    const cands = dedupe(T.objectsFor(j).filter((o) => matchesTarget(o, task)));
+    const mineAll = T.objectsFor(j), strict = dedupe(mineAll.filter((o) => matchesTarget(o, task))), loose = findTarget(mineAll, task);
+    const cands = strict.length ? strict : loose ? [loose] : [];
     if (!cands.length) return;
     const byRoom = {}; for (const o of cands) byRoom[o.room] = (byRoom[o.room] || 0) + 1;
     const text = cands.length === 1 ? `I saw a ${cands[0].label} in the ${cands[0].room}.` : `I saw ${cands.length} that match: ${phraseRooms(byRoom)}.`;
@@ -247,7 +266,7 @@ export async function runLanguage(T, task, log = () => {}, { agg = 'max' } = {})
 
   // locate the target for robot r: own map, else ask, search the named rooms, else explore
   const locate = async (r, tk, heard = null) => {
-    const find = () => T.objectsFor(r).find((o) => matchesTarget(o, tk));
+    const find = () => findTarget(T.objectsFor(r), tk);
     if (find()) return find();
     const replies = heard ? heard.filter((c) => c.j !== r) : askWhere(T, C, r, tk);
     for (const room of rankRooms(T, r, replies)) {
@@ -348,7 +367,7 @@ export async function runLanguage(T, task, log = () => {}, { agg = 'max' } = {})
   if (task.kind === 'rendezvous') {
     const near = (CATS[task.target.cat]?.r ?? 0.4) + 1.5, claims = new Set();
     // one round: Robot 1 sends the instruction; whoever has seen the object broadcasts the room
-    const mine = T.objectsFor(0).find((o) => matchesTarget(o, task));
+    const mine = findTarget(T.objectsFor(0), task);
     C.broadcast(0, mine ? `${task.text} I saw it in the ${mine.room}.` : `${task.text} Whoever has seen it: which room is it in?`);
     const heard = mine ? [{ j: 0, label: mine.label, room: mine.room, gt: mine._gt?.id ?? null }] : askWhere(T, C, 0, task, { toAll: true, ask: false });
     const arrivals = await Promise.all(T.robots.map((_, r) => (async () => {
@@ -476,7 +495,7 @@ function metrics(T, task, out, condition, I, extra) {
     rec.not_found = last ? 0 : 1;
     // final estimate of the target in Robot 1's map (team map when shared)
     const q = embedText(task.query);
-    const est = T.objectsFor(0).filter((o) => matchesTarget(o, task) || (task.kind === 'search' && matchesCat(o, q.cat))).sort((a, b) => dist(a, tgt) - dist(b, tgt))[0];
+    const est = T.objectsFor(0).filter((o) => matchesLoose(o, task) || (task.kind === 'search' && matchesCat(o, q.cat))).sort((a, b) => dist(a, tgt) - dist(b, tgt))[0];
     rec.target_pos_err_m = last ? +dist(last, tgt).toFixed(3) : null;   // error of the position Robot 1 actually navigated to
     rec.target_map_err_m = est ? +dist(est, tgt).toFixed(3) : null;
     ge = rec.wrong_goal + rec.not_found + G.room_misses + G.false_found;
@@ -484,7 +503,7 @@ function metrics(T, task, out, condition, I, extra) {
   if (task.kind === 'rendezvous') {
     let wrong = 0, none = 0, errs = [];
     T.robots.forEach((_, r) => {
-      const o = T.objectsFor(r).filter((x) => matchesTarget(x, task)).sort((a, b) => dist(a, tgt) - dist(b, tgt))[0];
+      const o = T.objectsFor(r).filter((x) => matchesLoose(x, task)).sort((a, b) => dist(a, tgt) - dist(b, tgt))[0];
       if (!o) { none++; return; }
       const e = dist(o, tgt); errs.push(e); if (e > reach(tgt)) wrong++;
     });
@@ -517,7 +536,8 @@ function metrics(T, task, out, condition, I, extra) {
   rec.map_disagreement_m = T.solverStats ? T.solverStats.map_disagreement_after_m : null;
   rec.min_sep_m = Number.isFinite(T.minSep) ? +T.minSep.toFixed(3) : null;
   rec.collision = Number.isFinite(T.minSep) && T.minSep < COLLIDE;
-  rec.job_timeouts = I.timeouts;
+  rec.job_timeouts = I.timeouts; rec.nav_no_path = I.noPath; rec.stuck_nav = I.stuckNav; rec.stuck_explore = I.stuckExplore;
+  rec.stuck_legs = I.timeouts + I.stuckNav + I.stuckExplore;
   return Object.assign(rec, extra);
 }
 

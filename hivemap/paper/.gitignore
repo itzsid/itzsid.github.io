@@ -7,3 +7,6 @@ figs/teaser.png
 results/results.jsonl
 preview.html
 __pycache__/
+results/results.csv
+results/summary.json
+results/summary.md
