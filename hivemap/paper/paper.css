@@ -105,7 +105,7 @@ code { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; 
 .paper-figure.teaser { margin: 4px 0 28px; }
 .paper-figure.teaser img { cursor: pointer; border: 1px solid var(--border); }
 figcaption { font-size: 14.5px; line-height: 1.55; color: var(--text); margin-top: 10px; text-align: justify; hyphens: auto; }
-.teaser figcaption { text-align: center; color: var(--text-muted); }
+.teaser figcaption { color: var(--text); }
 .fig-label { font-weight: 700; }
 .table-card figcaption { margin: 0 0 10px; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }

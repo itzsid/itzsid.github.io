@@ -1,14 +1,9 @@
-// Paper page behaviour: KaTeX, active contents entry, citation popovers,
+// Paper page behaviour: active contents entry, citation popovers,
 // copy-BibTeX button and a figure lightbox.
 (function () {
   function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
 
   ready(function () {
-    // math
-    if (window.renderMathInElement) {
-      try { renderMathInElement(document.body, { delimiters: [{ left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { /* leave raw TeX */ }
-    }
-
     // contents: highlight the section in view
     var links = Array.prototype.slice.call(document.querySelectorAll('#toc-list a'));
     var targets = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
@@ -46,7 +41,7 @@
     // lightbox
     var box = document.getElementById('lightbox'), img = box.querySelector('img');
     document.querySelectorAll('a.fig-zoom').forEach(function (a) {
-      a.addEventListener('click', function (e) { e.preventDefault(); img.src = a.getAttribute('href'); img.alt = a.querySelector('img').alt; box.hidden = false; });
+      a.addEventListener('click', function (e) { e.preventDefault(); var h = a.getAttribute('href'); img.src = h && h !== '#' ? h : a.querySelector('img').src; img.alt = a.querySelector('img').alt; box.hidden = false; });
     });
     box.addEventListener('click', function () { box.hidden = true; });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') box.hidden = true; });

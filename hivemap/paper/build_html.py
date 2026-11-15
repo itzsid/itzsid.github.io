@@ -4,13 +4,14 @@
 Handles only the LaTeX subset used in hivemap.tex: sections, subsections,
 paragraph leads, itemize/enumerate, figure/figure*, table/table* (tables are
 included from tables/<name>.html), \\cite (author-year), \\ref, \\emph,
-\\textbf, \\texttt, \\url, \\cond and inline math (rendered by KaTeX).
+\\textbf, \\texttt, \\url, \\cond and simple inline math (converted to HTML).
 
     python3 build_html.py
 """
 import html
 import os
 import re
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = 'https://itzsid.github.io'
@@ -161,13 +162,13 @@ def find_group(s, i):
 
 
 def inline(s, ctx):
-    """Convert inline LaTeX to HTML. Math ($...$) is passed through for KaTeX."""
+    """Convert inline LaTeX to HTML."""
     out, i = [], 0
     while i < len(s):
         c = s[i]
         if c == '$':
             j = s.index('$', i + 1)
-            out.append('<span class="math">$' + esc(s[i + 1:j]) + '$</span>')
+            out.append(math_html(s[i + 1:j]))
             i = j + 1
             continue
         if c == '\\':
@@ -251,6 +252,44 @@ def inline(s, ctx):
         out.append(esc(c))
         i += 1
     return ''.join(out)
+
+
+GREEK = {'alpha': 'α', 'beta': 'β', 'sigma': 'σ', 'omega': 'ω', 'theta': 'θ', 'mu': 'μ', 'lambda': 'λ', 'epsilon': 'ε', 'delta': 'δ'}
+
+
+def math_html(m):
+    """The few inline formulas in the paper, as plain HTML (italic variables, Unicode operators)."""
+    m = m.replace('\\times', '×').replace('\\max', '\x00').replace('\\,', '\u2009').replace('^\\circ', '°')
+    m = re.sub(r'\\([a-z]+)', lambda g: GREEK.get(g.group(1), g.group(1)), m)
+    m = re.sub(r'\s*([=+])\s*', lambda g: f'\u2009{g.group(1)}\u2009', m).strip()
+
+    def atoms(t):
+        out = []
+        for c in t:
+            if c == '\x00':
+                out.append('max')
+            elif (c.isalpha() and c.isascii()) or c in GREEK.values():
+                out.append(f'<i>{c}</i>')
+            elif c == '-':
+                out.append('−')
+            else:
+                out.append(html.escape(c, quote=False))
+        return ''.join(out)
+    out, i = [], 0
+    while i < len(m):
+        ch = m[i]
+        if ch in '^_' and i + 1 < len(m):
+            tag = 'sup' if ch == '^' else 'sub'
+            if m[i + 1] == '{':
+                k = m.index('}', i)
+                arg, i = m[i + 2:k], k + 1
+            else:
+                arg, i = m[i + 1], i + 2
+            out.append(f'<{tag}>{atoms(arg)}</{tag}>')
+            continue
+        out.append(atoms(ch))
+        i += 1
+    return f'<span class="math">{"".join(out)}</span>'
 
 
 def strip_comments(s):
@@ -452,6 +491,22 @@ def main():
         demo=DEMO_URL, code=CODE_URL, pdf=PDF_URL)
     open(os.path.join(HERE, 'index.html'), 'w', encoding='utf8').write(page)
     print(f'index.html: {len(page) // 1024} KB, {len(ctx.cited)} references, {len(ctx.toc)} sections')
+    if len(sys.argv) > 1:   # python3 build_html.py OUT.html -> one self-contained file (CSS, JS and figures inlined)
+        import base64
+        one = page.replace('<link rel="stylesheet" href="paper.css">', '<style>' + open(os.path.join(HERE, 'paper.css'), encoding='utf8').read() + '</style>')
+        one = one.replace('<script defer src="paper.js"></script>', '<script>' + open(os.path.join(HERE, 'paper.js'), encoding='utf8').read() + '</script>')
+
+        def data_uri(m):
+            f = os.path.join(HERE, m.group(2))
+            if not os.path.exists(f):
+                return m.group(0)
+            mime = 'image/jpeg' if f.endswith('.jpg') else 'image/svg+xml' if f.endswith('.svg') else 'image/png'
+            return m.group(1) + f'data:{mime};base64,' + base64.b64encode(open(f, 'rb').read()).decode() + '"'
+        one = re.sub(r'(<img src=")(figs/[^"]+)"', data_uri, one)
+        one = re.sub(r'(<a href=")(figs/[^"]+)"', lambda m: m.group(1) + '#"', one)
+        one = one.replace('href="hivemap.pdf"', f'href="{PAGE_URL}hivemap.pdf"').replace('href="../"', 'href="https://itzsid.github.io/hivemap/"').replace('href="../../"', 'href="https://itzsid.github.io/"')
+        open(sys.argv[1], 'w', encoding='utf8').write(one)
+        print(f'{sys.argv[1]}: {len(one) // 1024} KB (self-contained)')
 
 
 TEMPLATE = r"""<!DOCTYPE html>
@@ -480,7 +535,6 @@ TEMPLATE = r"""<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="paper.css">
 </head>
 <body>
@@ -531,8 +585,6 @@ TEMPLATE = r"""<!DOCTYPE html>
   <div id="hover-popover" role="tooltip"></div>
   <div id="lightbox" hidden><img alt=""></div>
 
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
   <script defer src="paper.js"></script>
 </body>
 </html>
