@@ -1,0 +1,274 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figs/}}
+
+\newcommand{\cond}[1]{\textsc{#1}}
+
+\begin{document}
+
+\title{Talk or Map? What Should Robot Teams Share?}
+
+\author{\IEEEauthorblockN{Siddharth Choudhary}
+\IEEEauthorblockA{\url{https://itzsid.github.io/hivemap/}}}
+
+\maketitle
+
+\begin{abstract}
+When every robot in a team runs its own language-model agent, the team needs a way to pool what its members have seen.
+Multi-robot LLM systems usually let the robots talk to each other in natural language, while collaborative SLAM systems fuse what the robots have seen into one map.
+We ask which of the two a team should share, and when.
+We built Hivemap, an open-source testbed that runs in a web browser.
+In it, up to ten simulated robots with drifting odometry and open-vocabulary object detections explore six buildings, then carry out five kinds of task: go to an object, count a category, meet at a landmark, visit every instance of a category, and find a lost item.
+The robots either work alone, exchange short natural-language messages, or merge their object maps through verified cross-robot data association and distributed pose-graph optimization.
+%%ABS_RESULTS%%
+The whole system, including in-browser language-model agents that choose among these same tools, runs on a laptop.
+\end{abstract}
+
+%% =====================================================================
+\section{Introduction}\label{sec:intro}
+
+Picture ten robots that have spent the night patrolling a hospital wing.
+Each one has seen a different part of the building.
+In the morning a nurse asks one of them to fetch the wheelchair from Room~203, a room that robot has never entered.
+Somebody on the team has seen that wheelchair.
+How should that knowledge reach the robot that needs it?
+
+Two research communities have given two different answers.
+Work on large language models (LLMs) for multi-robot teams gives each robot an agent and lets the agents \emph{talk}: they negotiate plans~\cite{mandi2024roco}, decide what to tell their teammates~\cite{zhang2024coela}, or route messages through a central or hierarchical planner~\cite{chen2024scalable,kannan2024smartllm}.
+Work on collaborative SLAM instead fuses the robots' observations into a single consistent \emph{map}~\cite{choudhary2017ijrr,tian2022kimeramulti,lajoie2024swarmslam}, increasingly with open-vocabulary object labels that a language model can query~\cite{chang2023hydramulti,gu2025mrcographs}.
+Each community tends to assume its own medium.
+LLM-team papers rarely build a map, and when LLM planners do use a shared map, the map is usually assumed to be correct, with known robot poses~\cite{yu2023conavgpt,shen2025mcoconav,wang2025comresvlm}.
+Collaborative SLAM papers measure trajectory error and bandwidth, not whether the map helps a team finish a job.
+
+This paper puts the two media side by side.
+We hold the buildings, robots, tasks, and decision rules fixed and change only what the robots share:
+\begin{itemize}
+\item \cond{Alone}: nothing; each robot uses only what it saw itself.
+\item \cond{Language}: short natural-language messages that name objects and rooms, as a language agent would write them.
+\item \cond{Map}: an object map merged across robots, built under unknown initial frames, verified against perceptual aliasing, and either used as merged or refined by distributed pose-graph optimization~\cite{choudhary2016icra,choudhary2017ijrr}.
+\end{itemize}
+The map is not handed to the robots.
+They build it from noisy odometry and detections, find each other's frames by meeting or by matching objects, and pay for it in bandwidth.
+Merging errors, rejected look-alike matches, and residual drift are therefore part of what we measure.
+
+Our contributions are:
+\begin{enumerate}
+\item \textbf{Hivemap}, an open-source multi-robot testbed that runs in the browser, with up to ten robots, six buildings (including a hospital wing with ten look-alike patient rooms), five task families, and per-robot LLM agents that call mapping and messaging operations as tools (Fig.~\ref{fig:teaser}).
+\item A \textbf{controlled comparison} of the three media over %%N_EPISODES%% episodes, reporting success, completion time, distance driven, and bytes sent per channel.
+\item \textbf{Findings} on when each medium is enough.
+%%CONTRIB_RESULTS%%
+\end{enumerate}
+
+We do not propose a new SLAM back-end or a new LLM planner.
+The two-stage distributed solver is from our earlier work~\cite{choudhary2016icra,choudhary2017ijrr}, the verification rules follow established practice for robust inter-robot loop closures~\cite{mangelson2018pcm,yang2020gnc}, and the agents follow the familiar tool-calling pattern~\cite{yao2023react}.
+What is new is the question and the measurement.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{teaser.jpg}
+\caption{\textbf{Hivemap.} Ten robots in a simulated hospital wing after the instruction ``Explore the building.'' Each colored line is one robot's path. Gold markers are objects that two or more robots saw; once verified, they tie the robots' maps together. The robots then meet at the nurse station using the merged map. The live demo at \url{https://itzsid.github.io/hivemap/} runs this simulation, the map merging, and one language-model agent per robot in the browser.}
+\label{fig:teaser}
+\end{figure*}
+
+%% =====================================================================
+\section{Related Work}\label{sec:related}
+
+\textbf{Collaborative SLAM.}
+Distributed and decentralized multi-robot SLAM has a long history.
+It includes distributed smoothing~\cite{cunningham2010ddfsam}, two-stage distributed Gauss-Seidel estimation with object-based landmarks~\cite{choudhary2016icra,choudhary2017ijrr}, data-efficient decentralized visual SLAM~\cite{cieslewski2018icra}, and certifiably correct distributed pose-graph optimization~\cite{tian2021dc2pgo}.
+Complete systems include DOOR-SLAM~\cite{lajoie2020doorslam}, Kimera-Multi~\cite{chang2021kimeramulti,tian2022kimeramulti}, Swarm-SLAM~\cite{lajoie2024swarmslam}, COVINS~\cite{schmuck2021covins}, and the field-tested LAMP~\cite{ebadi2020lamp,chang2022lamp2}; see~\cite{lajoie2022survey} for a survey.
+A wrong inter-robot loop closure can corrupt the whole map, so pairwise consistency maximization~\cite{mangelson2018pcm} and graduated non-convexity~\cite{yang2020gnc} are now standard.
+When the robots' initial frames are unknown, maps can be merged from direct robot-robot observations~\cite{zhou2006rendezvous,howard2006ijrr}.
+Hivemap reuses these ideas.
+These systems are evaluated by trajectory and map accuracy; we evaluate the map by what it lets a team of agents do, and against a language baseline.
+
+\textbf{Open-vocabulary object maps and scene graphs.}
+Object-level SLAM~\cite{salasmoreno2013slampp,nicholson2019quadricslam,yang2019cubeslam} and foundation-model features~\cite{radford2021clip,kirillov2023sam,ravi2025sam2} have produced maps that can be queried in words, including dense feature fields~\cite{peng2023openscene,jatavallabhula2023conceptfusion} and object graphs~\cite{gu2024conceptgraphs,werby2024hovsg,maggio2024clio}.
+Multi-robot versions build and share 3D scene graphs~\cite{chang2023hydramulti}, compress them for transmission~\cite{chang2023dlite}, or share open-vocabulary object graphs at a fraction of the bandwidth~\cite{gu2025mrcographs}.
+These are more capable map builders than ours, which uses simulated stand-in features (Sec.~\ref{sec:limits}).
+They do not put language agents in the loop, and they do not compare map sharing with talking.
+
+\textbf{LLM agents for multi-robot teams.}
+LLMs plan for single robots by grounding language in affordances~\cite{ahn2022saycan}, code~\cite{liang2023cap}, feedback~\cite{huang2022innermonologue}, or a given 3D scene graph~\cite{rana2023sayplan}.
+For teams, RoCo~\cite{mandi2024roco} has per-robot LLMs negotiate in dialogue, SMART-LLM~\cite{kannan2024smartllm} decomposes and allocates tasks centrally, and Chen et al.~\cite{chen2024scalable} compare centralized, decentralized, and hybrid dialogue structures as the team grows.
+CoELA~\cite{zhang2024coela} builds embodied agents that decide what to say to each other and finds that language helps, but that many LLM messages are redundant.
+A second line gives an LLM or VLM planner a shared semantic map for multi-robot search and navigation~\cite{yu2023conavgpt,shen2025mcoconav,wang2025comresvlm}; there the map is typically fused centrally under known poses.
+Murata et al.~\cite{murata2025multiobject} plan multi-object retrieval with knowledge distributed across robots.
+Prior work therefore fixes the medium, either language or a trusted map.
+We vary it while holding everything else fixed, and we include the cost and errors of building the map.
+
+\textbf{Task allocation.}
+Our dispatcher is a classical cost-based allocator~\cite{gerkey2004taxonomy,dias2006market}, and our room-splitting search is a simple form of coordinated exploration~\cite{burgard2005coordinated}.
+We claim nothing new here.
+The point is that path-cost allocation needs metric positions in a common frame, which language replies do not provide.
+
+%% =====================================================================
+\section{Hivemap}\label{sec:method}
+
+Fig.~\ref{fig:pipeline} shows the pipeline.
+Each robot builds its own object map.
+When asked, the team exchanges maps, finds each robot's frame relative to the others, verifies which objects are shared, and optionally optimizes the joint pose graph.
+Agents or scripted policies then act on the result.
+Everything runs in JavaScript in the browser and, for experiments, headless in Node.js with a fixed random seed.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{pipeline.pdf}
+\caption{\textbf{Pipeline.} Each robot runs local object SLAM. In the \cond{Map} conditions, robots exchange compact object descriptors, align their frames by meeting each other or by matching objects, verify which objects are the same physical thing, and solve the joint pose graph with the two-stage distributed solver. In \cond{Language}, robots instead answer questions in words from their own maps.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Buildings, robots, and sensing}
+Six floor plans cover common indoor settings: an office (24\,m$\times$16\,m, 5 rooms), a warehouse with occluding racks and many identical pallets (36$\times$22\,m, 3 areas), an apartment (20$\times$14\,m, 5 rooms), a hospital wing with ten nearly identical patient rooms off one corridor (36$\times$18\,m, 11 rooms), a retail store with shelf aisles (30$\times$20\,m, 4 areas), and a lab building (32$\times$18\,m, 7 rooms).
+They contain 33 to 65 objects each, from 51 categories in nine colors.
+Robots are differential-drive bases (0.56$\times$0.44\,m, up to 1\,m/s) that plan on an occupancy grid, follow smoothed paths, and yield to each other.
+They record a keyframe every 0.5\,m or 30$^\circ$.
+Odometry has 3.5\% translational and 1.5\% rotational noise per step, a per-robot gyro bias of up to 0.014\,rad/m, and occasional wheel slip.
+The camera has a 90$^\circ$ field of view.
+An object at range $r$ is detected with probability $0.97\,(1-(r/R)^3)$, where $R$ is 2.6\,m for small objects, 6\,m for large ones, and 5\,m otherwise.
+Walls and tall furniture block the view, 2\% of detections are false, and an object enters a robot's map only after two sightings.
+
+\textbf{Open-vocabulary features.}
+We do not render images.
+Each detection carries a 48-dimensional unit descriptor that mixes a fixed direction for its category with a weaker direction for its color, plus view noise.
+Text queries such as ``orange armchair'' embed into the same space.
+This stands in for mask-plus-CLIP features~\cite{ravi2025sam2,radford2021clip}.
+It reproduces the property that matters here, that objects of the same kind and color look alike, but it is cleaner than real features.
+
+\subsection{Local object SLAM}
+Each robot keeps a pose graph of its keyframes and the objects it has seen, with odometry factors between consecutive keyframes and relative-pose factors from keyframes to objects.
+We solve it with the two-stage method of~\cite{choudhary2016icra}: first rotations, as a linear least-squares problem over unit complex numbers, then translations given the rotations.
+Both stages use Gauss-Seidel sweeps with successive over-relaxation ($\omega=1.9$) and warm starts.
+
+\subsection{Merging maps under unknown frames}\label{sec:merge}
+Robots start from a common dock but do not know their relative poses.
+Each robot's map is expressed in its own starting frame.
+To merge maps, robots exchange object descriptors, and the team adds robots one at a time to a growing joint map.
+We count 1{,}040 bytes per object sent, as if each descriptor carried a 512-dimensional half-precision CLIP feature plus its position and id.
+
+\textbf{Frame alignment.}
+If two robots have met (within 4\,m with a clear line of sight), the measured relative pose aligns their frames directly, in the spirit of~\cite{zhou2006rendezvous,howard2006ijrr}.
+Otherwise we propose candidate object matches by descriptor similarity (cosine $>0.8$) and fit a 2D rigid transform with two-point RANSAC.
+Look-alike rooms make this risky: in the hospital, five patient rooms each hold a bed, a chair, and an IV stand in the same arrangement.
+We therefore accept an alignment only if it passes three checks.
+(i)~\emph{Strength}: at least five inliers from at least three categories, or four inliers from two categories with residual below 0.3\,m spread over more than 2.5\,m.
+(ii)~\emph{Uniqueness}: no rival hypothesis that places the map more than 1.2\,m or 0.3\,rad away has more than 60\% of the inliers or comes within two inliers of the best.
+(iii)~\emph{Floor-plan consistency}: once aligned, no more than 2\% of the robot's trajectory may pass through a wall.
+We assume the floor plan is known, as it usually is for facility robots.
+
+\textbf{Object association.}
+Given the frames, two objects from different robots become one shared object if they are within 1\,m, their descriptors agree, they are not on opposite sides of a wall, and neither robot has a look-alike within a radius $A=\max(1.5,\,2.5(\sigma_a+\sigma_b))$\,m.
+Here $\sigma = 0.1 + 0.04\,d$ grows with the distance $d$ the robot had driven before first seeing the object, so the gate widens with accumulated drift.
+Each accepted match adds a ``same object'' factor between the two robots' landmarks, and each meeting adds a relative-pose factor between their keyframes.
+
+\subsection{Distributed optimization}
+The joint graph is solved with the same two-stage solver run in its distributed form~\cite{choudhary2016icra,choudhary2017ijrr}.
+Each robot updates only its own poses and landmarks and, after every round, sends its estimates of the variables that appear in factors shared with other robots, the ``separators.''
+If an update grows instead of shrinking, the stage restarts with a smaller relaxation factor.
+We report the number of rounds and count the bytes they cost.
+
+\subsection{From map to action}
+Shared objects are fused by union-find over the accepted matches and given a plain-language label and a room.
+A query such as ``the black vending machine'' is embedded and matched against this list.
+With a merged map, every robot can compute path costs to every object in one frame.
+This is what lets the dispatcher assign the closest free robot, split a category's instances among robots, or pick meeting slots around a landmark.
+
+\subsection{Language-model agents}
+In the interactive demo, each robot runs its own agent: an open Qwen2.5 model~\cite{qwen2024qwen25} (1.5B, 3B, or 7B parameters) running on the visitor's GPU through WebLLM~\cite{ruan2024webllm}, with replies constrained to a JSON schema.
+Every turn, the agent sees the team state (robot positions and jobs, explored rooms, the objects it knows with their ids, rooms, and positions) and picks one of nine tools: \texttt{search\_map}, \texttt{navigate\_to}, \texttt{go\_to\_room}, \texttt{explore\_room}, \texttt{exchange\_maps}, \texttt{optimize\_team\_map}, \texttt{ask\_robot}, \texttt{return\_to\_start}, or \texttt{reply}.
+\texttt{ask\_robot} is the language channel: it forwards a message to another robot's agent, which answers from its own state.
+\texttt{exchange\_maps} and \texttt{optimize\_team\_map} are the map channel.
+Without a GPU, a rule-based planner drives the same tools.
+
+%% =====================================================================
+\section{Experimental Setup}\label{sec:setup}
+
+\textbf{Separating the medium from the planner.}
+Small language models make planning mistakes.
+In an end-to-end comparison those mistakes would mix with the effect of the medium, and we could not run thousands of episodes of in-browser inference.
+We therefore drive each condition with a fixed, competent scripted policy that uses its channel the way a good agent would.
+The result measures what each medium \emph{makes possible} for a sensible policy, not how well a particular language model uses it.
+We return to this choice in Sec.~\ref{sec:limits}.
+
+\textbf{Conditions.}
+All conditions start from the identical world state, including the same robot trajectories and observations; we check this with a fingerprint of the state.
+\begin{itemize}
+\item \cond{Alone}: each robot uses only its own map and explores rooms it has not seen until it finds what it needs.
+\item \cond{Language}: robots exchange template sentences of the kind an LLM agent produces, e.g. ``Has anyone seen the black vending machine? Which room is it in?'' and ``I saw a black vending machine in the Hall.''
+Every teammate that has seen a match answers truthfully and at once.
+Answers name the object and its room but never give coordinates, because without a shared frame one robot's coordinates mean nothing to another.
+The asking robot searches the named rooms in order of how many teammates named them, then by distance, and stops as soon as it sees the object itself.
+For counts, robots cannot tell whether two teammates saw the same chair, so the asker takes the largest count reported for each room; summing counts is an ablation.
+\item \cond{Map}: maps are exchanged and merged as in Sec.~\ref{sec:merge}, and the policy queries the merged map and drives straight to the merged object positions. \cond{Map (merge only)} skips the distributed optimization and keeps the RANSAC or meeting alignment; \cond{Map + opt.} runs it.
+\end{itemize}
+The language channel is generous by design: messages are free, instant, and never lost, every teammate answers, and the asker never misreads an answer.
+
+\textbf{Protocol.}
+Each episode has two phases.
+In a prior shift, the robots split the rooms round-robin and cover them, so each robot knows only part of the building.
+Then a task is issued:
+\begin{itemize}
+\item \emph{Fetch}: Robot~1 goes to a named object, e.g. ``bring a sensor reading from the black vending machine.'' The target is chosen among objects seen by a teammate but not by Robot~1, with a name (color and category, plus room if needed) that picks out one object.
+\item \emph{Inventory}: Robot~1 reports how many objects of a category exist and in which rooms; the score is the fraction of rooms whose count is correct.
+\item \emph{Rendezvous}: all robots meet at a named object; the score is the fraction that arrive.
+\item \emph{Dispatch}: the team visits every instance of a category (e.g. every fire extinguisher); the score is the fraction visited.
+\item \emph{Search}: an object that appeared after the prior shift (e.g. a lost backpack) must be found, and Robot~1 must drive to it.
+\end{itemize}
+A robot has reached an object when it stops within the object's radius plus 1\,m of its true position.
+
+\textbf{Metrics.}
+We report success (score of 1), mean score, completion time in simulated seconds, total distance driven, and bytes sent.
+For \cond{Language}, bytes are the UTF-8 length of each message, counted once per recipient.
+For \cond{Map}, they are the object descriptors sent to each joined teammate plus the separator estimates sent in each optimization round.
+
+\textbf{Grid.}
+%%GRID%%
+
+%% =====================================================================
+\section{Results}\label{sec:results}
+
+%%RESULTS%%
+
+%% =====================================================================
+\section{Limitations}\label{sec:limits}
+
+\textbf{Simulated perception.}
+Our descriptors are synthetic.
+Real mask-plus-CLIP features are noisier, confuse more categories, and drift with viewpoint and lighting, so real data would produce more look-alike matches.
+This would likely widen the gap between verified and unverified merging, but we have not shown it.
+Multi-robot open-vocabulary mappers on real sensors~\cite{chang2023hydramulti,gu2025mrcographs,tian2022kimeramulti} are the natural back-end for a real deployment.
+
+\textbf{Scripted policies instead of LLMs.}
+We isolate the medium by using fixed policies.
+Real LLM agents make planning errors, and their errors may differ by medium.
+A structured map may be easier for a small model to use correctly than a set of free-form replies, as CoELA's observations of redundant messages suggest~\cite{zhang2024coela}, or a long object list may overflow a small model's context.
+Measuring that interaction with the in-browser agents is the next step.
+
+\textbf{A generous, but limited, language channel.}
+Our messages carry object names and rooms, not metric descriptions such as ``two meters left of the door.''
+Agents could describe positions relative to landmarks, which would close part of the gap at the cost of longer, more ambiguous messages.
+Conversely, our channel is lossless and instant, which favors language.
+
+\textbf{Scale and realism.}
+The buildings are small and two-dimensional, and the robots are homogeneous.
+The map's advantage should grow with building size, since the cost of searching a room grows while the cost of driving to a known point does not, but larger and multi-floor buildings remain to be tested.
+
+%% =====================================================================
+\section{Conclusion}\label{sec:conclusion}
+
+%%CONCLUSION%%
+
+The code, the experiment harness, and the per-episode results are available at \url{https://itzsid.github.io/hivemap/}, where the simulation and its agents run in the browser.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

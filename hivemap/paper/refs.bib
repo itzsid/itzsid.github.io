@@ -1,0 +1,1076 @@
+% refs.bib -- Hivemap related work
+% All entries checked (Nov 2026) against arXiv API metadata and/or Crossref DOI records.
+% Venue fields for arXiv-only entries come from the arXiv comment/journal-ref field or the published DOI.
+
+%% ===================================================================
+%% 1. Multi-robot / collaborative SLAM and distributed estimation
+%% ===================================================================
+
+@inproceedings{cunningham2010ddfsam,
+  author    = {Cunningham, Alexander and Paluri, Manohar and Dellaert, Frank},
+  title     = {{DDF-SAM}: Fully Distributed {SLAM} using Constrained Factor Graphs},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  pages     = {3025--3030},
+  year      = {2010},
+  doi       = {10.1109/IROS.2010.5652875}
+}
+
+@inproceedings{choudhary2016icra,
+  author    = {Choudhary, Siddharth and Carlone, Luca and Nieto, Carlos and Rogers, John and Christensen, Henrik I. and Dellaert, Frank},
+  title     = {Distributed Trajectory Estimation with Privacy and Communication Constraints: A Two-Stage Distributed {Gauss-Seidel} Approach},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {5261--5268},
+  year      = {2016},
+  doi       = {10.1109/ICRA.2016.7487736}
+}
+
+@article{choudhary2017ijrr,
+  author    = {Choudhary, Siddharth and Carlone, Luca and Nieto, Carlos and Rogers, John and Christensen, Henrik I. and Dellaert, Frank},
+  title     = {Distributed Mapping with Privacy and Communication Constraints: Lightweight Algorithms and Object-based Models},
+  journal   = {The International Journal of Robotics Research},
+  volume    = {36},
+  number    = {12},
+  year      = {2017},
+  doi       = {10.1177/0278364917732640},
+  eprint    = {1702.03435},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{cieslewski2018icra,
+  author    = {Cieslewski, Titus and Choudhary, Siddharth and Scaramuzza, Davide},
+  title     = {Data-Efficient Decentralized Visual {SLAM}},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {2466--2473},
+  year      = {2018},
+  doi       = {10.1109/ICRA.2018.8461155},
+  eprint    = {1710.05772},
+  archivePrefix = {arXiv}
+}
+
+@article{lajoie2020doorslam,
+  author    = {Lajoie, Pierre-Yves and Ramtoula, Benjamin and Chang, Yun and Carlone, Luca and Beltrame, Giovanni},
+  title     = {{DOOR-SLAM}: Distributed, Online, and Outlier Resilient {SLAM} for Robotic Teams},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {5},
+  number    = {2},
+  pages     = {1656--1663},
+  year      = {2020},
+  doi       = {10.1109/LRA.2020.2967681},
+  eprint    = {1909.12198},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{chang2021kimeramulti,
+  author    = {Chang, Yun and Tian, Yulun and How, Jonathan P. and Carlone, Luca},
+  title     = {{Kimera-Multi}: a System for Distributed Multi-Robot Metric-Semantic Simultaneous Localization and Mapping},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {11210--11218},
+  year      = {2021},
+  doi       = {10.1109/ICRA48506.2021.9561090},
+  eprint    = {2011.04087},
+  archivePrefix = {arXiv}
+}
+
+@article{tian2022kimeramulti,
+  author    = {Tian, Yulun and Chang, Yun and Herrera Arias, Fernando and Nieto-Granda, Carlos and How, Jonathan P. and Carlone, Luca},
+  title     = {{Kimera-Multi}: Robust, Distributed, Dense Metric-Semantic {SLAM} for Multi-Robot Systems},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {38},
+  number    = {4},
+  pages     = {2022--2038},
+  year      = {2022},
+  doi       = {10.1109/TRO.2021.3137751},
+  eprint    = {2106.14386},
+  archivePrefix = {arXiv}
+}
+
+@article{lajoie2024swarmslam,
+  author    = {Lajoie, Pierre-Yves and Beltrame, Giovanni},
+  title     = {{Swarm-SLAM}: Sparse Decentralized Collaborative Simultaneous Localization and Mapping Framework for Multi-Robot Systems},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {9},
+  number    = {1},
+  pages     = {475--482},
+  year      = {2024},
+  doi       = {10.1109/LRA.2023.3333742},
+  eprint    = {2301.06230},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{schmuck2021covins,
+  author    = {Schmuck, Patrik and Ziegler, Thomas and Karrer, Marco and Perraudin, Jonathan and Chli, Margarita},
+  title     = {{COVINS}: Visual-Inertial {SLAM} for Centralized Collaboration},
+  booktitle = {IEEE International Symposium on Mixed and Augmented Reality Adjunct (ISMAR-Adjunct)},
+  pages     = {171--176},
+  year      = {2021},
+  doi       = {10.1109/ISMAR-Adjunct54149.2021.00043},
+  eprint    = {2108.05756},
+  archivePrefix = {arXiv}
+}
+
+@article{schmuck2019ccmslam,
+  author    = {Schmuck, Patrik and Chli, Margarita},
+  title     = {{CCM-SLAM}: Robust and Efficient Centralized Collaborative Monocular Simultaneous Localization and Mapping for Robotic Teams},
+  journal   = {Journal of Field Robotics},
+  volume    = {36},
+  number    = {4},
+  pages     = {763--781},
+  year      = {2019},
+  doi       = {10.1002/rob.21854}
+}
+
+@article{xu2024d2slam,
+  author    = {Xu, Hao and Liu, Peize and Chen, Xinyi and Shen, Shaojie},
+  title     = {{$D^2$SLAM}: Decentralized and Distributed Collaborative Visual-Inertial {SLAM} System for Aerial Swarm},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {40},
+  pages     = {3445--3464},
+  year      = {2024},
+  doi       = {10.1109/TRO.2024.3422003},
+  eprint    = {2211.01538},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{ebadi2020lamp,
+  author    = {Ebadi, Kamak and Chang, Yun and Palieri, Matteo and Stephens, Alex and Hatteland, Alex and Heiden, Eric and Thakur, Abhishek and Funabiki, Nobuhiro and Morrell, Benjamin and Wood, Sally and Carlone, Luca and Agha-mohammadi, Ali-akbar},
+  title     = {{LAMP}: Large-Scale Autonomous Mapping and Positioning for Exploration of Perceptually-Degraded Subterranean Environments},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {80--86},
+  year      = {2020},
+  doi       = {10.1109/ICRA40945.2020.9197082},
+  eprint    = {2003.01744},
+  archivePrefix = {arXiv}
+}
+
+@article{chang2022lamp2,
+  author    = {Chang, Yun and Ebadi, Kamak and Denniston, Christopher E. and Ginting, Muhammad Fadhil and Rosinol, Antoni and Reinke, Andrzej and Palieri, Matteo and Shi, Jingnan and Chatterjee, Arghya and Morrell, Benjamin and Agha-mohammadi, Ali-akbar and Carlone, Luca},
+  title     = {{LAMP 2.0}: A Robust Multi-Robot {SLAM} System for Operation in Challenging Large-Scale Underground Environments},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {7},
+  number    = {4},
+  pages     = {9175--9182},
+  year      = {2022},
+  doi       = {10.1109/LRA.2022.3191204},
+  eprint    = {2205.13135},
+  archivePrefix = {arXiv}
+}
+
+@article{huang2022discoslam,
+  author    = {Huang, Yewei and Shan, Tixiao and Chen, Fanfei and Englot, Brendan},
+  title     = {{DiSCo-SLAM}: Distributed Scan Context-Enabled Multi-Robot {LiDAR} {SLAM} With Two-Stage Global-Local Graph Optimization},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {7},
+  number    = {2},
+  pages     = {1150--1157},
+  year      = {2022},
+  doi       = {10.1109/LRA.2021.3138156}
+}
+
+@article{tian2021dc2pgo,
+  author    = {Tian, Yulun and Khosoussi, Kasra and Rosen, David M. and How, Jonathan P.},
+  title     = {Distributed Certifiably Correct Pose-Graph Optimization},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {37},
+  number    = {6},
+  pages     = {2137--2156},
+  year      = {2021},
+  doi       = {10.1109/TRO.2021.3072346},
+  eprint    = {1911.03721},
+  archivePrefix = {arXiv}
+}
+
+@article{lajoie2022survey,
+  author    = {Lajoie, Pierre-Yves and Ramtoula, Benjamin and Wu, Fang and Beltrame, Giovanni},
+  title     = {Towards Collaborative Simultaneous Localization and Mapping: a Survey of the Current Research Landscape},
+  journal   = {Field Robotics},
+  year      = {2022},
+  doi       = {10.55417/fr.2022032},
+  eprint    = {2108.08325},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{mangelson2018pcm,
+  author    = {Mangelson, Joshua G. and Dominic, Derrick and Eustice, Ryan M. and Vasudevan, Ram},
+  title     = {Pairwise Consistent Measurement Set Maximization for Robust Multi-Robot Map Merging},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {2916--2923},
+  year      = {2018},
+  doi       = {10.1109/ICRA.2018.8460217}
+}
+
+@article{yang2020gnc,
+  author    = {Yang, Heng and Antonante, Pasquale and Tzoumas, Vasileios and Carlone, Luca},
+  title     = {Graduated Non-Convexity for Robust Spatial Perception: From Non-Minimal Solvers to Global Outlier Rejection},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {5},
+  number    = {2},
+  pages     = {1127--1134},
+  year      = {2020},
+  doi       = {10.1109/LRA.2020.2965893},
+  eprint    = {1909.08605},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{zhou2006rendezvous,
+  author    = {Zhou, Xun S. and Roumeliotis, Stergios I.},
+  title     = {Multi-robot {SLAM} with Unknown Initial Correspondence: The Robot Rendezvous Case},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  pages     = {1785--1792},
+  year      = {2006},
+  doi       = {10.1109/IROS.2006.282219}
+}
+
+@article{howard2006ijrr,
+  author    = {Howard, Andrew},
+  title     = {Multi-robot Simultaneous Localization and Mapping using Particle Filters},
+  journal   = {The International Journal of Robotics Research},
+  volume    = {25},
+  number    = {12},
+  pages     = {1243--1256},
+  year      = {2006},
+  doi       = {10.1177/0278364906072250}
+}
+
+@inproceedings{kim2010multiple,
+  author    = {Kim, Been and Kaess, Michael and Fletcher, Luke and Leonard, John and Bachrach, Abraham and Roy, Nicholas and Teller, Seth},
+  title     = {Multiple Relative Pose Graphs for Robust Cooperative Mapping},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {3185--3192},
+  year      = {2010},
+  doi       = {10.1109/ROBOT.2010.5509154}
+}
+
+@inproceedings{tian2018budgeted,
+  author    = {Tian, Yulun and Khosoussi, Kasra and Giamou, Matthew and How, Jonathan P. and Kelly, Jonathan},
+  title     = {Near-Optimal Budgeted Data Exchange for Distributed Loop Closure Detection},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2018},
+  eprint    = {1806.00188},
+  archivePrefix = {arXiv}
+}
+
+@article{liu2025slideslam,
+  author    = {Liu, Xu and Lei, Jiuzhou and Prabhu, Ankit and Tao, Yuezhan and Spasojevic, Igor and Chaudhari, Pratik and Atanasov, Nikolay and Kumar, Vijay},
+  title     = {{SlideSLAM}: Sparse, Lightweight, Decentralized Metric-Semantic {SLAM} for Multirobot Navigation},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {41},
+  pages     = {6529--6548},
+  year      = {2025},
+  doi       = {10.1109/TRO.2025.3629786},
+  eprint    = {2406.17249},
+  archivePrefix = {arXiv}
+}
+
+%% ===================================================================
+%% 2. Object-level and semantic SLAM
+%% ===================================================================
+
+@article{cadena2016past,
+  author    = {Cadena, Cesar and Carlone, Luca and Carrillo, Henry and Latif, Yasir and Scaramuzza, Davide and Neira, Jos{\'e} and Reid, Ian and Leonard, John J.},
+  title     = {Past, Present, and Future of Simultaneous Localization and Mapping: Toward the Robust-Perception Age},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {32},
+  number    = {6},
+  pages     = {1309--1332},
+  year      = {2016},
+  doi       = {10.1109/TRO.2016.2624754},
+  eprint    = {1606.05830},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{salasmoreno2013slampp,
+  author    = {Salas-Moreno, Renato F. and Newcombe, Richard A. and Strasdat, Hauke and Kelly, Paul H. J. and Davison, Andrew J.},
+  title     = {{SLAM++}: Simultaneous Localisation and Mapping at the Level of Objects},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {1352--1359},
+  year      = {2013},
+  doi       = {10.1109/CVPR.2013.178}
+}
+
+@article{nicholson2019quadricslam,
+  author    = {Nicholson, Lachlan and Milford, Michael and S{\"u}nderhauf, Niko},
+  title     = {{QuadricSLAM}: Dual Quadrics From Object Detections as Landmarks in Object-Oriented {SLAM}},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {4},
+  number    = {1},
+  pages     = {1--8},
+  year      = {2019},
+  doi       = {10.1109/LRA.2018.2866205},
+  eprint    = {1804.04011},
+  archivePrefix = {arXiv}
+}
+
+@article{yang2019cubeslam,
+  author    = {Yang, Shichao and Scherer, Sebastian},
+  title     = {{CubeSLAM}: Monocular 3-{D} Object {SLAM}},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {35},
+  number    = {4},
+  pages     = {925--938},
+  year      = {2019},
+  doi       = {10.1109/TRO.2019.2909168},
+  eprint    = {1806.00557},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{choudhary2014iros,
+  author    = {Choudhary, Siddharth and Trevor, Alexander J. B. and Christensen, Henrik I. and Dellaert, Frank},
+  title     = {{SLAM} with Object Discovery, Modeling and Mapping},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  pages     = {1018--1025},
+  year      = {2014},
+  doi       = {10.1109/IROS.2014.6942683}
+}
+
+@inproceedings{mccormac2018fusionpp,
+  author    = {McCormac, John and Clark, Ronald and Bloesch, Michael and Davison, Andrew J. and Leutenegger, Stefan},
+  title     = {{Fusion++}: Volumetric Object-Level {SLAM}},
+  booktitle = {International Conference on 3D Vision (3DV)},
+  pages     = {32--41},
+  year      = {2018},
+  doi       = {10.1109/3DV.2018.00015},
+  eprint    = {1808.08378},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{mccormac2017semanticfusion,
+  author    = {McCormac, John and Handa, Ankur and Davison, Andrew and Leutenegger, Stefan},
+  title     = {{SemanticFusion}: Dense {3D} Semantic Mapping with Convolutional Neural Networks},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2017},
+  eprint    = {1609.05130},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{bowman2017probabilistic,
+  author    = {Bowman, Sean L. and Atanasov, Nikolay and Daniilidis, Kostas and Pappas, George J.},
+  title     = {Probabilistic Data Association for Semantic {SLAM}},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  pages     = {1722--1729},
+  year      = {2017},
+  doi       = {10.1109/ICRA.2017.7989203}
+}
+
+@article{garg2020semantics,
+  author    = {Garg, Sourav and S{\"u}nderhauf, Niko and Dayoub, Feras and Morrison, Douglas and Cosgun, Akansel and Carneiro, Gustavo and Wu, Qi and Chin, Tat-Jun and Reid, Ian and Gould, Stephen and Corke, Peter and Milford, Michael},
+  title     = {Semantics for Robotic Mapping, Perception and Interaction: A Survey},
+  journal   = {Foundations and Trends in Robotics},
+  volume    = {8},
+  number    = {1--2},
+  pages     = {1--224},
+  year      = {2020},
+  doi       = {10.1561/2300000059},
+  eprint    = {2101.00443},
+  archivePrefix = {arXiv}
+}
+
+%% ===================================================================
+%% 3. Open-vocabulary perception, 3D maps and scene graphs
+%% ===================================================================
+
+@inproceedings{radford2021clip,
+  author    = {Radford, Alec and Kim, Jong Wook and Hallacy, Chris and Ramesh, Aditya and Goh, Gabriel and Agarwal, Sandhini and Sastry, Girish and Askell, Amanda and Mishkin, Pamela and Clark, Jack and Krueger, Gretchen and Sutskever, Ilya},
+  title     = {Learning Transferable Visual Models From Natural Language Supervision},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2021},
+  eprint    = {2103.00020},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{kirillov2023sam,
+  author    = {Kirillov, Alexander and Mintun, Eric and Ravi, Nikhila and Mao, Hanzi and Rolland, Chloe and Gustafson, Laura and Xiao, Tete and Whitehead, Spencer and Berg, Alexander C. and Lo, Wan-Yen and Doll{\'a}r, Piotr and Girshick, Ross},
+  title     = {Segment Anything},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023},
+  eprint    = {2304.02643},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{ravi2025sam2,
+  author    = {Ravi, Nikhila and Gabeur, Valentin and Hu, Yuan-Ting and Hu, Ronghang and Ryali, Chaitanya and Ma, Tengyu and Khedr, Haitham and R{\"a}dle, Roman and Rolland, Chloe and Gustafson, Laura and Mintun, Eric and Pan, Junting and others},
+  title     = {{SAM 2}: Segment Anything in Images and Videos},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2408.00714},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{peng2023openscene,
+  author    = {Peng, Songyou and Genova, Kyle and Jiang, Chiyu "Max" and Tagliasacchi, Andrea and Pollefeys, Marc and Funkhouser, Thomas},
+  title     = {{OpenScene}: {3D} Scene Understanding with Open Vocabularies},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2023},
+  eprint    = {2211.15654},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{jatavallabhula2023conceptfusion,
+  author    = {Jatavallabhula, Krishna Murthy and Kuwajerwala, Alihusein and Gu, Qiao and Omama, Mohd and Chen, Tao and Maalouf, Alaa and Li, Shuang and Iyer, Ganesh and Saryazdi, Soroush and Keetha, Nikhil and Tewari, Ayush and Tenenbaum, Joshua B. and others},
+  title     = {{ConceptFusion}: Open-set Multimodal {3D} Mapping},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2023},
+  eprint    = {2302.07241},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{huang2023vlmaps,
+  author    = {Huang, Chenguang and Mees, Oier and Zeng, Andy and Burgard, Wolfram},
+  title     = {Visual Language Maps for Robot Navigation},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2023},
+  eprint    = {2210.05714},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{gu2024conceptgraphs,
+  author    = {Gu, Qiao and Kuwajerwala, Alihusein and Morin, Sacha and Jatavallabhula, Krishna Murthy and Sen, Bipasha and Agarwal, Aditya and Rivera, Corban and Paul, William and Ellis, Kirsty and Chellappa, Rama and Gan, Chuang and de Melo, Celso Miguel and others},
+  title     = {{ConceptGraphs}: Open-Vocabulary {3D} Scene Graphs for Perception and Planning},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2024},
+  eprint    = {2309.16650},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{werby2024hovsg,
+  author    = {Werby, Abdelrhman and Huang, Chenguang and B{\"u}chner, Martin and Valada, Abhinav and Burgard, Wolfram},
+  title     = {Hierarchical Open-Vocabulary {3D} Scene Graphs for Language-Grounded Robot Navigation},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2024},
+  doi       = {10.15607/RSS.2024.XX.077},
+  eprint    = {2403.17846},
+  archivePrefix = {arXiv}
+}
+
+@article{maggio2024clio,
+  author    = {Maggio, Dominic and Chang, Yun and Hughes, Nathan and Trang, Matthew and Griffith, Dan and Dougherty, Carlyn and Cristofalo, Eric and Schmid, Lukas and Carlone, Luca},
+  title     = {Clio: Real-time Task-Driven Open-Set {3D} Scene Graphs},
+  journal   = {IEEE Robotics and Automation Letters},
+  year      = {2024},
+  eprint    = {2404.13696},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{hughes2022hydra,
+  author    = {Hughes, Nathan and Chang, Yun and Carlone, Luca},
+  title     = {Hydra: A Real-time Spatial Perception System for {3D} Scene Graph Construction and Optimization},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2022},
+  eprint    = {2201.13360},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{chang2023hydramulti,
+  author    = {Chang, Yun and Hughes, Nathan and Ray, Aaron and Carlone, Luca},
+  title     = {{Hydra-Multi}: Collaborative Online Construction of {3D} Scene Graphs with Multi-Robot Teams},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  pages     = {10995--11002},
+  year      = {2023},
+  doi       = {10.1109/IROS55552.2023.10341838},
+  eprint    = {2304.13487},
+  archivePrefix = {arXiv}
+}
+
+@article{chang2023dlite,
+  author    = {Chang, Yun and Ballotta, Luca and Carlone, Luca},
+  title     = {{D-Lite}: Navigation-Oriented Compression of {3D} Scene Graphs for Multi-Robot Collaboration},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {8},
+  number    = {11},
+  pages     = {7527--7534},
+  year      = {2023},
+  doi       = {10.1109/LRA.2023.3320011},
+  eprint    = {2209.06111},
+  archivePrefix = {arXiv}
+}
+
+@article{gu2025mrcographs,
+  author    = {Gu, Qiuyi and Ye, Zhaocheng and Yu, Jincheng and Tang, Jiahao and Yi, Tinghao and Dong, Yuhan and Wang, Jian and Cui, Jinqiang and Chen, Xinlei and Wang, Yu},
+  title     = {{MR-COGraphs}: Communication-Efficient Multi-Robot Open-Vocabulary Mapping System via {3D} Scene Graphs},
+  journal   = {IEEE Robotics and Automation Letters},
+  volume    = {10},
+  number    = {6},
+  pages     = {5713--5720},
+  year      = {2025},
+  doi       = {10.1109/LRA.2025.3561569},
+  eprint    = {2412.18381},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{armeni2019scenegraph,
+  author    = {Armeni, Iro and He, Zhi-Yang and Gwak, JunYoung and Zamir, Amir R. and Fischer, Martin and Malik, Jitendra and Savarese, Silvio},
+  title     = {{3D} Scene Graph: A Structure for Unified Semantics, {3D} Space, and Camera},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2019},
+  eprint    = {1910.02527},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{rosinol2020dsg,
+  author    = {Rosinol, Antoni and Gupta, Arjun and Abate, Marcus and Shi, Jingnan and Carlone, Luca},
+  title     = {{3D} Dynamic Scene Graphs: Actionable Spatial Perception with Places, Objects, and Humans},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2020},
+  eprint    = {2002.06289},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{kerr2023lerf,
+  author    = {Kerr, Justin and Kim, Chung Min and Goldberg, Ken and Kanazawa, Angjoo and Tancik, Matthew},
+  title     = {{LERF}: Language Embedded Radiance Fields},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023},
+  eprint    = {2303.09553},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{takmaz2023openmask3d,
+  author    = {Takmaz, Ay{\c{c}}a and Fedele, Elisabetta and Sumner, Robert W. and Pollefeys, Marc and Tombari, Federico and Engelmann, Francis},
+  title     = {{OpenMask3D}: Open-Vocabulary {3D} Instance Segmentation},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  eprint    = {2306.13631},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{gadre2023cows,
+  author    = {Gadre, Samir Yitzhak and Wortsman, Mitchell and Ilharco, Gabriel and Schmidt, Ludwig and Song, Shuran},
+  title     = {{CoWs} on Pasture: Baselines and Benchmarks for Language-Driven Zero-Shot Object Navigation},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2023},
+  eprint    = {2203.10421},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{yokoyama2024vlfm,
+  author    = {Yokoyama, Naoki and Ha, Sehoon and Batra, Dhruv and Wang, Jiuguang and Bucher, Bernadette},
+  title     = {{VLFM}: Vision-Language Frontier Maps for Zero-Shot Semantic Navigation},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2024},
+  eprint    = {2312.03275},
+  archivePrefix = {arXiv}
+}
+
+%% ===================================================================
+%% 4. LLMs for robot planning and embodied agents
+%% ===================================================================
+
+@inproceedings{ahn2022saycan,
+  author    = {Ahn, Michael and Brohan, Anthony and Brown, Noah and Chebotar, Yevgen and Cortes, Omar and David, Byron and Finn, Chelsea and others},
+  title     = {Do As {I} Can, Not As {I} Say: Grounding Language in Robotic Affordances},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2022},
+  eprint    = {2204.01691},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{liang2023cap,
+  author    = {Liang, Jacky and Huang, Wenlong and Xia, Fei and Xu, Peng and Hausman, Karol and Ichter, Brian and Florence, Pete and Zeng, Andy},
+  title     = {Code as Policies: Language Model Programs for Embodied Control},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2023},
+  eprint    = {2209.07753},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{huang2022innermonologue,
+  author    = {Huang, Wenlong and Xia, Fei and Xiao, Ted and Chan, Harris and Liang, Jacky and Florence, Pete and Zeng, Andy and Tompson, Jonathan and Mordatch, Igor and Chebotar, Yevgen and Sermanet, Pierre and Brown, Noah and others},
+  title     = {Inner Monologue: Embodied Reasoning through Planning with Language Models},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2022},
+  eprint    = {2207.05608},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{singh2023progprompt,
+  author    = {Singh, Ishika and Blukis, Valts and Mousavian, Arsalan and Goyal, Ankit and Xu, Danfei and Tremblay, Jonathan and Fox, Dieter and Thomason, Jesse and Garg, Animesh},
+  title     = {{ProgPrompt}: Generating Situated Robot Task Plans using Large Language Models},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2023},
+  eprint    = {2209.11302},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{rana2023sayplan,
+  author    = {Rana, Krishan and Haviland, Jesse and Garg, Sourav and Abou-Chakra, Jad and Reid, Ian and S{\"u}nderhauf, Niko},
+  title     = {{SayPlan}: Grounding Large Language Models using {3D} Scene Graphs for Scalable Robot Task Planning},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2023},
+  eprint    = {2307.06135},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{song2023llmplanner,
+  author    = {Song, Chan Hee and Wu, Jiaman and Washington, Clayton and Sadler, Brian M. and Chao, Wei-Lun and Su, Yu},
+  title     = {{LLM-Planner}: Few-Shot Grounded Planning for Embodied Agents with Large Language Models},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2023},
+  eprint    = {2212.04088},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{huang2023voxposer,
+  author    = {Huang, Wenlong and Wang, Chen and Zhang, Ruohan and Li, Yunzhu and Wu, Jiajun and Fei-Fei, Li},
+  title     = {{VoxPoser}: Composable {3D} Value Maps for Robotic Manipulation with Language Models},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2023},
+  eprint    = {2307.05973},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{brohan2023rt2,
+  author    = {Brohan, Anthony and Brown, Noah and Carbajal, Justice and Chebotar, Yevgen and Chen, Xi and Choromanski, Krzysztof and Ding, Tianli and Driess, Danny and Dubey, Avinava and Finn, Chelsea and others},
+  title     = {{RT-2}: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2023},
+  eprint    = {2307.15818},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{kim2024openvla,
+  author    = {Kim, Moo Jin and Pertsch, Karl and Karamcheti, Siddharth and Xiao, Ted and Balakrishna, Ashwin and Nair, Suraj and Rafailov, Rafael and Foster, Ethan and Lam, Grace and Sanketi, Pannag and Vuong, Quan and Kollar, Thomas and others},
+  title     = {{OpenVLA}: An Open-Source Vision-Language-Action Model},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2024},
+  eprint    = {2406.09246},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{black2025pi0,
+  author    = {Black, Kevin and Brown, Noah and Driess, Danny and Esmail, Adnan and Equi, Michael and Finn, Chelsea and Fusai, Niccolo and Groom, Lachy and Hausman, Karol and Ichter, Brian and others},
+  title     = {$\pi_0$: A Vision-Language-Action Flow Model for General Robot Control},
+  booktitle = {Robotics: Science and Systems (RSS)},
+  year      = {2025},
+  eprint    = {2410.24164},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{yao2023react,
+  author    = {Yao, Shunyu and Zhao, Jeffrey and Yu, Dian and Du, Nan and Shafran, Izhak and Narasimhan, Karthik and Cao, Yuan},
+  title     = {{ReAct}: Synergizing Reasoning and Acting in Language Models},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  eprint    = {2210.03629},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{schick2023toolformer,
+  author    = {Schick, Timo and Dwivedi-Yu, Jane and Dess{\`i}, Roberto and Raileanu, Roberta and Lomeli, Maria and Zettlemoyer, Luke and Cancedda, Nicola and Scialom, Thomas},
+  title     = {Toolformer: Language Models Can Teach Themselves to Use Tools},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  eprint    = {2302.04761},
+  archivePrefix = {arXiv}
+}
+
+@misc{wang2023voyager,
+  author    = {Wang, Guanzhi and Xie, Yuqi and Jiang, Yunfan and Mandlekar, Ajay and Xiao, Chaowei and Zhu, Yuke and Fan, Linxi and Anandkumar, Anima},
+  title     = {Voyager: An Open-Ended Embodied Agent with Large Language Models},
+  year      = {2023},
+  eprint    = {2305.16291},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2305.16291}
+}
+
+%% ===================================================================
+%% 5. LLM multi-agent / multi-robot coordination and communication
+%% ===================================================================
+
+@inproceedings{mandi2024roco,
+  author    = {Mandi, Zhao and Jain, Shreeya and Song, Shuran},
+  title     = {{RoCo}: Dialectic Multi-Robot Collaboration with Large Language Models},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2024},
+  eprint    = {2307.04738},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{kannan2024smartllm,
+  author    = {Kannan, Shyam Sundar and Venkatesh, Vishnunandan L. N. and Min, Byung-Cheol},
+  title     = {{SMART-LLM}: Smart Multi-Agent Robot Task Planning using Large Language Models},
+  booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year      = {2024},
+  eprint    = {2309.10062},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{liu2025coherent,
+  author    = {Liu, Kehui and Tang, Zixin and Wang, Dong and Wang, Zhigang and Li, Xuelong and Zhao, Bin},
+  title     = {{COHERENT}: Collaboration of Heterogeneous Multi-Robot System with Large Language Models},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2025},
+  eprint    = {2409.15146},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{chen2024scalable,
+  author    = {Chen, Yongchao and Arkin, Jacob and Zhang, Yang and Roy, Nicholas and Fan, Chuchu},
+  title     = {Scalable Multi-Robot Collaboration with Large Language Models: Centralized or Decentralized Systems?},
+  booktitle = {IEEE International Conference on Robotics and Automation (ICRA)},
+  year      = {2024},
+  eprint    = {2309.15943},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{zhang2024coela,
+  author    = {Zhang, Hongxin and Du, Weihua and Shan, Jiaming and Zhou, Qinhong and Du, Yilun and Tenenbaum, Joshua B. and Shu, Tianmin and Gan, Chuang},
+  title     = {Building Cooperative Embodied Agents Modularly with Large Language Models},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2307.02485},
+  archivePrefix = {arXiv}
+}
+
+@misc{gong2023mindagent,
+  author    = {Gong, Ran and Huang, Qiuyuan and Ma, Xiaojian and Vo, Hoi and Durante, Zane and Noda, Yusuke and Zheng, Zilong and Zhu, Song-Chun and Terzopoulos, Demetri and Fei-Fei, Li and Gao, Jianfeng},
+  title     = {{MindAgent}: Emergent Gaming Interaction},
+  year      = {2023},
+  eprint    = {2309.09971},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2309.09971}
+}
+
+@misc{yu2023conavgpt,
+  author    = {Yu, Bangguo and Yuan, Qihao and Li, Kailai and Kasaei, Hamidreza and Cao, Ming},
+  title     = {{Co-NavGPT}: Multi-Robot Cooperative Visual Semantic Navigation Using Vision Language Models},
+  year      = {2023},
+  eprint    = {2310.07937},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2310.07937}
+}
+
+@inproceedings{shen2025mcoconav,
+  author    = {Shen, Zhixuan and Luo, Haonan and Chen, Kexun and Lv, Fengmao and Li, Tianrui},
+  title     = {Enhancing Multi-Robot Semantic Navigation Through Multimodal Chain-of-Thought Score Collaboration},
+  booktitle = {AAAI Conference on Artificial Intelligence},
+  year      = {2025},
+  eprint    = {2412.18292},
+  archivePrefix = {arXiv}
+}
+
+@misc{wang2025comresvlm,
+  author    = {Wang, Ruiyang and Hsu, Hao-Lun and Hunt, David and Kim, Jiwoo and Luo, Shaocheng and Pajic, Miroslav},
+  title     = {{COMRES-VLM}: Coordinated Multi-Robot Exploration and Search using Vision Language Models},
+  note      = {Earlier arXiv versions titled ``LLM-MCoX: Large Language Model-based Multi-robot Coordinated Exploration and Search''},
+  year      = {2025},
+  eprint    = {2509.26324},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2509.26324}
+}
+
+@misc{murata2025multiobject,
+  author    = {Murata, Kento and Hasegawa, Shoichi and Ishikawa, Tomochika and Hagiwara, Yoshinobu and Taniguchi, Akira and El Hafi, Lotfi and Taniguchi, Tadahiro},
+  title     = {Multi-Robot Task Planning for Multi-Object Retrieval Tasks with Distributed On-Site Knowledge via Large Language Models},
+  year      = {2025},
+  eprint    = {2509.12838},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2509.12838}
+}
+
+@misc{zhou2026duomind,
+  author    = {Zhou, Hanchu and Gao, Dechen and Wang, Hang and Lynch, Brendan and Zhao, Boqi and Ma, Qiyao and Goyal, Raman and Zhang, Junshan},
+  title     = {{DuoMind}: Enabling Distributed Multi-Robot Coordination with Semantic Communication},
+  year      = {2026},
+  eprint    = {2610.02161},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2610.02161}
+}
+
+@misc{guo2024organized,
+  author    = {Guo, Xudong and Huang, Kaixuan and Liu, Jiale and Fan, Wenhui and V{\'e}lez, Natalia and Wu, Qingyun and Wang, Huazheng and Griffiths, Thomas L. and Wang, Mengdi},
+  title     = {Embodied {LLM} Agents Learn to Cooperate in Organized Teams},
+  year      = {2024},
+  eprint    = {2403.12482},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2403.12482}
+}
+
+@inproceedings{li2023tom,
+  author    = {Li, Huao and Chong, Yu Quan and Stepputtis, Simon and Campbell, Joseph and Hughes, Dana and Lewis, Michael and Sycara, Katia},
+  title     = {Theory of Mind for Multi-Agent Collaboration via Large Language Models},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {180--192},
+  year      = {2023},
+  doi       = {10.18653/v1/2023.emnlp-main.13},
+  eprint    = {2310.10701},
+  archivePrefix = {arXiv}
+}
+
+@misc{li2025llmmrssurvey,
+  author    = {Li, Peihan and An, Zijian and Abrar, Shams and Zhou, Lifeng},
+  title     = {Large Language Models for Multi-Robot Systems: A Survey},
+  year      = {2025},
+  eprint    = {2502.03814},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2502.03814}
+}
+
+@inproceedings{li2023camel,
+  author    = {Li, Guohao and Hammoud, Hasan Abed Al Kader and Itani, Hani and Khizbullin, Dmitrii and Ghanem, Bernard},
+  title     = {{CAMEL}: Communicative Agents for ``Mind'' Exploration of Large Language Model Society},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  eprint    = {2303.17760},
+  archivePrefix = {arXiv}
+}
+
+@misc{wu2023autogen,
+  author    = {Wu, Qingyun and Bansal, Gagan and Zhang, Jieyu and Wu, Yiran and Li, Beibin and Zhu, Erkang and Jiang, Li and Zhang, Xiaoyun and Zhang, Shaokun and Liu, Jiale and Awadallah, Ahmed Hassan and White, Ryen W. and others},
+  title     = {{AutoGen}: Enabling Next-Gen {LLM} Applications via Multi-Agent Conversation},
+  year      = {2023},
+  eprint    = {2308.08155},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2308.08155}
+}
+
+@inproceedings{park2023generative,
+  author    = {Park, Joon Sung and O'Brien, Joseph C. and Cai, Carrie J. and Morris, Meredith Ringel and Liang, Percy and Bernstein, Michael S.},
+  title     = {Generative Agents: Interactive Simulacra of Human Behavior},
+  booktitle = {ACM Symposium on User Interface Software and Technology (UIST)},
+  year      = {2023},
+  eprint    = {2304.03442},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{foerster2016learning,
+  author    = {Foerster, Jakob N. and Assael, Yannis M. and de Freitas, Nando and Whiteson, Shimon},
+  title     = {Learning to Communicate with Deep Multi-Agent Reinforcement Learning},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2016},
+  eprint    = {1605.06676},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{lazaridou2017emergence,
+  author    = {Lazaridou, Angeliki and Peysakhovich, Alexander and Baroni, Marco},
+  title     = {Multi-Agent Cooperation and the Emergence of (Natural) Language},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017},
+  eprint    = {1612.07182},
+  archivePrefix = {arXiv}
+}
+
+%% ===================================================================
+%% 6. Multi-robot task allocation, exploration, comm.-constrained coordination
+%% ===================================================================
+
+@article{gerkey2004taxonomy,
+  author    = {Gerkey, Brian P. and Matari{\'c}, Maja J.},
+  title     = {A Formal Analysis and Taxonomy of Task Allocation in Multi-Robot Systems},
+  journal   = {The International Journal of Robotics Research},
+  volume    = {23},
+  number    = {9},
+  pages     = {939--954},
+  year      = {2004},
+  doi       = {10.1177/0278364904045564}
+}
+
+@article{korsah2013taxonomy,
+  author    = {Korsah, G. Ayorkor and Stentz, Anthony and Dias, M. Bernardine},
+  title     = {A Comprehensive Taxonomy for Multi-Robot Task Allocation},
+  journal   = {The International Journal of Robotics Research},
+  volume    = {32},
+  number    = {12},
+  pages     = {1495--1512},
+  year      = {2013},
+  doi       = {10.1177/0278364913496484}
+}
+
+@article{dias2006market,
+  author    = {Dias, M. Bernardine and Zlot, Robert and Kalra, Nidhi and Stentz, Anthony},
+  title     = {Market-Based Multirobot Coordination: A Survey and Analysis},
+  journal   = {Proceedings of the IEEE},
+  volume    = {94},
+  number    = {7},
+  pages     = {1257--1270},
+  year      = {2006},
+  doi       = {10.1109/JPROC.2006.876939}
+}
+
+@article{choi2009cbba,
+  author    = {Choi, Han-Lim and Brunet, Luc and How, Jonathan P.},
+  title     = {Consensus-Based Decentralized Auctions for Robust Task Allocation},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {25},
+  number    = {4},
+  pages     = {912--926},
+  year      = {2009},
+  doi       = {10.1109/TRO.2009.2022423}
+}
+
+@article{burgard2005coordinated,
+  author    = {Burgard, Wolfram and Moors, Mark and Stachniss, Cyrill and Schneider, Frank E.},
+  title     = {Coordinated Multi-Robot Exploration},
+  journal   = {IEEE Transactions on Robotics},
+  volume    = {21},
+  number    = {3},
+  pages     = {376--386},
+  year      = {2005},
+  doi       = {10.1109/TRO.2004.839232}
+}
+
+@inproceedings{yamauchi1998frontier,
+  author    = {Yamauchi, Brian},
+  title     = {Frontier-Based Exploration using Multiple Robots},
+  booktitle = {International Conference on Autonomous Agents (AGENTS)},
+  pages     = {47--53},
+  year      = {1998},
+  doi       = {10.1145/280765.280773}
+}
+
+@article{amigoni2017commrestricted,
+  author    = {Amigoni, Francesco and Banfi, Jacopo and Basilico, Nicola},
+  title     = {Multirobot Exploration of Communication-Restricted Environments: A Survey},
+  journal   = {IEEE Intelligent Systems},
+  volume    = {32},
+  number    = {6},
+  pages     = {48--57},
+  year      = {2017},
+  doi       = {10.1109/MIS.2017.4531226}
+}
+
+@article{otte2020auctions,
+  author    = {Otte, Michael and Kuhlman, Michael J. and Sofge, Donald},
+  title     = {Auctions for Multi-Robot Task Allocation in Communication Limited Environments},
+  journal   = {Autonomous Robots},
+  volume    = {44},
+  number    = {3--4},
+  pages     = {547--584},
+  year      = {2020},
+  doi       = {10.1007/s10514-019-09828-5}
+}
+
+%% ===================================================================
+%% 7. Benchmarks and simulators for embodied (multi-agent) tasks
+%% ===================================================================
+
+@inproceedings{savva2019habitat,
+  author    = {Savva, Manolis and Kadian, Abhishek and Maksymets, Oleksandr and Zhao, Yili and Wijmans, Erik and Jain, Bhavana and Straub, Julian and Liu, Jia and Koltun, Vladlen and Malik, Jitendra and Parikh, Devi and Batra, Dhruv},
+  title     = {Habitat: A Platform for Embodied {AI} Research},
+  booktitle = {IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2019},
+  eprint    = {1904.01201},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{puig2024habitat3,
+  author    = {Puig, Xavier and Undersander, Eric and Szot, Andrew and Cote, Mikael Dallaire and Yang, Tsung-Yen and Partsey, Ruslan and Desai, Ruta and Clegg, Alexander William and Hlavac, Michal and Min, So Yeon and Vondru{\v{s}}, Vladim{\'i}r and Gervet, Theophile and others},
+  title     = {Habitat 3.0: A Co-Habitat for Humans, Avatars and Robots},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  eprint    = {2310.13724},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{chang2025partnr,
+  author    = {Chang, Matthew and Chhablani, Gunjan and Clegg, Alexander and Cote, Mikael Dallaire and Desai, Ruta and Hlavac, Michal and Karashchuk, Vladimir and Krantz, Jacob and Mottaghi, Roozbeh and Parashar, Priyam and Patki, Siddharth and Prasad, Ishita and others},
+  title     = {{PARTNR}: A Benchmark for Planning and Reasoning in Embodied Multi-agent Tasks},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  eprint    = {2411.00081},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{gan2021tdw,
+  author    = {Gan, Chuang and Schwartz, Jeremy and Alter, Seth and Mrowca, Damian and Schrimpf, Martin and Traer, James and De Freitas, Julian and Kubilius, Jonas and Bhandwaldar, Abhishek and Haber, Nick and Sano, Megumi and Kim, Kuno and others},
+  title     = {{ThreeDWorld}: A Platform for Interactive Multi-Modal Physical Simulation},
+  booktitle = {NeurIPS Datasets and Benchmarks Track},
+  year      = {2021},
+  eprint    = {2007.04954},
+  archivePrefix = {arXiv}
+}
+
+@misc{gan2021tdwtransport,
+  author    = {Gan, Chuang and Zhou, Siyuan and Schwartz, Jeremy and Alter, Seth and Bhandwaldar, Abhishek and Gutfreund, Dan and Yamins, Daniel L. K. and DiCarlo, James J. and McDermott, Josh and Torralba, Antonio and Tenenbaum, Joshua B.},
+  title     = {The {ThreeDWorld} Transport Challenge: A Visually Guided Task-and-Motion Planning Benchmark for Physically Realistic Embodied {AI}},
+  year      = {2021},
+  eprint    = {2103.14025},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2103.14025}
+}
+
+@inproceedings{shridhar2020alfred,
+  author    = {Shridhar, Mohit and Thomason, Jesse and Gordon, Daniel and Bisk, Yonatan and Han, Winson and Mottaghi, Roozbeh and Zettlemoyer, Luke and Fox, Dieter},
+  title     = {{ALFRED}: A Benchmark for Interpreting Grounded Instructions for Everyday Tasks},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2020},
+  eprint    = {1912.01734},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{li2022behavior1k,
+  author    = {Li, Chengshu and Zhang, Ruohan and Wong, Josiah and Gokmen, Cem and Srivastava, Sanjana and Mart{\'i}n-Mart{\'i}n, Roberto and Wang, Chen and Levine, Gabrael and others},
+  title     = {{BEHAVIOR-1K}: A Benchmark for Embodied {AI} with 1,000 Everyday Activities and Realistic Simulation},
+  booktitle = {Conference on Robot Learning (CoRL)},
+  year      = {2022},
+  note      = {Extended version: arXiv:2403.09227, ``BEHAVIOR-1K: A Human-Centered, Embodied AI Benchmark with 1,000 Everyday Activities and Realistic Simulation''},
+  eprint    = {2403.09227},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{puig2021wah,
+  author    = {Puig, Xavier and Shu, Tianmin and Li, Shuang and Wang, Zilin and Liao, Yuan-Hong and Tenenbaum, Joshua B. and Fidler, Sanja and Torralba, Antonio},
+  title     = {Watch-And-Help: A Challenge for Social Perception and Human-{AI} Collaboration},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  eprint    = {2010.09890},
+  archivePrefix = {arXiv}
+}
+
+@inproceedings{tan2020maeqa,
+  author    = {Tan, Sinan and Xiang, Weilai and Liu, Huaping and Guo, Di and Sun, Fuchun},
+  title     = {Multi-agent Embodied Question Answering in Interactive Environments},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  series    = {Lecture Notes in Computer Science},
+  pages     = {663--678},
+  year      = {2020},
+  doi       = {10.1007/978-3-030-58601-0_39}
+}
+
+%% ===================================================================
+%% 8. Small / on-device LLMs and structured decoding
+%% ===================================================================
+
+@misc{ruan2024webllm,
+  author    = {Ruan, Charlie F. and Qin, Yucheng and Parthasarathy, Akaash R. and Zhou, Xun and Lai, Ruihang and Jin, Hongyi and Dong, Yixin and Hou, Bohan and Yu, Meng-Shiun and Zhai, Yiyan and Agarwal, Sudeep and Cao, Hangrui and others},
+  title     = {{WebLLM}: A High-Performance In-Browser {LLM} Inference Engine},
+  year      = {2024},
+  eprint    = {2412.15803},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2412.15803}
+}
+
+@misc{qwen2024qwen25,
+  author    = {{Qwen Team} and Yang, An and Yang, Baosong and Zhang, Beichen and Hui, Binyuan and Zheng, Bo and Yu, Bowen and Li, Chengyuan and Liu, Dayiheng and Huang, Fei and Wei, Haoran and others},
+  title     = {{Qwen2.5} Technical Report},
+  year      = {2024},
+  eprint    = {2412.15115},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2412.15115}
+}
+
+@inproceedings{dong2025xgrammar,
+  author    = {Dong, Yixin and Ruan, Charlie F. and Cai, Yaxing and Lai, Ruihang and Xu, Ziyi and Zhao, Yilong and Chen, Tianqi},
+  title     = {{XGrammar}: Flexible and Efficient Structured Generation Engine for Large Language Models},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2025},
+  eprint    = {2411.15100},
+  archivePrefix = {arXiv}
+}
+
+@misc{willard2023outlines,
+  author    = {Willard, Brandon T. and Louf, R{\'e}mi},
+  title     = {Efficient Guided Generation for Large Language Models},
+  year      = {2023},
+  eprint    = {2307.09702},
+  archivePrefix = {arXiv},
+  url       = {https://arxiv.org/abs/2307.09702}
+}
+
+@inproceedings{geng2023gcd,
+  author    = {Geng, Saibo and Josifoski, Martin and Peyrard, Maxime and West, Robert},
+  title     = {Grammar-Constrained Decoding for Structured {NLP} Tasks without Finetuning},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2023},
+  eprint    = {2305.13971},
+  archivePrefix = {arXiv}
+}

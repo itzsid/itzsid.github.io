@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 330" width="1000" height="330" font-family="Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6270"/>
+    </marker>
+    <marker id="ahB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f6f8b"/>
+    </marker>
+    <marker id="ahO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b5651d"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1000" height="330" fill="#ffffff"/>
+
+  <!-- column 1: local maps -->
+  <text x="20" y="26" font-size="15" font-weight="700" fill="#1d2330">1  Each robot maps alone</text>
+  <text x="20" y="44" font-size="12" fill="#5b6270">odometry + detections → local graph</text>
+  <g id="robots">
+    <!-- R1 -->
+    <rect x="20" y="62" width="170" height="74" rx="9" fill="#f5f6f8" stroke="#d5d9e0"/>
+    <text x="30" y="80" font-size="12" font-weight="700" fill="#2563eb">R1</text>
+    <polyline points="40,124 62,104 92,112 118,92 150,100 176,86" fill="none" stroke="#2563eb" stroke-width="2"/>
+    <circle cx="74" cy="96" r="4.5" fill="#e0752d"/><circle cx="132" cy="118" r="4.5" fill="#3a8f4b"/><circle cx="160" cy="76" r="4.5" fill="#8a5cd6"/>
+    <!-- R2 -->
+    <rect x="20" y="146" width="170" height="74" rx="9" fill="#f5f6f8" stroke="#d5d9e0"/>
+    <text x="30" y="164" font-size="12" font-weight="700" fill="#c0392b">R2</text>
+    <polyline points="40,206 70,190 96,200 126,178 176,190" fill="none" stroke="#c0392b" stroke-width="2"/>
+    <circle cx="60" cy="176" r="4.5" fill="#3a8f4b"/><circle cx="110" cy="210" r="4.5" fill="#d4a017"/><circle cx="150" cy="168" r="4.5" fill="#e0752d"/>
+    <!-- Rn -->
+    <rect x="20" y="230" width="170" height="74" rx="9" fill="#f5f6f8" stroke="#d5d9e0"/>
+    <text x="30" y="248" font-size="12" font-weight="700" fill="#0f8a7e">R3 … R10</text>
+    <polyline points="40,292 64,270 100,282 136,262 176,276" fill="none" stroke="#0f8a7e" stroke-width="2"/>
+    <circle cx="88" cy="262" r="4.5" fill="#8a5cd6"/><circle cx="122" cy="292" r="4.5" fill="#d4a017"/><circle cx="162" cy="258" r="4.5" fill="#3a8f4b"/>
+  </g>
+  <text x="20" y="322" font-size="11" fill="#7a8090">each robot's map lives in its own frame</text>
+
+  <!-- language lane -->
+  <rect x="226" y="54" width="562" height="92" rx="12" fill="#fdf5ec" stroke="#efd3b4"/>
+  <text x="242" y="76" font-size="15" font-weight="700" fill="#b5651d">2a  Talk</text>
+  <text x="318" y="76" font-size="12" fill="#8a6a4b">names and rooms, no coordinates · about 0.5 kB per question</text>
+  <rect x="242" y="88" width="250" height="44" rx="8" fill="#ffffff" stroke="#efd3b4"/>
+  <text x="252" y="106" font-size="11.5" fill="#1d2330">R1: “Has anyone seen the black</text>
+  <text x="252" y="122" font-size="11.5" fill="#1d2330">vending machine? Which room?”</text>
+  <rect x="504" y="88" width="134" height="44" rx="8" fill="#ffffff" stroke="#efd3b4"/>
+  <text x="514" y="106" font-size="11.5" fill="#1d2330">R3: “I saw one</text>
+  <text x="514" y="122" font-size="11.5" fill="#1d2330">in the Hall.”</text>
+  <rect x="650" y="88" width="124" height="44" rx="8" fill="#ffffff" stroke="#efd3b4"/>
+  <text x="660" y="106" font-size="11.5" fill="#1d2330">R1 searches</text>
+  <text x="660" y="122" font-size="11.5" fill="#1d2330">the Hall</text>
+  <line x1="492" y1="110" x2="502" y2="110" stroke="#b5651d" stroke-width="1.6" marker-end="url(#ahO)"/>
+  <line x1="638" y1="110" x2="648" y2="110" stroke="#b5651d" stroke-width="1.6" marker-end="url(#ahO)"/>
+
+  <!-- map lane -->
+  <rect x="226" y="160" width="562" height="160" rx="12" fill="#eef6f9" stroke="#bfdbe6"/>
+  <text x="242" y="182" font-size="15" font-weight="700" fill="#1f6f8b">2b  Share a map</text>
+  <text x="372" y="182" font-size="12" fill="#4b6b78">metric positions in one frame · about 1 kB per object</text>
+  <g font-size="11.5" fill="#1d2330">
+    <rect x="242" y="196" width="124" height="108" rx="8" fill="#ffffff" stroke="#bfdbe6"/>
+    <text x="252" y="216" font-weight="700">Exchange</text>
+    <text x="252" y="234">object descriptors</text>
+    <text x="252" y="250">(feature, position)</text>
+    <text x="252" y="266">with teammates</text>
+
+    <rect x="380" y="196" width="138" height="108" rx="8" fill="#ffffff" stroke="#bfdbe6"/>
+    <text x="390" y="216" font-weight="700">Align frames</text>
+    <text x="390" y="234">by meeting, or by</text>
+    <text x="390" y="250">RANSAC on objects,</text>
+    <text x="390" y="266">checked for strength,</text>
+    <text x="390" y="282">uniqueness, floor plan</text>
+
+    <rect x="530" y="196" width="118" height="108" rx="8" fill="#ffffff" stroke="#bfdbe6"/>
+    <text x="540" y="216" font-weight="700">Verify matches</text>
+    <text x="540" y="234">same object only if</text>
+    <text x="540" y="250">close, alike, no</text>
+    <text x="540" y="266">look-alike nearby,</text>
+    <text x="540" y="282">no wall between</text>
+
+    <rect x="660" y="196" width="120" height="108" rx="8" fill="#ffffff" stroke="#bfdbe6"/>
+    <text x="670" y="216" font-weight="700">Optimize</text>
+    <text x="670" y="234">two-stage solver,</text>
+    <text x="670" y="250">run distributed;</text>
+    <text x="670" y="266">robots send only</text>
+    <text x="670" y="282">separator values</text>
+    <text x="670" y="298" font-size="10" fill="#4b6b78">skipped in merge-only</text>
+  </g>
+  <line x1="366" y1="250" x2="378" y2="250" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#ahB)"/>
+  <line x1="518" y1="250" x2="528" y2="250" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#ahB)"/>
+  <line x1="648" y1="250" x2="658" y2="250" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#ahB)"/>
+
+  <!-- arrows from column 1 into lanes -->
+  <g stroke="#5b6270" stroke-width="1.6" fill="none">
+    <line x1="190" y1="99" x2="206" y2="99"/><line x1="190" y1="183" x2="206" y2="183"/><line x1="190" y1="267" x2="206" y2="267"/>
+    <line x1="206" y1="99" x2="206" y2="267"/>
+    <line x1="206" y1="110" x2="224" y2="110" stroke="#b5651d" marker-end="url(#ahO)"/>
+    <line x1="206" y1="240" x2="224" y2="240" stroke="#1f6f8b" marker-end="url(#ahB)"/>
+  </g>
+
+  <!-- column 3: act -->
+  <text x="828" y="26" font-size="15" font-weight="700" fill="#1d2330">3  Act</text>
+  <text x="828" y="44" font-size="12" fill="#5b6270">same tasks, same rules</text>
+  <rect x="828" y="62" width="154" height="242" rx="10" fill="#f5f6f8" stroke="#d5d9e0"/>
+  <g font-size="12.5" fill="#1d2330">
+    <text x="842" y="86" font-weight="700">Tasks</text>
+    <text x="842" y="108">Fetch an object</text>
+    <text x="842" y="128">Count a category</text>
+    <text x="842" y="148">Meet at a landmark</text>
+    <text x="842" y="168">Visit every instance</text>
+    <text x="842" y="188">Find a lost item</text>
+    <line x1="842" y1="204" x2="968" y2="204" stroke="#d5d9e0"/>
+    <text x="842" y="226" font-weight="700">Driven by</text>
+    <text x="842" y="246">scripted policies (exp.)</text>
+    <text x="842" y="266">or one LLM agent per</text>
+    <text x="842" y="286">robot (demo, 9 tools)</text>
+  </g>
+  <path d="M788,100 C808,100 808,140 826,140" fill="none" stroke="#b5651d" stroke-width="1.6" marker-end="url(#ahO)"/>
+  <path d="M788,240 C808,240 808,200 826,200" fill="none" stroke="#1f6f8b" stroke-width="1.6" marker-end="url(#ahB)"/>
+</svg>
