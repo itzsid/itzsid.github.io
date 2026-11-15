@@ -232,12 +232,27 @@ export class SceneView {
   //  obj = same object in two robots' maps (gold arcs), enc = robots saw each other (dark dashed)
   setLinks(list) {
     if (!this.linkGroup) return;
-    const obj = [], enc = [];
+    const obj = [], enc = [], clusters = [];
     for (const m of list) {
       if (m.kind === 'enc') { enc.push(m.a.x, 0.32, m.a.y, m.b.x, 0.32, m.b.y); continue; }
-      const a = V(m.a.x, m.a.y, 0.06), b = V(m.b.x, m.b.y, 0.06), mid = a.clone().add(b).multiplyScalar(0.5); mid.y = 0.35 + 0.12 * a.distanceTo(b);
-      const pts = new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(14);
-      for (let j = 0; j < pts.length - 1; j++) obj.push(pts[j].x, pts[j].y, pts[j].z, pts[j + 1].x, pts[j + 1].y, pts[j + 1].z);
+      // group matches by physical object (the two robots' rings usually sit almost on top of each other)
+      const mx = (m.a.x + m.b.x) / 2, my = (m.a.y + m.b.y) / 2;
+      let c = clusters.find((q) => Math.hypot(q.x - mx, q.y - my) < 0.8);
+      if (!c) { c = { x: mx, y: my, ends: [] }; clusters.push(c); }
+      c.ends.push(m.a, m.b);
+    }
+    // a gold marker floats above each shared object, with thin gold lines down to every robot's ring
+    const H = 1.55;
+    for (const c of clusters) {
+      for (const e of c.ends) obj.push(c.x, H, c.y, e.x, 0.06, e.y);
+    }
+    if (this.sharedMarks) { this.linkGroup.remove(this.sharedMarks); this.sharedMarks.dispose(); this.sharedMarks = null; }
+    if (clusters.length) {
+      this._markGeo ||= new THREE.OctahedronGeometry(0.13, 0);
+      this._markMat ||= new THREE.MeshStandardMaterial({ color: LINK_OBJ, emissive: LINK_OBJ, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.2 });
+      const im = new THREE.InstancedMesh(this._markGeo, this._markMat, clusters.length), M4 = new THREE.Matrix4();
+      clusters.forEach((c, k) => { M4.makeTranslation(c.x, H, c.y); im.setMatrixAt(k, M4); });
+      im.renderOrder = 6; im.userData.spin = true; this.linkGroup.add(im); this.sharedMarks = im;
     }
     const make = (arr, prev, opts) => {
       if (prev) { this.linkGroup.remove(prev); prev.geometry.dispose(); }
@@ -248,7 +263,7 @@ export class SceneView {
       const l = new LineSegments2(g, mat); if (opts.dashed) l.computeLineDistances(); l.renderOrder = 5;
       this.linkGroup.add(l); return l;
     };
-    this.objLinks = make(obj, this.objLinks, { color: LINK_OBJ, linewidth: 1.6, opacity: 0.9 });
+    this.objLinks = make(obj, this.objLinks, { color: LINK_OBJ, linewidth: 1.8, opacity: 0.95 });
     this.encLinks = make(enc, this.encLinks, { color: LINK_ENC, linewidth: 1.6, opacity: 0.85, dashed: true, dashSize: 0.22, gapSize: 0.16 });
   }
   setNavPath(i, points, color) {
