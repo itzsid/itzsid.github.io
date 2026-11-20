@@ -84,13 +84,24 @@ steps are memoryless.
 The fix is to treat the gradient not as the direction to move but as a force on a
 velocity that the optimizer carries from step to step:
 \begin{equation}
-v \leftarrow \beta v + g, \qquad w \leftarrow w - \eta\, v.
+m \leftarrow \beta m + g, \qquad w \leftarrow w - \eta\, m.
 \end{equation}
-With $\beta$ near $1$ (typically $0.9$), useless directions whose gradients flip
-sign cancel in $v$, while the consistent valley direction accumulates --- at
+This is Polyak's heavy-ball method \cite{ref17}, brought to deep learning by
+Sutskever et al.\ \cite{ref19}; we write the buffer as $m$ (for momentum)
+throughout. With $\beta$ near $1$ (typically $0.9$), useless directions whose gradients flip
+sign cancel in $m$, while the consistent valley direction accumulates --- at
 steady state with $\beta=0.9$ the velocity is roughly ten gradients' worth, so
 progress along the valley is about ten times faster. Under noise, the independent
-noise terms also average toward zero in $v$ while the signal survives.
+noise terms also average toward zero in $m$ while the signal survives.
+
+\textbf{Sum or average?} The buffer can equally be written as an exponential
+moving average, $m \leftarrow \beta m + (1-\beta) g$, the form Adam uses below.
+The two are the same algorithm: the EMA is the sum scaled by $(1-\beta)$, so it
+gives the same trajectory with the learning rate multiplied by $1/(1-\beta)$. The
+sum form is what PyTorch's SGD implements; the EMA form keeps $m$ on the scale of
+$g$, so $\eta$ means the same thing for any $\beta$. (Nesterov momentum
+\cite{ref18} evaluates the gradient at the look-ahead point; the picture is the
+same.)
 
 Momentum fixes the memoryless complaint and partly the noise one, but it does
 \emph{not} solve heterogeneous gradient scales: a parameter with a $100\times$
@@ -103,14 +114,21 @@ differing by $1000\times$. The field converged on per-parameter learning rates
 computed automatically from gradient statistics, in three steps.
 
 \textbf{AdaGrad} keeps a running sum of squared gradients per parameter and
-divides the step by its square root, $w \leftarrow w - \eta\, g/\sqrt{G+\epsilon}$
-with $G \leftarrow G + g^2$. Loud parameters get shrunk, quiet ones keep a
+divides the step by its square root, $w \leftarrow w - \eta\, g/(\sqrt{G}+\epsilon)$
+with $G \leftarrow G + g^2$. Here and below, $g^2$, $\sqrt{\cdot}$ and the
+division act \emph{component-wise}: each parameter $i$ is divided by its own
+$\sqrt{G_i}$. Loud parameters get shrunk, quiet ones keep a
 near-full rate. The catch: $G$ only grows, so after a few thousand steps every
 effective learning rate approaches zero and the optimizer stalls~\cite{ref1}.
 
 \textbf{RMSProp} replaces the running sum with an exponential moving average,
 $v \leftarrow \beta_2 v + (1-\beta_2) g^2$, so $v$ tracks \emph{recent} magnitude
-and plateaus instead of growing forever \cite{ref2}. \textbf{Adam} then stacks
+and plateaus instead of growing forever \cite{ref2}. This is the same EMA recipe
+as the averaged form of momentum; only the averaged quantity differs. Momentum
+averages $g$ (the first moment), so signs cancel and the result is a smoothed
+\emph{direction} that goes in the numerator. RMSProp averages $g^2$ (the second
+moment), so nothing cancels and the result is a typical \emph{magnitude} that goes
+in the denominator. \textbf{Adam} then stacks
 the two ideas --- a momentum EMA of the gradient and an RMSProp EMA of the
 squared gradient, both bias-corrected \cite{ref3}:
 \begin{equation}
@@ -171,25 +189,35 @@ $\beta_1$ window and the long $\beta_2$ window can push the update above $1$. Th
 is part of why gradient clipping is standard for transformer training.
 
 \section{AdamW: the one-line fix}
-Adam was published in 2014; AdamW, the version everyone actually uses, came in
-2017, and the change is one line \cite{ref4}. Weight decay gently pulls
-parameters toward zero each step to improve generalization. For SGD there is an
-identity: shrinking the parameters is equivalent to adding $\lambda w$ to the
-gradient, so for years people implemented decay by folding $\lambda w$ into the
-gradient. That is correct for any optimizer that just multiplies the gradient by
-$\eta$ and subtracts.
+So far every section has asked how fast an optimizer drives the training loss
+down. But what we care about is performance on unseen data, and a model that fits
+the training set with large, finely tuned weights often generalizes badly. So
+nearly every real run adds a regularizer alongside the optimizer, most commonly
+\emph{weight decay}: each step, shrink every weight slightly toward zero,
+$w \leftarrow (1-\eta\lambda)\, w$, so a weight stays large only if the gradient
+keeps pushing it there.
+
+Weight decay predates Adam, and the natural move was to attach it to Adam the way
+it had always been attached to SGD. That turned out to be a mistake: Adam was
+published in 2014; AdamW, the corrected version everyone actually uses, came in
+2017, and the fix is one line \cite{ref4}. For SGD there is an identity:
+shrinking the parameters is equivalent to adding $\lambda w$ to the gradient
+(the gradient of an L2 penalty $\tfrac{\lambda}{2}\|w\|^2$), since
+$w-\eta(g+\lambda w)=(1-\eta\lambda)w-\eta g$. So for years people implemented
+decay by folding $\lambda w$ into the gradient. That is correct for any optimizer
+that just multiplies the gradient by $\eta$ and subtracts.
 
 Adam does not. It divides by $\sqrt{v}$ first, so a folded-in decay term becomes
 $\eta\,\lambda w/\sqrt{v}$: parameters with large $v$ (loud gradients) get decayed
 \emph{less}, quiet ones \emph{more}. This is exactly backwards --- the parameters
-most at risk of overfitting receive the least regularization. The fix is to
+most at risk of overfitting receive the least regularization. Loshchilov and
+Hutter's fix \cite{ref4} is to
 decouple decay from the gradient and apply it directly to the weights:
 \begin{equation}
 w \leftarrow w - \eta\, \hat m/(\sqrt{\hat v}+\epsilon), \qquad
 w \leftarrow w - \eta\,\lambda\, w.
 \end{equation}
-Now every parameter gets the same proportional decay regardless of $v$, and
-$\lambda$ is an independent knob. AdamW trained essentially every transformer
+Now every parameter gets the same proportional decay regardless of $v$. AdamW trained essentially every transformer
 between 2017 and roughly 2023 --- the silent default behind GPT-2, GPT-3, BERT,
 ViT, and CLIP (though not quite all: T5 and PaLM used the memory-saving Adafactor).
 
@@ -250,7 +278,7 @@ gradient magnitude. The adaptive and sign-based methods flatten it.}
 optimizer & effective step & scales with $|g_i|$? \\
 \midrule
 SGD            & $\eta\, g_i$ & yes, linearly \\
-SGD+momentum   & $\eta\, v_i$ & yes, linearly \\
+SGD+momentum   & $\eta\, m_i$ & yes, linearly \\
 AdamW          & $\eta\, m_i/\sqrt{v_i}\approx\eta\,\sign(g_i)$ & no, flat \\
 Lion           & $\eta\,\sign(\beta m_i + (1{-}\beta) g_i)$ & no, flat \\
 SignSGD        & $\eta\,\sign(g_i)$ & no, flat \\
@@ -276,7 +304,7 @@ that those scalars form a matrix --- with rows, columns, and structure that
 survives matrix multiplication --- is thrown away. Muon's bet is that this
 structure is exactly the information you need \cite{ref10,ref11}.
 
-Any matrix has a singular value decomposition $M=U\Sigma V^\top$, where $\Sigma$
+Any matrix has a singular value decomposition $A=U\Sigma V^\top$, where $\Sigma$
 holds the singular values --- how much the matrix stretches space along each
 principal direction. Gradient matrices in training have very unequal singular
 values: a few directions dominate, most are nearly zero, so a vanilla step makes
@@ -284,8 +312,8 @@ progress in one or two directions and barely moves the rest. Muon computes the
 momentum-smoothed gradient and then flattens all its singular values to $1$
 before stepping:
 \begin{equation}
-u \leftarrow \beta u + g, \quad \hat u = \operatorname{orth}(u), \quad
-W \leftarrow W - \eta\, \hat u,
+M \leftarrow \beta M + G, \quad O = \operatorname{orth}(M), \quad
+W \leftarrow W - \eta\, O,
 \end{equation}
 where $\operatorname{orth}(\cdot)$ replaces $\Sigma$ with the identity (keeping
 $U,V$). Computing this by SVD every step is too slow, so Muon uses a degree-5
@@ -346,9 +374,17 @@ matrix-aware answer.
 \section{Shampoo: curvature-aware preconditioning}
 Shampoo predates Muon (2018) and was one of the first matrix-aware optimizers to
 gain attention --- preceded by K-FAC, which Kronecker-factors the Fisher matrix
-per layer \cite{ref28} --- though Muon got most of the practical traction \cite{ref7}. Shampoo
-approximates the full Hessian with two matrices per layer, one for how rows
-interact and one for columns:
+per layer \cite{ref28} --- though Muon got most of the practical traction \cite{ref7}.
+
+It is easiest to read Shampoo as ``Adam for a whole matrix.'' Adam's
+$g/\sqrt{v}$ multiplies the gradient by a \emph{diagonal} preconditioner, so it
+rescales each parameter alone and cannot express that parameters move together.
+The ideal, full-matrix AdaGrad \cite{ref1}, uses the whole second-moment matrix
+$C=\mathbb{E}[gg^\top]$ and steps along $C^{-1/2}g$; but for one $4096\times4096$
+layer $C$ has about $3\times10^{14}$ entries. Shampoo instead uses the matrix
+shape of $W\in\mathbb{R}^{m\times n}$ (gradient $G$) and keeps two small
+summaries, of how the gradient's rows co-vary ($m\times m$) and how its columns
+co-vary ($n\times n$), each averaged over time like Adam's $v$:
 \begin{equation}
 \begin{aligned}
 L &\leftarrow \beta L + (1-\beta)\, G G^\top, \\
@@ -356,7 +392,11 @@ R &\leftarrow \beta R + (1-\beta)\, G^\top G, \\
 W &\leftarrow W - \eta\, L^{-1/4}\, G\, R^{-1/4}.
 \end{aligned}
 \end{equation}
-The $-1/4$ exponents come from a Kronecker-factorization argument. The ideal
+Why $-1/4$ rather than Adam's $-1/2$? The two factors split the job of one
+inverse square root, so each side gets half of it. As a check, scaling $G$ by
+$10$ scales $L$ and $R$ by $100$, so $L^{-1/4}$ and $R^{-1/4}$ each shrink by
+$\sqrt{10}$ and together exactly cancel the $10\times$: like Adam, the update is
+independent of the gradient's raw scale. Formally, the ideal
 (full-matrix AdaGrad) preconditioner is the inverse square root of the gradient
 second-moment matrix $\mathbb{E}[\operatorname{vec}(G)\operatorname{vec}(G)^\top]$,
 a stand-in for the Hessian. Shampoo approximates it by $L^{1/2}\otimes R^{1/2}$,
@@ -432,6 +472,11 @@ optimizer fixes a specific failure of the one before it, and noticing the failur
 clearly is the hard part.
 
 The lineage above rests on a broader body of work: stochastic approximation and momentum~\cite{ref16,ref17,ref18,ref19}, analyses and critiques of adaptive methods~\cite{ref20,ref21}, the normalization literature~\cite{ref22,ref23,ref24,ref25,ref26}, second-order and natural-gradient methods~\cite{ref27,ref28,ref29}, the spectral-norm and duality view of matrix optimizers~\cite{ref30,ref31,ref32}, and learning-rate schedules and large-batch scaling~\cite{ref33,ref34,ref35}.
+
+\section*{Acknowledgements}
+Thanks to Jeremy Bernstein and Luca Carlone for reading this essay and for their
+thoughtful feedback, which made it clearer and more accurate. Any remaining errors
+are my own.
 
 \begin{thebibliography}{99}
 \footnotesize

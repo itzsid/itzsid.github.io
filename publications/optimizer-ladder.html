@@ -706,6 +706,7 @@ footer.post-footer {
     <li><a href="#ch-shampoo">Shampoo: curvature-aware preconditioning</a></li>
     <li><a href="#ch-muonh">MuonH: pinning the weight norm</a></li>
     <li><a href="#ch-coda">Coda: the through-line</a></li>
+    <li><a href="#ch-ack">Acknowledgements</a></li>
     <li><a href="#ch-refs">References</a></li>
   </ol>
 </nav>
@@ -882,12 +883,14 @@ canvas.lin { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Stop treating the gradient as the <em>direction to move</em>. Treat it as a <em>force pushing on a velocity vector</em>. The optimizer carries the velocity from step to step. Useful directions (where the force keeps pushing the same way) cause the velocity to grow. Useless directions (where the force flips back and forth) cause the velocity contributions to cancel.</p>
 
-<pre><code>v ← β · v + g
-w ← w − lr · v</code></pre>
+<pre><code>m ← β · m + g
+w ← w − lr · m</code></pre>
 
-<p>That's it. Two lines. <code>β</code> is a number close to 1 (a typical default is 0.9), controlling how much of the old velocity persists. With <code>β = 0</code> you get plain SGD back. With <code>β = 0.9</code> the velocity is a kind of running tally of roughly the last ten gradients' worth of motion.</p>
+<p>That's it. Two lines. This is Polyak's "heavy ball" method,<sup class="ref"><a href="#ref-17">[17]</a></sup> brought into deep learning by Sutskever et al.<sup class="ref"><a href="#ref-19">[19]</a></sup> We call the buffer <code>m</code> (for <em>momentum</em>) and use that letter for it throughout the essay. <code>β</code> is a number close to 1 (a typical default is 0.9), controlling how much of the old velocity persists. With <code>β = 0</code> you get plain SGD back. With <code>β = 0.9</code> the velocity is a kind of running tally of roughly the last ten gradients' worth of motion.</p>
 
-<p>In the steep-wall directions, the gradient alternates sign each step, so when you accumulate it into <code>v</code>, the contributions cancel and the velocity stays small. In the consistent valley direction, every gradient pushes the same way, so the velocity grows — at steady state with β=0.9, it's about ten times a single gradient, which means the effective step is ten times bigger than SGD's would have been. And under noise, the noise terms in successive gradients are independent and average toward zero in <code>v</code>, while the real signal accumulates.</p>
+<p>In the steep-wall directions, the gradient alternates sign each step, so when you accumulate it into <code>m</code>, the contributions cancel and the velocity stays small. In the consistent valley direction, every gradient pushes the same way, so the velocity grows — at steady state with β=0.9, it's about ten times a single gradient, which means the effective step is ten times bigger than SGD's would have been. And under noise, the noise terms in successive gradients are independent and average toward zero in <code>m</code>, while the real signal accumulates.</p>
+
+<p><strong>Why a sum and not an average?</strong> You could equally write the buffer as an <em>exponential moving average</em>, <code>m ← β · m + (1 − β) · g</code> — the form Adam uses in the next section. The two are the same algorithm: the EMA is just the sum multiplied by <code>(1 − β)</code>, so it produces the same trajectory once you multiply the learning rate by <code>1 / (1 − β)</code> (10× at β = 0.9). The sum form is what PyTorch's <code>SGD(momentum=…)</code> implements, and it keeps the "ten times a single gradient" speedup visible. The EMA form keeps <code>m</code> on the same scale as <code>g</code>, which makes <code>lr</code> mean the same thing whatever β you pick — and that matters once we start dividing by gradient statistics. (A popular variant, Nesterov momentum,<sup class="ref"><a href="#ref-18">[18]</a></sup> evaluates the gradient at the point the velocity is about to carry you to rather than where you stand; it often helps a little, but the picture is the same.)</p>
 
 <p>Below, both optimizers start at the same point, see the same noisy gradients, and use the same learning rate. The <em>only</em> difference is momentum. The contour ellipses are very flat horizontal ovals — that's the elongated valley.</p>
 
@@ -977,7 +980,9 @@ canvas.mom { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <p>Keep, for each parameter, a running sum of how big its gradients have been:</p>
 
 <pre><code>G ← G + g²
-w ← w − lr · g / sqrt(G + ε)</code></pre>
+w ← w − lr · g / (sqrt(G) + ε)</code></pre>
+
+<p><strong>A note on notation, used from here on:</strong> <code>g</code>, <code>G</code>, <code>m</code> and <code>v</code> are vectors with one entry per parameter, and <code>g²</code>, <code>sqrt(·)</code> and the division are all applied <em>component-wise</em> — entry <code>i</code> of <code>g²</code> is <code>g<sub>i</sub>²</code>, not a dot product, and each parameter is divided by its own <code>sqrt(G<sub>i</sub>)</code>. The small <code>ε</code> (say 10⁻⁸) just prevents division by zero.</p>
 
 <p>A parameter that's been seeing huge gradients gets divided by a huge <code>sqrt(G)</code>, so its effective step shrinks. A parameter with tiny gradients keeps a near-full <code>lr</code>. This is exactly what we wanted — automatic per-parameter scaling.</p>
 
@@ -988,13 +993,22 @@ w ← w − lr · g / sqrt(G + ε)</code></pre>
 <p>Replace the running sum with an exponential moving average:</p>
 
 <pre><code>v ← β₂ · v + (1 − β₂) · g²
-w ← w − lr · g / sqrt(v + ε)</code></pre>
+w ← w − lr · g / (sqrt(v) + ε)</code></pre>
 
-<p>Now <code>v</code> is bounded — it tracks the <em>recent</em> squared-gradient magnitude rather than the lifetime sum. Per-parameter scaling without monotonic decay. If gradients are roughly stationary at some long-run value, the steady-state <code>v</code> satisfies "EMA equals itself" and plateaus at the average squared gradient. The effective learning rate is preserved forever.<sup class="ref"><a href="#ref-2">[2]</a></sup></p>
+<p>Now <code>v</code> is bounded — it tracks the <em>recent</em> squared-gradient magnitude rather than the lifetime sum. Per-parameter scaling without monotonic decay. If gradients are roughly stationary at some long-run value, the steady-state <code>v</code> satisfies "EMA equals itself" and plateaus at the average squared gradient. The effective learning rate is preserved forever.<sup class="ref"><a href="#ref-2">[2]</a></sup> (We write the decay rate as <code>β₂</code> rather than plain <code>β</code> because Adam, below, will need both.)</p>
 
-<p>Compare the two accumulators on the same constant gradient stream:</p>
+<p>If that update line looks familiar, it should: it's the same exponential-moving-average recipe as the EMA form of momentum from section 2, <code>m ← β · m + (1 − β) · g</code>. The only difference is <em>what</em> gets averaged, and that changes the job completely:</p>
 
-<div class="widget-caption"><span class="num">Fig. 3.1</span>AdaGrad's accumulator grows linearly forever. RMSProp's plateaus.</div>
+<ul>
+<li><strong>Momentum averages <code>g</code></strong> — the first moment. Signs matter, so gradients that flip back and forth cancel and consistent ones add up. The result is a smoothed <em>direction</em>, and it goes in the numerator: it's what you step along.</li>
+<li><strong>RMSProp averages <code>g²</code></strong> — the second moment. Squaring throws the sign away, so nothing cancels; the result is a running estimate of how <em>big</em> this parameter's gradients typically are. It goes in the denominator: it's what you divide by.</li>
+</ul>
+
+<p>Same machinery, two different statistics — which is exactly why the next step, Adam, can simply run both side by side.</p>
+
+<p>First, though, see what replacing the sum with an average buys. Below, the same gradient stream feeds both accumulators. The y-axis is logarithmic so you can see both curves (AdaGrad's sum reaches the thousands while RMSProp's average stays near 1). The bottom panel is the quantity that actually matters: the effective learning-rate multiplier <code>1 / sqrt(accumulator)</code> each optimizer applies.</p>
+
+<div class="widget-caption"><span class="num">Fig. 3.1</span>AdaGrad's accumulator grows linearly forever, so its step shrinks forever. RMSProp's plateaus — and re-adapts when the gradient scale changes.</div>
 <div class="widget-container">
 <div class="widget-inner">
 <style>
@@ -1010,28 +1024,37 @@ canvas.acc { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 .acc-stat .lbl { font-size: 12px; color: var(--color-text-secondary); }
 .acc-stat .num { font-size: 20px; font-weight: 500; margin-top: 2px; font-family: var(--font-mono); }
 </style>
-<canvas id="acc-canvas" class="acc" width="540" height="280"></canvas>
+<canvas id="acc-canvas" class="acc" width="540" height="400"></canvas>
 <div class="acc-leg">
   <div class="acc-leg-it"><span class="acc-leg-bar" style="background: #D85A30;"></span>AdaGrad (sum)</div>
   <div class="acc-leg-it"><span class="acc-leg-bar" style="background: #7F77DD;"></span>RMSProp (EMA)</div>
+  <div class="acc-leg-it"><span class="acc-leg-bar" style="background: #888;"></span>g² fed in</div>
 </div>
 <div class="acc-row">
-  <label>β₂</label>
-  <input type="range" id="acc-b2" min="0.5" max="0.9995" step="0.0005" value="0.999" style="flex: 1;">
-  <span class="val" id="acc-b2-val">0.9990</span>
+  <label>Gradient stream</label>
+  <select id="acc-stream" style="flex: 1; min-width: 0; max-width: 280px;">
+    <option value="const">constant, |g| = 1</option>
+    <option value="drop" selected>|g| drops 1 → 0.1 at step 1500</option>
+    <option value="noisy">noisy, g = 0.3 + N(0, 1)</option>
+  </select>
+</div>
+<div class="acc-row">
+  <label>β₂ (RMSProp)</label>
+  <input type="range" id="acc-b2" min="0.5" max="0.9995" step="0.0005" value="0.99" style="flex: 1;">
+  <span class="val" id="acc-b2-val">0.9900</span>
 </div>
 <div class="acc-stats">
-  <div class="acc-stat"><div class="lbl">AdaGrad G at step 3000</div><div class="num" id="acc-ada">3000</div></div>
-  <div class="acc-stat"><div class="lbl">RMSProp v at step 3000</div><div class="num" id="acc-rms">0.95</div></div>
+  <div class="acc-stat"><div class="lbl">AdaGrad step multiplier at step 3000</div><div class="num" id="acc-ada">—</div></div>
+  <div class="acc-stat"><div class="lbl">RMSProp step multiplier at step 3000</div><div class="num" id="acc-rms">—</div></div>
 </div>
 </div>
 </div>
 
-<p>Drag β₂ down to 0.9. RMSProp's plateau is unchanged (still 1) but it gets there in about ten steps — short memory, fast adaptation, noisier. Push β₂ up to 0.9995 and RMSProp warms up so slowly it barely reaches its plateau by the end of the run; long memory, smooth, but more AdaGrad-ish. At β₂=1 exactly, the EMA stops accumulating entirely.</p>
+<p>Start with the default stream, where the gradient magnitude drops tenfold halfway through (as happens when training moves from a steep region to a flat one). AdaGrad's sum barely notices — it has 1,500 steps of large gradients baked in forever — so its step multiplier keeps sinking. RMSProp forgets the old regime within a few hundred steps and its multiplier jumps back up roughly tenfold, exactly compensating for the smaller gradients. Drag β₂ down to 0.9: RMSProp re-adapts in about ten steps — short memory, fast adaptation, but on the noisy stream its multiplier gets jittery. Push β₂ up to 0.9995 and the memory is so long (~2,000 steps) that RMSProp behaves almost like AdaGrad over this run. At β₂ = 1 exactly, the EMA stops updating entirely.</p>
 
 <h3>Adam: RMSProp meets momentum</h3>
 
-<p>Adam's contribution is conceptually small but practically enormous.<sup class="ref"><a href="#ref-3">[3]</a></sup> It just stacks the two ideas: keep a momentum term (EMA of gradients) <em>and</em> a per-parameter scale term (EMA of squared gradients), and use both:</p>
+<p>Adam's contribution is conceptually small but practically enormous.<sup class="ref"><a href="#ref-3">[3]</a></sup> It just stacks the two ideas: keep a momentum term (the EMA form from section 2, an average of <code>g</code>) <em>and</em> a per-parameter scale term (EMA of squared gradients), and use both:</p>
 
 <pre><code>m ← β₁ · m + (1 − β₁) · g          ← this is momentum
 v ← β₂ · v + (1 − β₂) · g²         ← this is RMSProp
@@ -1187,14 +1210,20 @@ canvas.snr { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <section class="chapter" id="ch-adamw">
 <h2><span class="num">Sec. 05</span> <span>AdamW: the one-line fix</span></h2>
 
-<p>Adam was published in 2014.<sup class="ref"><a href="#ref-3">[3]</a></sup> AdamW, the version everyone actually uses, came out in 2017.<sup class="ref"><a href="#ref-4">[4]</a></sup> The change is one line of code. The reason it took three years is that nobody — including the people who originally wrote Adam — noticed the bug.</p>
+<p>So far every section has been about one question: <em>how fast</em> can we drive the training loss down? But nobody trains a network to minimize training loss for its own sake. What we care about is how well it does on data it hasn't seen, and a model that fits the training set perfectly with enormous, finely tuned weights often generalizes badly. So almost every real training run adds a second ingredient alongside the optimizer: <strong>regularization</strong>, something that discourages the weights from growing without a good reason.</p>
 
-<p>Weight decay's job: at every step, gently pull parameters toward zero. Small parameters → simpler model → better generalization. The "gentle pull" is a multiplier slightly less than 1:</p>
+<p>The oldest and most common regularizer is <strong>weight decay</strong>. Its job: at every step, gently pull every parameter toward zero, so a weight only stays large if the gradient keeps pushing it there. Small parameters → simpler model → better generalization. The "gentle pull" is a multiplier slightly less than 1, applied after the usual update:</p>
 
 <pre><code>w ← w − lr · g                ← regular update
-w ← (1 − wd) · w              ← weight decay, applied separately</code></pre>
+w ← (1 − lr · wd) · w         ← weight decay, applied separately</code></pre>
 
-<p>There's a math identity that's true for SGD: shrinking the parameters is equivalent to adding <code>wd · w</code> to the gradient. So for years it was standard practice to "implement weight decay" by just adding <code>wd · w</code> to the gradient before passing it to the optimizer. Cleaner code, same result — for SGD, momentum, RMSProp, anything that just multiplies the gradient by <code>lr</code> and subtracts.</p>
+<p>(<code>wd</code> is a small constant, e.g. 0.01–0.1; tying the shrink factor to <code>lr</code> is the usual convention, so decay slows down when the learning rate does.)</p>
+
+<p>Weight decay was standard long before Adam, and the natural thing was to bolt it onto Adam the same way it had always been bolted onto SGD. That turned out to be a mistake that went unnoticed for years. Adam was published in 2014;<sup class="ref"><a href="#ref-3">[3]</a></sup> AdamW, the corrected version everyone actually uses, came out in 2017.<sup class="ref"><a href="#ref-4">[4]</a></sup> The fix is one line of code. The reason it took three years is that nobody — including the people who originally wrote Adam — noticed the bug.</p>
+
+<h3>The shortcut that worked for SGD</h3>
+
+<p>There's a math identity that's true for SGD: shrinking the parameters is equivalent to adding <code>wd · w</code> to the gradient. (That's the same as adding an "L2 penalty" <code>½ · wd · ‖w‖²</code> to the loss, since the penalty's gradient is <code>wd · w</code> — which is why the two names get used interchangeably. Check it: <code>w − lr · (g + wd · w) = (1 − lr · wd) · w − lr · g</code>, exactly the two lines above.) So for years it was standard practice to "implement weight decay" by just adding <code>wd · w</code> to the gradient before passing it to the optimizer. Cleaner code, same result — for plain SGD, or anything else that just multiplies the gradient by <code>lr</code> and subtracts. (With momentum it's already only approximately the same, since the decay term gets smoothed through the buffer; but the strength of the pull is unchanged, so nobody minded.)</p>
 
 <p>The original Adam paper followed this convention. So did every Adam implementation for the next three years.</p>
 
@@ -1206,7 +1235,7 @@ w ← (1 − wd) · w              ← weight decay, applied separately</code></
 
 <h3>The fix</h3>
 
-<p>Loshchilov and Hutter's observation: the identity that lets you fold weight decay into the gradient is <em>only</em> valid when the optimizer is <code>w ← w − lr · g</code>. The moment you preprocess the gradient — with <code>sqrt(v)</code>, with sign, with anything — the equivalence breaks. So just don't fold it in. Apply weight decay directly to the weights:</p>
+<p>Loshchilov and Hutter's observation<sup class="ref"><a href="#ref-4">[4]</a></sup>: the identity that lets you fold weight decay into the gradient is <em>only</em> valid when the optimizer is <code>w ← w − lr · g</code>. The moment you preprocess the gradient — with <code>sqrt(v)</code>, with sign, with anything — the equivalence breaks. So just don't fold it in. Apply weight decay directly to the weights:</p>
 
 <pre><code>m ← β₁·m + (1−β₁)·g
 v ← β₂·v + (1−β₂)·g²
@@ -1214,7 +1243,7 @@ m̂ = m / (1 − β₁ᵗ),  v̂ = v / (1 − β₂ᵗ)
 w ← w − lr · m̂ / (sqrt(v̂) + ε)    ← Adam update, no wd here
 w ← w − lr · wd · w                 ← decoupled weight decay</code></pre>
 
-<p>That's the entire change. Now every parameter gets the same proportional decay regardless of <code>v</code>, and <code>wd</code> is an independent knob from <code>lr</code>.</p>
+<p>That's the entire change. Now every parameter gets the same proportional decay regardless of <code>v</code>, and the strength of the regularization no longer depends on each parameter's gradient history.</p>
 
 <p>This visualization isolates the effect: two parameters A (loud, large <code>v</code>) and B (quiet, small <code>v</code>) both starting at 1.0 with zero gradient. The only thing pulling them down is decay. So everything you see is the decay term in action, no other dynamics.</p>
 
@@ -1465,7 +1494,7 @@ canvas.lio { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 <thead><tr><th>optimizer</th><th>effective step for parameter <code>i</code></th><th>scales with |g<sub>i</sub>|?</th></tr></thead>
 <tbody>
 <tr><td>SGD</td><td><code>lr · g<sub>i</sub></code></td><td>yes — linearly</td></tr>
-<tr><td>SGD + momentum</td><td><code>lr · v<sub>i</sub></code> where v is the momentum buffer (decaying sum of past g)</td><td>yes — still linearly</td></tr>
+<tr><td>SGD + momentum</td><td><code>lr · m<sub>i</sub></code> where m is the momentum buffer (decaying sum of past g)</td><td>yes — still linearly</td></tr>
 <tr><td>AdamW</td><td><code>lr · m<sub>i</sub> / sqrt(v<sub>i</sub>) ≈ lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
 <tr><td>Lion</td><td><code>lr · sign(β m<sub>i</sub> + (1−β) g<sub>i</sub>)</code></td><td>no — flat</td></tr>
 <tr><td>SignSGD</td><td><code>lr · sign(g<sub>i</sub>)</code></td><td>no — flat</td></tr>
@@ -1514,7 +1543,7 @@ canvas.par { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <h3>The picture: singular values</h3>
 
-<p>Any matrix <code>M</code> has a singular value decomposition: <code>M = U Σ V<sup>T</sup></code>. <code>U</code> and <code>V</code> are rotation matrices. <code>Σ</code> is a diagonal matrix of <em>singular values</em> — these say how much the matrix stretches space along each principal direction. A matrix with one huge singular value and many tiny ones acts almost like a rank-1 projection: it pours all input variation onto one output direction. A matrix with uniform singular values acts like a rotation that preserves the geometry of the input space.</p>
+<p>Any matrix <code>A</code> has a singular value decomposition: <code>A = U Σ V<sup>T</sup></code>. <code>U</code> and <code>V</code> are rotation matrices. <code>Σ</code> is a diagonal matrix of <em>singular values</em> — these say how much the matrix stretches space along each principal direction. A matrix with one huge singular value and many tiny ones acts almost like a rank-1 projection: it pours all input variation onto one output direction. A matrix with uniform singular values acts like a rotation that preserves the geometry of the input space.</p>
 
 <p>The gradient of a weight matrix has its own singular value structure. And empirically, gradient matrices in training have <em>very</em> unequal singular values. A few directions dominate; most are nearly zero. This means a vanilla gradient step is mostly making progress in one or two directions and barely moving in others.</p>
 
@@ -1522,9 +1551,9 @@ canvas.par { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Compute the momentum-smoothed gradient as usual. Then, before stepping, <strong>flatten all its singular values to 1</strong>. Equivalently: replace <code>Σ</code> with the identity. What you get is a "whitened" version of the gradient — same directions as the original (same <code>U</code> and <code>V</code>) but every direction now contributes equally.</p>
 
-<pre><code>u ← β · u + g                  ← momentum buffer
-û = orthogonalize(u)           ← replace u's singular values with 1s
-W ← W − lr · û</code></pre>
+<pre><code>M ← β · M + G                  ← momentum buffer (G = gradient matrix)
+O = orthogonalize(M)           ← replace M's singular values with 1s
+W ← W − lr · O</code></pre>
 
 <p>For hidden weight matrices only — embeddings, biases, and norm parameters use AdamW. That's why Muon comes packaged with a side-by-side optimizer in practice: it only knows what to do with matrices.</p>
 
@@ -1670,7 +1699,7 @@ canvas.crv { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Both green and coral curves have the same slope at the green dot (the starting point). The slider is the step size — i.e., how far you move in the direction the gradient suggests. On the gentle curve, a big step lands you closer to the minimum. On the sharp curve, the same big step overshoots and lands you higher up the other side.</p>
 
-<p>This is the third recurring complaint about first-order methods. The optimizer can't see how much each parameter "wants" you to step — only the direction. Adam's <code>sqrt(v)</code> normalizes by recent gradient magnitudes, which is a noisy proxy for curvature. SignSGD throws away even that. None of them are using the actual curvature of the loss landscape.</p>
+<p>This is a blind spot shared by every first-order method. The optimizer can't see how much each parameter "wants" you to step — only the direction. Adam's <code>sqrt(v)</code> normalizes by recent gradient magnitudes, which is a noisy proxy for curvature. SignSGD throws away even that. None of them are using the actual curvature of the loss landscape.</p>
 
 <h3>What "curvature" means precisely</h3>
 
@@ -1808,13 +1837,21 @@ canvas.hes { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Shampoo predates Muon by several years (the original paper is from 2018)<sup class="ref"><a href="#ref-7">[7]</a></sup> and was one of the first matrix-aware optimizers to gain real attention — preceded by K-FAC (2015), which uses a similar per-layer Kronecker factorization, but of the Fisher matrix rather than of gradient statistics.<sup class="ref"><a href="#ref-28">[28]</a></sup> The plot twist is that Muon got most of the practical traction, partly because Shampoo is more expensive to run and partly because its theoretical motivation — full Newton-style preconditioning — is a stronger claim than people initially needed.</p>
 
-<p>Shampoo's pitch: approximate the full Hessian using just <em>two</em> matrices per layer, one capturing how rows interact and one capturing how columns interact. For a weight matrix <code>W ∈ ℝ<sup>m×n</sup></code> with gradient <code>G</code>, maintain:</p>
+<p>Shampoo is easiest to understand as "Adam, but for a whole matrix at once." Let's build it in four steps.</p>
 
-<pre><code>L ← β·L + (1−β)·G G<sup>T</sup>      ← m × m left preconditioner (row curvature)
-R ← β·R + (1−β)·G<sup>T</sup> G      ← n × n right preconditioner (column curvature)
+<p><strong>Step 1 — Adam is already a preconditioner.</strong> A <em>preconditioner</em> is just a matrix you multiply the gradient by before stepping, to reshape it. Adam's update <code>g / sqrt(v)</code> is the gradient multiplied by a <em>diagonal</em> matrix whose entries are <code>1 / sqrt(v<sub>i</sub>)</code>. Diagonal means each parameter is rescaled on its own; it can't express "these two parameters tend to move together."</p>
+
+<p><strong>Step 2 — the ideal is a full matrix, and it's far too big.</strong> The un-simplified version of that idea, full-matrix AdaGrad,<sup class="ref"><a href="#ref-1">[1]</a></sup> keeps the whole second-moment matrix <code>C = E[g g<sup>T</sup>]</code> — every pair of parameters, not just the diagonal — and steps along <code>C<sup>−1/2</sup> g</code>. <code>C</code> records how parameters co-vary, which makes it a cheap stand-in for the Hessian from section 11. But for one 4096 × 4096 weight matrix (about 17 million parameters), <code>C</code> would have about 3 × 10<sup>14</sup> entries. Impossible.</p>
+
+<p><strong>Step 3 — use the matrix shape.</strong> A weight matrix <code>W ∈ ℝ<sup>m×n</sup></code> (gradient <code>G</code>) has rows and columns, so instead of tracking every pair of entries, Shampoo tracks two much smaller summaries: how the <em>rows</em> of the gradient co-vary (<code>G G<sup>T</sup></code>, an m × m matrix) and how the <em>columns</em> co-vary (<code>G<sup>T</sup> G</code>, n × n). For our 4096 × 4096 layer that's two matrices of 17 million entries each instead of one of 3 × 10<sup>14</sup>. Average them over time, just as Adam averages <code>g²</code>:</p>
+
+<pre><code>L ← β·L + (1−β)·G G<sup>T</sup>      ← m × m: row statistics   (Adam's v, for rows)
+R ← β·R + (1−β)·G<sup>T</sup> G      ← n × n: column statistics (Adam's v, for columns)
 W ← W − lr · L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code></pre>
 
-<p>The <code>−1/4</code> exponents come from a Kronecker-factorization argument. The ideal (full-matrix AdaGrad) preconditioner is the inverse square root of the gradient second-moment matrix <code>E[vec(G) vec(G)<sup>T</sup>]</code>, a stand-in for the Hessian. Shampoo approximates that matrix by <code>L<sup>1/2</sup> ⊗ R<sup>1/2</sup></code> — each factor gets a square root so that the product has the right scale — and the inverse square root of <code>L<sup>1/2</sup> ⊗ R<sup>1/2</sup></code> is <code>L<sup>−1/4</sup> ⊗ R<sup>−1/4</sup></code>. Applied to <code>G</code>, that means multiplying by <code>L<sup>−1/4</sup></code> on the left and <code>R<sup>−1/4</sup></code> on the right.</p>
+<p><strong>Step 4 — why the power is −1/4, not −1/2.</strong> Adam divides by <code>sqrt(v)</code>, i.e. multiplies by <code>v<sup>−1/2</sup></code>. Shampoo splits that job between two sides — <code>L</code> on the left, <code>R</code> on the right — so each side gets half of it: <code>−1/2 ÷ 2 = −1/4</code>. A quick sanity check shows why that's the right amount: make the gradient 10× bigger and <code>L</code> and <code>R</code> each grow 100×, so <code>L<sup>−1/4</sup></code> and <code>R<sup>−1/4</sup></code> each shrink by <code>√10</code>. Together they cancel the 10× exactly, so the update's size doesn't depend on the gradient's raw scale — the same property that made Adam's <code>m / sqrt(v)</code> work.</p>
+
+<p>For readers who want the precise version: Shampoo approximates the ideal <code>C</code> by the Kronecker product <code>L<sup>1/2</sup> ⊗ R<sup>1/2</sup></code>, and the inverse square root of that is <code>L<sup>−1/4</sup> ⊗ R<sup>−1/4</sup></code>. Because a Kronecker product acts on a flattened matrix as "multiply on the left by one factor, on the right by the other" (and both factors here are symmetric), applying it to <code>G</code> is exactly <code>L<sup>−1/4</sup> · G · R<sup>−1/4</sup></code>.</p>
 
 <p>One bookkeeping note that echoes the AdaGrad → RMSProp story from section 3: the <em>original</em> 2018 Shampoo accumulated <code>L</code> and <code>R</code> as un-decayed running sums (<code>L ← L + GGᵀ</code>), exactly the AdaGrad form, with the same eventual-stall problem. Every practical implementation since — Distributed Shampoo, SOAP — uses the exponential moving average shown above, so the preconditioner tracks <em>recent</em> curvature instead of the lifetime sum.<sup class="ref"><a href="#ref-8">[8]</a><a href="#ref-9">[9]</a></sup></p>
 
@@ -1989,7 +2026,7 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 
 <p>Thirteen sections, eleven optimizers. The arc, compressed:</p>
 
-<p><strong>SGD</strong> took small noisy steps in the gradient's direction. <strong>Momentum</strong> gave the optimizer a memory and a velocity. <strong>Adam</strong> added per-parameter learning rates via the EMA of squared gradients, which we then saw was really computing a signal-to-noise ratio bounded in <code>[−1, +1]</code>. <strong>AdamW</strong> noticed that the obvious way to add weight decay to Adam silently broke it, and fixed it in one line. <strong>SignSGD</strong> and <strong>Lion</strong> showed that the per-parameter normalized step was the active ingredient all along — Adam's elaborate machinery was approximating something simpler. <strong>Muon</strong> jumped from per-parameter to per-matrix, orthogonalizing each weight matrix's update so every singular direction gets attention. <strong>Shampoo</strong> went one further and tracked actual curvature per-row and per-column. <strong>MuonH</strong> opened a third axis: control the weight magnitude directly, not just the update.</p>
+<p><strong>SGD</strong> took small noisy steps in the gradient's direction. <strong>Momentum</strong> gave the optimizer a memory and a velocity. <strong>Adam</strong> added per-parameter learning rates via the EMA of squared gradients, which we then saw was really computing a signal-to-noise ratio, roughly bounded in <code>[−1, +1]</code>. <strong>AdamW</strong> noticed that the obvious way to add weight decay to Adam silently broke it, and fixed it in one line. <strong>SignSGD</strong> and <strong>Lion</strong> showed that the per-parameter normalized step was the active ingredient all along — Adam's elaborate machinery was approximating something simpler. <strong>Muon</strong> jumped from per-parameter to per-matrix, orthogonalizing each weight matrix's update so every singular direction gets attention. <strong>Shampoo</strong> went one further and tracked actual curvature per-row and per-column. <strong>MuonH</strong> opened a third axis: control the weight magnitude directly, not just the update.</p>
 
 <p>The arc, abstracted: each optimizer either looked at the previous one and asked <em>what is it failing to use?</em>, or asked <em>what is it doing redundantly that we can throw away?</em> Both directions produced wins.<sup class="ref"><a href="#ref-3">[3]</a><a href="#ref-10">[10]</a></sup></p>
 
@@ -2007,6 +2044,14 @@ canvas.hyp { display: block; max-width: 100%; height: auto; border: 0.5px solid 
 </div>
 </div>
 
+</section>
+
+<hr class="section-break">
+
+<section class="chapter" id="ch-ack">
+<h2><span class="num">Ack</span> <span>Acknowledgements</span></h2>
+
+<p>Thanks to Jeremy Bernstein and Luca Carlone for reading this essay and for their thoughtful feedback, which made it clearer and more accurate. Any remaining errors are my own.</p>
 </section>
 
 <hr class="section-break">
@@ -2550,81 +2595,108 @@ function gauss() {
   const canvas = document.getElementById('acc-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const W = 540, H = 280, T = 3000;
-  const M = { left: 60, right: 20, top: 20, bottom: 32 };
-  const PW = W - M.left - M.right, PH = H - M.top - M.bottom;
-  function toPx(t, y, yMax) {
-    return [M.left + (t / T) * PW, H - M.bottom - (y / yMax) * PH];
+  const W = 540, H = 400, T = 3000;
+  const L = 64, R = 20;
+  const PW = W - L - R;
+  // Two stacked log-scale panels sharing the step axis.
+  const P1 = { top: 24, bot: 196, lo: -3, hi: 4, title: 'accumulator (log scale)' };
+  const P2 = { top: 238, bot: 356, lo: -2, hi: 2, title: 'step multiplier 1 / sqrt(accumulator)  (log scale)' };
+  const xPx = t => L + (t / (T - 1)) * PW;
+  const yPx = (P, val) => {
+    const lv = Math.log10(Math.max(val, Math.pow(10, P.lo)));
+    const c = Math.min(Math.max(lv, P.lo), P.hi);
+    return P.bot - ((c - P.lo) / (P.hi - P.lo)) * (P.bot - P.top);
+  };
+  function streamGrad(kind) {
+    const g2 = new Float64Array(T);
+    let s = 12345;
+    const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    for (let t = 0; t < T; t++) {
+      let g;
+      if (kind === 'const') g = 1;
+      else if (kind === 'drop') g = t < 1500 ? 1 : 0.1;
+      else {
+        const u1 = Math.max(rnd(), 1e-12), u2 = rnd();
+        g = 0.3 + Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      }
+      g2[t] = g * g;
+    }
+    return g2;
   }
-  function simulate(beta2) {
-    const ada = new Float32Array(T), rms = new Float32Array(T);
+  function simulate(g2, beta2) {
+    const ada = new Float64Array(T), rms = new Float64Array(T);
     let G = 0, v = 0;
     for (let t = 0; t < T; t++) {
-      G += 1; v = beta2 * v + (1 - beta2) * 1;
+      G += g2[t]; v = beta2 * v + (1 - beta2) * g2[t];
       ada[t] = G; rms[t] = v;
     }
     return { ada, rms };
   }
   const b2In = document.getElementById('acc-b2');
   const b2V = document.getElementById('acc-b2-val');
+  const sIn = document.getElementById('acc-stream');
   const adaOut = document.getElementById('acc-ada');
   const rmsOut = document.getElementById('acc-rms');
   b2In.addEventListener('input', () => { b2V.textContent = parseFloat(b2In.value).toFixed(4); draw(); });
+  sIn.addEventListener('change', draw);
+  function panel(P) {
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    for (let e = P.lo; e <= P.hi; e++) {
+      const py = yPx(P, Math.pow(10, e));
+      ctx.beginPath(); ctx.moveTo(L, py); ctx.lineTo(W - R, py); ctx.stroke();
+      ctx.fillText(e === 0 ? '1' : (e > 0 ? '1e' + e : '1e' + e), L - 6, py + 3);
+    }
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)';
+    ctx.beginPath(); ctx.moveTo(L, P.bot); ctx.lineTo(W - R, P.bot); ctx.moveTo(L, P.bot); ctx.lineTo(L, P.top); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#888';
+    ctx.fillText(P.title, L + 4, P.top - 8);
+  }
+  function line(P, arr, color, width, f) {
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    ctx.beginPath();
+    for (let i = 0; i < T; i++) {
+      const px = xPx(i), py = yPx(P, f ? f(arr[i]) : arr[i]);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
   function draw() {
     const beta2 = parseFloat(b2In.value);
-    const { ada, rms } = simulate(beta2);
-    const yMax = ada[T-1] * 1.05;
+    const kind = sIn.value;
+    const g2 = streamGrad(kind);
+    const { ada, rms } = simulate(g2, beta2);
     ctx.clearRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.15)'; ctx.lineWidth = 0.5;
-    for (let i = 1; i <= 4; i++) {
-      const yVal = yMax * i / 4;
-      const [, py] = toPx(0, yVal, yMax);
-      ctx.beginPath(); ctx.moveTo(M.left, py); ctx.lineTo(W - M.right, py); ctx.stroke();
+    panel(P1); panel(P2);
+    // gradient stream (g²) in gray, top panel only
+    if (kind === 'noisy') {
+      ctx.fillStyle = 'rgba(136, 136, 136, 0.35)';
+      for (let i = 0; i < T; i += 6) ctx.fillRect(xPx(i) - 0.5, yPx(P1, g2[i]) - 0.5, 1.2, 1.2);
+    } else {
+      line(P1, g2, 'rgba(136, 136, 136, 0.8)', 1);
     }
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.45)'; ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(M.left, H - M.bottom); ctx.lineTo(W - M.right, H - M.bottom);
-    ctx.moveTo(M.left, H - M.bottom); ctx.lineTo(M.left, M.top);
-    ctx.stroke();
-    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
-    ctx.textAlign = 'right';
+    line(P1, ada, '#D85A30', 2);
+    line(P1, rms, '#7F77DD', 2);
+    const inv = x => 1 / Math.sqrt(x);
+    line(P2, ada, '#D85A30', 2, inv);
+    line(P2, rms, '#7F77DD', 2, inv);
+    // x axis
+    ctx.fillStyle = '#888'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
     for (let i = 0; i <= 4; i++) {
-      const yVal = yMax * i / 4;
-      const [, py] = toPx(0, yVal, yMax);
-      ctx.fillText(yVal.toFixed(0), M.left - 6, py + 3);
+      const tVal = (T * i) / 4;
+      ctx.fillText(tVal.toFixed(0), xPx(Math.min(tVal, T - 1)), P2.bot + 14);
     }
-    ctx.textAlign = 'center';
-    for (let i = 0; i <= 4; i++) {
-      const tVal = T * i / 4;
-      const [px] = toPx(tVal, 0, yMax);
-      ctx.fillText(tVal.toFixed(0), px, H - M.bottom + 14);
+    ctx.fillText('training step', L + PW / 2, H - 6);
+    if (kind === 'drop') {
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(128,128,128,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xPx(1500), P1.top); ctx.lineTo(xPx(1500), P2.bot); ctx.stroke();
+      ctx.setLineDash([]);
     }
-    ctx.textAlign = 'left'; ctx.fillStyle = '#888';
-    ctx.fillText('accumulator value', M.left - 14, M.top - 6);
-    ctx.textAlign = 'center';
-    ctx.fillText('training step', M.left + PW / 2, H - 4);
-    ctx.strokeStyle = '#D85A30'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < T; i++) {
-      const [px, py] = toPx(i, ada[i], yMax);
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    ctx.strokeStyle = '#7F77DD'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < T; i++) {
-      const [px, py] = toPx(i, rms[i], yMax);
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    const window = Math.round(1 / (1 - beta2));
-    ctx.fillStyle = '#7F77DD'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
-    const [labX, labY] = toPx(T * 0.55, rms[Math.floor(T * 0.55)], yMax);
-    ctx.fillText('plateau at g² = 1', labX, labY - 8);
-    ctx.fillStyle = '#888';
-    ctx.fillText('effective window ≈ ' + window + ' steps', labX, labY + 16);
-    adaOut.textContent = ada[T-1].toFixed(0);
-    rmsOut.textContent = rms[T-1].toFixed(2);
+    const win = Math.round(1 / (1 - beta2));
+    ctx.fillStyle = '#7F77DD'; ctx.textAlign = 'right';
+    ctx.fillText('RMSProp memory ≈ ' + win + ' steps', W - R - 4, P1.top + 4);
+    adaOut.textContent = '× ' + inv(ada[T - 1]).toFixed(3);
+    rmsOut.textContent = '× ' + inv(rms[T - 1]).toFixed(2);
   }
   draw();
 })();
